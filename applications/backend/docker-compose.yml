@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  postgres:
+    container_name: borsell-pg
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - 5433:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - borsell-network
+
+volumes:
+  postgres_data:
+
+networks:
+  borsell-network:

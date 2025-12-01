@@ -1,0 +1,5 @@
+{
+  "notStrong": "Field must contain at least one uppercase letter, one lowercase letter, one number and one special character",
+  "MIN": "Field must be at least {{min}} characters long",
+  "MAX": "Field must be at most {{max}} characters long"
+}

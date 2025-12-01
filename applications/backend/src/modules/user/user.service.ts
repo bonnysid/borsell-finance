@@ -1,0 +1,52 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
+
+import { ChangePasswordDto } from '@/modules/user/dto/change-password.dto';
+import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
+import { User } from '@/modules/user/entities';
+
+@Injectable()
+export class UserService {
+  constructor(@InjectRepository(User) private readonly usersRepository: Repository<User>) {}
+
+  async create(createUserDto: CreateUserDto) {
+    const candidate = await this.findOne(createUserDto.username);
+
+    if (candidate) {
+      throw new BadRequestException('Something went wrong');
+    }
+
+    const newUser = this.usersRepository.create({
+      username: createUserDto.username,
+      password: bcrypt.hashSync(createUserDto.password, 10),
+    });
+
+    return this.usersRepository.save(newUser);
+  }
+
+  async findOne(username: string) {
+    return this.usersRepository.findOne({
+      where: { username },
+    });
+  }
+
+  async changePassword(username: string, dto: ChangePasswordDto) {
+    const user = await this.findOne(username);
+
+    if (!user) {
+      throw new BadRequestException('Something went wrong');
+    }
+
+    const isValid = bcrypt.compareSync(dto.oldPassword, user.password);
+
+    if (!isValid) {
+      throw new BadRequestException('Неверный пароль');
+    }
+
+    user.password = bcrypt.hashSync(dto.newPassword, 10);
+
+    return this.usersRepository.save(user);
+  }
+}
