@@ -29,6 +29,7 @@
         "noUndeclaredVariables": "off",
         "useExhaustiveDependencies": "off",
         "useUniqueElementIds": "off",
+        "noEmptyPattern": "off",
         "noUnusedImports": {
           "level": "warn",
           "fix": "safe"

@@ -12,11 +12,12 @@ const dirname =
 
 const src = path.resolve(dirname, 'src');
 
-console.log(path.resolve(dirname, 'src', 'app'));
-
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react(), svgr()],
+  server: {
+    host: true,
+  },
   resolve: {
     alias: {
       '@app': path.resolve(src, 'app'),

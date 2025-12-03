@@ -1,0 +1,13 @@
+.header {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto 1fr;
+  padding: var(--PaddingS);
+}
+
+.logo {
+  --logo-size: 24px;
+
+  width: var(--logo-size);
+  height: var(--logo-size);
+}

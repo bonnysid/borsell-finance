@@ -1,11 +1,12 @@
 import { Layout } from '@app/Layout';
+import { PrivateLayout } from '@app/PrivateLayout';
 import { PrivateRoute, PublicRoute } from '@entities/auth';
 import { AssistantPage } from '@pages/assistant';
 import { AuthLayout, SignInPage, SignUpPage } from '@pages/auth';
 import { DashboardPage } from '@pages/dasboard';
 import { PortfolioPage } from '@pages/portfolios';
 import { AppRoutePaths, AppRoutes } from '@shared/router';
-import { Navigate, Outlet, RouteObject } from 'react-router-dom';
+import { Navigate, RouteObject } from 'react-router-dom';
 
 export const ROUTES: RouteObject[] = [
   {
@@ -38,7 +39,7 @@ export const ROUTES: RouteObject[] = [
       {
         element: (
           <PrivateRoute>
-            <Outlet />
+            <PrivateLayout />
           </PrivateRoute>
         ),
         children: [

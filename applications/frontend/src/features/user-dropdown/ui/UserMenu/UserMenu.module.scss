@@ -1,0 +1,9 @@
+.user-menu {
+  display: flex;
+  flex-direction: column;
+  padding: var(--PaddingS);
+  box-shadow: var(--shadow-primary);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--RoundingM);
+  border: 1px solid var(--color-border-primary);
+}

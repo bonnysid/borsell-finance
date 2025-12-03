@@ -1,5 +1,5 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
-import LogoSVG from '@shared/assets/img/logo.svg?react';
+import { Logo } from '@shared/ui';
 import { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 
@@ -14,7 +14,7 @@ export const AuthLayout: FC<AuthLayoutProps> = () => {
     <div className={cx('auth-layout')}>
       <div className={cx('block')}>
         <div className={cx('header')}>
-          <LogoSVG className={cx('logo')} />
+          <Logo className={cx('logo')} />
         </div>
 
         <Outlet />

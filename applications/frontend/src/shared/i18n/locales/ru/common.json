@@ -3,5 +3,7 @@
   "Registration": "Зарегистрироваться",
   "Username": "Имя пользователя",
   "Password": "Пароль",
-  "RepeatPassword": "Повторите пароль"
+  "RepeatPassword": "Повторите пароль",
+
+  "Search": "Поиск"
 }

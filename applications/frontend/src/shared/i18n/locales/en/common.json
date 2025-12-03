@@ -3,5 +3,7 @@
   "Registration": "Registration",
   "Username": "Username",
   "Password": "Password",
-  "RepeatPassword": "Repeat password"
+  "RepeatPassword": "Repeat password",
+
+  "Search": "Search"
 }
