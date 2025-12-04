@@ -9,5 +9,4 @@ export const I18nAppModule = I18nModule.forRoot({
     watch: true,
   },
   resolvers: [new HeaderResolver([X_LANG_HEADER]), AcceptLanguageResolver],
-  typesOutputPath: path.join(__dirname, '../src/i18n/i18n.generated.ts'),
 });
