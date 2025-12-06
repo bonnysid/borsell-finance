@@ -1,17 +1,17 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
-import { User } from '@/modules/user';
+import { UserEntity } from '@/modules/user';
 
 @Entity()
-export class RefreshToken {
+export class RefreshTokenEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ManyToOne(
-    () => User,
+    () => UserEntity,
     (user) => user.refreshTokens,
   )
-  user: User;
+  user: UserEntity;
 
   @Column()
   tokenHash: string;

@@ -5,8 +5,9 @@ import { AssistantPage } from '@pages/assistant';
 import { AuthLayout, SignInPage, SignUpPage } from '@pages/auth';
 import { DashboardPage } from '@pages/dasboard';
 import { PortfolioPage } from '@pages/portfolios';
+import { TransactionsPage } from '@pages/transactions';
 import { AppRoutePaths, AppRoutes } from '@shared/router';
-import { Navigate, RouteObject } from 'react-router-dom';
+import { Navigate, RouteObject } from 'react-router';
 
 export const ROUTES: RouteObject[] = [
   {
@@ -58,6 +59,14 @@ export const ROUTES: RouteObject[] = [
           {
             path: AppRoutes.ASSISTANT,
             element: <AssistantPage />,
+          },
+          {
+            path: AppRoutes.TRANSACTIONS,
+            element: <TransactionsPage />,
+          },
+          {
+            path: '*',
+            element: <Navigate to={AppRoutePaths.DASHBOARD()} />,
           },
         ],
       },

@@ -7,10 +7,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { RefreshToken } from '@/modules/auth/entities/refresh-token.entity';
+import { RefreshTokenEntity } from '@/modules/auth/entities/refresh-token.entity';
+import { PortfolioEntity } from '@/modules/portfolio';
 
 @Entity('users')
-export class User {
+export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -33,8 +34,14 @@ export class User {
   updatedAt: string;
 
   @OneToMany(
-    () => RefreshToken,
+    () => RefreshTokenEntity,
     (refreshToken) => refreshToken.user,
   )
-  refreshTokens: RefreshToken[];
+  refreshTokens: RefreshTokenEntity[];
+
+  @OneToMany(
+    () => PortfolioEntity,
+    (portfolio) => portfolio.user,
+  )
+  portfolios: PortfolioEntity[];
 }

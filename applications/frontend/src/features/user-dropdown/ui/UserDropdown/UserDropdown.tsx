@@ -1,4 +1,4 @@
-import { bindStyles, Loader, useOpenState } from '@devbonnysid/ui-kit-default';
+import { bindStyles, Icon, Loader, useOpenState } from '@devbonnysid/ui-kit-default';
 import { useGetMe } from '@entities/user';
 import { FC, useRef } from 'react';
 
@@ -13,11 +13,20 @@ export const UserDropdown: FC<UserDropdownProps> = ({}) => {
   const dropdownControls = useOpenState();
   const getMeQuery = useGetMe();
   const referenceRef = useRef<HTMLDivElement | null>(null);
+  const isReady = Boolean(getMeQuery.isSuccess && getMeQuery.data);
+
+  const handleClickTrigger = () => {
+    if (isReady) {
+      dropdownControls.open();
+    }
+  };
 
   return (
     <div className={cx('user-dropdown')}>
-      <div ref={referenceRef} className={cx('trigger')}>
-        {getMeQuery.isFetching && <Loader className={cx('loader')} />}
+      <div ref={referenceRef} className={cx('trigger', { isReady })} onClick={handleClickTrigger}>
+        {getMeQuery.isLoading && <Loader className={cx('loader')} />}
+
+        {isReady && <Icon type="user" className={cx('trigger-icon')} />}
       </div>
 
       {dropdownControls.isOpen && (

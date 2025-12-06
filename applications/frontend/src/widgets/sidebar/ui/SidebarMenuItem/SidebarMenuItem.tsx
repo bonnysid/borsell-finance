@@ -1,30 +1,19 @@
-import { Accordion, bindStyles, Icon, IconTypes } from '@devbonnysid/ui-kit-default';
-import {
-  AnchorHTMLAttributes,
-  ButtonHTMLAttributes,
-  FC,
-  ReactElement,
-  ReactNode,
-  useMemo,
-} from 'react';
-import { NavLink, To } from 'react-router-dom';
+import { Accordion, bindStyles, Icon } from '@devbonnysid/ui-kit-default';
+import { SidebarLink } from '@widgets/sidebar';
+import { AnchorHTMLAttributes, ButtonHTMLAttributes, FC, useMemo } from 'react';
+import { NavLink, To, useMatch } from 'react-router';
 
 import styles from './SidebarMenuItem.module.scss';
 
-export type SidebarMenuItemType = {
-  id: string;
-  caption: ReactNode;
-  icon?: ReactElement | IconTypes;
-};
-
-type SidebarMenuItemButtonProps = SidebarMenuItemType &
-  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof SidebarMenuItemType> & {
+type SidebarMenuItemButtonProps = SidebarLink &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof SidebarLink> & {
     as?: 'button';
     subItems?: SidebarMenuItemProps[];
+    isActive?: boolean;
   };
 
-type SidebarMenuItemLinkProps = SidebarMenuItemType &
-  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof SidebarMenuItemType> & {
+type SidebarMenuItemLinkProps = SidebarLink &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof SidebarLink> & {
     as: 'a';
     to: To;
   };
@@ -40,7 +29,10 @@ export const SidebarMenuItem: FC<SidebarMenuItemProps> = ({
   children,
   ...props
 }) => {
-  const classnames = cn(className, 'sidebar-menu-item');
+  const isRouteMatch = useMatch(typeof props.to === 'string' ? props.to : props.to.pathname || '');
+  const classnames = cn(className, 'sidebar-menu-item', {
+    isActive: props.as === 'a' ? Boolean(isRouteMatch) : props.isActive,
+  });
 
   const renderedIcon = useMemo(() => {
     if (typeof icon === 'string') {

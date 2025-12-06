@@ -8,7 +8,7 @@ type PortfolioPageProps = {};
 const cn = bindStyles(styles);
 
 export const PortfolioPage: FC<PortfolioPageProps> = () => {
-  return <div className={cn('Portfolio-page')}>Portfolio</div>;
+  return <div className={cn('portfolio-page')}>Portfolio</div>;
 };
 
 export default PortfolioPage;

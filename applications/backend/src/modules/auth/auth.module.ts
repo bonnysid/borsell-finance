@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
-import { RefreshToken } from '@/modules/auth/entities';
+import { RefreshTokenEntity } from '@/modules/auth/entities';
 import { RefreshTokenService } from '@/modules/auth/refresh-token.service';
-import { User, UserModule, UserService } from '@/modules/user';
+import { UserEntity, UserModule, UserService } from '@/modules/user';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { User, UserModule, UserService } from '@/modules/user';
     JwtModule.register({
       global: true,
     }),
-    TypeOrmModule.forFeature([RefreshToken, User]),
+    TypeOrmModule.forFeature([RefreshTokenEntity, UserEntity]),
   ],
   providers: [AuthService, RefreshTokenService, UserService],
   controllers: [AuthController],

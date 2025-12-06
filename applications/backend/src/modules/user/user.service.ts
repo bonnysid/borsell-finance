@@ -5,11 +5,13 @@ import { Repository } from 'typeorm';
 
 import { ChangePasswordDto } from '@/modules/user/dto/change-password.dto';
 import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
-import { User } from '@/modules/user/entities';
+import { UserEntity } from '@/modules/user/entities';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectRepository(User) private readonly usersRepository: Repository<User>) {}
+  constructor(
+    @InjectRepository(UserEntity) private readonly usersRepository: Repository<UserEntity>,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const candidate = await this.findOne(createUserDto.username);

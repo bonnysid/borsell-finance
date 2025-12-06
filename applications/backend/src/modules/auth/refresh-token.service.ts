@@ -3,13 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 
-import { RefreshToken } from './entities/refresh-token.entity';
+import { RefreshTokenEntity } from './entities/refresh-token.entity';
 
 @Injectable()
 export class RefreshTokenService {
   constructor(
-    @InjectRepository(RefreshToken)
-    private repo: Repository<RefreshToken>,
+    @InjectRepository(RefreshTokenEntity)
+    private repo: Repository<RefreshTokenEntity>,
   ) {}
 
   async create(userId: string, token: string, expiresAt: Date) {

@@ -9,7 +9,7 @@ import { queryClient } from '@shared/api';
 import i18n, { I18N_NS } from '@shared/i18n';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 
 initAuthInterceptor();
 

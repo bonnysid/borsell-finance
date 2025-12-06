@@ -1,7 +1,14 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { RefreshToken, User } from '@/modules';
+import {
+  AssetEntity,
+  CurrencyEntity,
+  PortfolioEntity,
+  PortfolioSnapshotEntity,
+  RefreshTokenEntity,
+  UserEntity,
+} from '@/modules';
 
 export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleOptions => {
   return {
@@ -13,6 +20,13 @@ export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleO
     database: configService.getOrThrow('POSTGRES_DATABASE'),
     autoLoadEntities: true,
     synchronize: true,
-    entities: [User, RefreshToken],
+    entities: [
+      UserEntity,
+      RefreshTokenEntity,
+      CurrencyEntity,
+      AssetEntity,
+      PortfolioEntity,
+      PortfolioSnapshotEntity,
+    ],
   };
 };

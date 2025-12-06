@@ -6,7 +6,7 @@ import { I18nAppModule } from '@/i18n';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule, UserModule } from './modules';
+import { AssetModule, AuthModule, CurrencyModule, PortfolioModule, UserModule } from './modules';
 
 @Module({
   imports: [
@@ -15,6 +15,9 @@ import { AuthModule, UserModule } from './modules';
     DatabaseModule,
     UserModule,
     AuthModule,
+    CurrencyModule,
+    AssetModule,
+    PortfolioModule,
   ],
   controllers: [AppController],
   providers: [AppService],

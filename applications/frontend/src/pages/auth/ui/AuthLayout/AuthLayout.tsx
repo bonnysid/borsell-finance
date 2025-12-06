@@ -1,7 +1,7 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { Logo } from '@shared/ui';
 import { FC } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 import styles from './AuthLayout.module.scss';
 

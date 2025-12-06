@@ -1,0 +1,44 @@
+// portfolio-snapshot.entity.ts
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+import { PortfolioEntity } from './portfolio.entity';
+
+@Entity('portfolio_snapshots')
+export class PortfolioSnapshotEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  // Связь с портфелем
+  @ManyToOne(
+    () => PortfolioEntity,
+    (portfolio) => portfolio.snapshots,
+    { onDelete: 'CASCADE' },
+  )
+  @JoinColumn({ name: 'portfolioId' })
+  portfolio: PortfolioEntity;
+
+  @Column()
+  portfolioId: string;
+
+  // ⭐️ Ключевое поле: Дата снимка
+  @Column({ type: 'date', unique: true }) // Уникальность по дате в рамках одного портфеля
+  snapshotDate: string;
+
+  // --- Основные метрики (в baseCurrency портфеля) ---
+
+  // Общая рыночная стоимость всех активов на эту дату
+  @Column({ type: 'decimal', precision: 18, scale: 4 })
+  totalValue: number;
+
+  // Общая сумма, которую пользователь вложил (депозиты)
+  @Column({ type: 'decimal', precision: 18, scale: 4 })
+  totalInvested: number;
+
+  // Общая сумма, которую пользователь вывел (выводы)
+  @Column({ type: 'decimal', precision: 18, scale: 4 })
+  totalWithdrawn: number;
+
+  // Прибыль/Убыток за период от начала инвестирования
+  @Column({ type: 'decimal', precision: 18, scale: 4 })
+  unrealizedGainLoss: number;
+}

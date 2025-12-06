@@ -17,7 +17,9 @@ export const Header: FC<HeaderProps> = ({}) => {
 
       <GlobalSearch />
 
-      <UserDropdown />
+      <div className={cx('right')}>
+        <UserDropdown />
+      </div>
     </div>
   );
 };

@@ -23,6 +23,7 @@ export const UserMenu: FC<UserMenuProps> = ({
       placementSide={placementSide}
       referenceRef={referenceRef}
       isPortal={isPortal}
+      width="200px"
       className={cx('user-menu')}
     >
       user

@@ -428,10 +428,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@devbonnysid/ui-kit-default@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@devbonnysid/ui-kit-default/-/ui-kit-default-1.4.0.tgz#9cc4385a2bac62fe9bdf13ff67f983ad9196bd22"
-  integrity sha512-FFvw7RPR/zj6RmM7dX9f3mGKj3NeNd/4YsUBboXbNLx9WQ1Y2Z+VSHq4MAVv1lQwcsQQOPDXa4CTXVJRKwd4TA==
+"@devbonnysid/ui-kit-default@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@devbonnysid/ui-kit-default/-/ui-kit-default-1.4.1.tgz#ff5ac0c698ee9c30eb7197d863a17b8fed97896c"
+  integrity sha512-Js4+Ah77ehiLW74Yzcfl/+ZseT9XyThasoE9/K/9kiCeNaM8bDgqahV0vQJO2rODuFIl+JyfKqIbWt0W3KvLRA==
   dependencies:
     axios "^1.13.2"
     classnames "^2.5.1"

@@ -1,2 +1,23 @@
 .user-dropdown {
+  display: flex;
+  width: fit-content;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  background-color: var(--color-bg-secondary);
+  cursor: pointer;
+  transition: opacity .2s;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  &-icon {
+    color: var(--color-icon-primary);
+  }
 }

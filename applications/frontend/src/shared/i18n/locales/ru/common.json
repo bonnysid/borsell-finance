@@ -5,5 +5,9 @@
   "Password": "Пароль",
   "RepeatPassword": "Повторите пароль",
 
-  "Search": "Поиск"
+  "Search": "Поиск",
+  "Portfolio": "Портфолио",
+  "Assistant": "Ассистент",
+  "Transactions": "Транзакции",
+  "Dashboard": "Дашборд"
 }

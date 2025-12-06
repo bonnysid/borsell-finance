@@ -1,0 +1,37 @@
+.sidebar-menu-item {
+  --icon-color: var(--color-icon-primary);
+  --text-color: var(--color-text-primary);
+  --text-font: var(--font-body-r-14);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  transition: background-color .2s;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: var(--color-bg-opacity);
+  }
+
+  &.isActive {
+    --text-font: var(--font-heading-sb-14);
+    --text-color: var(--color-text-info);
+    --icon-color: var(--color-icon-info);
+
+    background-color: var(--color-bg-opacity);
+  }
+}
+
+.caption {
+  font: var(--text-font);
+  color: var(--text-color);
+  transition: color .2s, font .2s;
+}
+
+.icon {
+  color: var(--icon-color);
+  transition: color .2s;
+}

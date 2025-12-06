@@ -1,6 +1,6 @@
 import { AppRoutePaths } from '@shared/router';
 import { FC, PropsWithChildren } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 
 import { useIsAuth } from '../../model';
 

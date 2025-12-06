@@ -1,6 +1,6 @@
 import { UserDtoShape } from '@packages/types';
 
-import { User } from '@/modules/user/entities';
+import { UserEntity } from '@/modules/user/entities';
 
 export class UserDto implements UserDtoShape {
   id: string;
@@ -8,7 +8,7 @@ export class UserDto implements UserDtoShape {
   createdAt: string;
   updatedAt: string;
 
-  constructor(user: User) {
+  constructor(user: UserEntity) {
     this.id = user.id;
     this.username = user.username;
     this.createdAt = user.createdAt;

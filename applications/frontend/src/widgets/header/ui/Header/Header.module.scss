@@ -11,3 +11,9 @@
   width: var(--logo-size);
   height: var(--logo-size);
 }
+
+.right {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
