@@ -4,8 +4,10 @@ export enum CurrencyType {
   VIRTUAL = 'VIRTUAL', // Для специфичных вещей, если нужно
 }
 
+export type CurrencyCode = string;
+
 export type CurrencyDtoShape = {
-  code: string;
+  code: CurrencyCode;
   name: string; // "United States Dollar", "Bitcoin"
   symbol: string; // "$", "₽", "₿"
   type: CurrencyType;
