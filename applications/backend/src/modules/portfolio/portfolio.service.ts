@@ -2,11 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { UserEntity } from '@/modules';
+import { PortfolioEntity } from './entities';
 
 @Injectable()
 export class PortfolioService {
   constructor(
-    @InjectRepository(UserEntity) private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(PortfolioEntity)
+    private readonly portfolioRepository: Repository<PortfolioEntity>,
   ) {}
+
+  async findByUserId(userId: string) {
+    return this.portfolioRepository.findOne({
+      where: { userId },
+    });
+  }
 }

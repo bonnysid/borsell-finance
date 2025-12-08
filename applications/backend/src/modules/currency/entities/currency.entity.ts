@@ -27,5 +27,5 @@ export class CurrencyEntity {
   rateToBase: number;
 
   @UpdateDateColumn()
-  updatedAt: Date; // Чтобы знать, не протух ли курс
+  updatedAt: string; // Чтобы знать, не протух ли курс
 }

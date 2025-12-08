@@ -12,7 +12,6 @@ export type CurrencyDtoShape = {
   symbol: string; // "$", "₽", "₿"
   type: CurrencyType;
   rateToBase: number;
-  createAt: string;
   isBaseCurrency: boolean;
   updatedAt: string; // Чтобы знать, не протух ли курс
 };

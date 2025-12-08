@@ -2,7 +2,7 @@ import { Button, bindStyles, Form, FormInput, Link } from '@devbonnysid/ui-kit-d
 import { useSignIn } from '@entities/auth';
 import { SignInDtoShape } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
-import { FC } from 'react';
+import { FC, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -21,6 +21,7 @@ export const SignInPage: FC<SignInPageProps> = () => {
     },
   });
   const signInMutation = useSignIn();
+  const { username, password } = form.watch();
 
   const onSubmit = async (values: SignInDtoShape) => {
     try {
@@ -30,6 +31,10 @@ export const SignInPage: FC<SignInPageProps> = () => {
       console.error(e);
     }
   };
+
+  const isButtonDisabled = useMemo(() => {
+    return !username || !password || signInMutation.isPending;
+  }, [username, password, signInMutation.isPending]);
 
   return (
     <Form form={form} onSubmit={onSubmit} className={cx('sign-in-page')}>
@@ -47,7 +52,7 @@ export const SignInPage: FC<SignInPageProps> = () => {
       <Button
         type="submit"
         isLoading={signInMutation.isPending}
-        disabled={form.formState.isDirty}
+        disabled={isButtonDisabled}
         isFullWidth
       >
         {t('Login')}

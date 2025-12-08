@@ -1,3 +1,4 @@
+import { AssetDtoShape } from '../asset';
 import { CurrencyDtoShape } from '../currency';
 
 export enum PortfolioType {
@@ -11,24 +12,18 @@ export type PortfolioDtoShape = {
   userId: string;
 
   name: string;
-  description?: string; // Полезно для заметок ("Портфель на пенсию")
+  description?: string;
 
-  // Важно: Валюта, в которую конвертируются все цены для отображения (USD, EUR, RUB)
   currency: CurrencyDtoShape;
 
-  // Тип портфеля
   type: PortfolioType;
 
-  // --- Денормализация (Кэш) ---
-  // Обновляем это поле фоновым джобом, чтобы не считать каждый раз при чтении
   cachedTotalValue: number;
   cachedDailyChangePercent: number;
-  lastValuationAt: string; // Когда последний раз обновляли цены
-
-  // --- Связи ---
-  // assets: Asset[];
-  // snapshots: PortfolioSnapshot[];
+  lastValuationAt: string;
 
   createdAt: string;
   updatedAt: string;
+
+  assets: AssetDtoShape[];
 };

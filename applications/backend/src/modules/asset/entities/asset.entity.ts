@@ -71,13 +71,13 @@ export class AssetEntity {
   cachedMarketPrice: number;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastPriceUpdateAt: Date; // Когда последний раз обновлялась цена
+  lastPriceUpdateAt: string; // Когда последний раз обновлялась цена
 
   // --- Временные метки ---
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt: string;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt: string;
 }

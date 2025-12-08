@@ -68,7 +68,7 @@ export class PortfolioEntity {
   cachedDailyChangePercent: number; // Изменение стоимости за 24 часа в %
 
   @Column({ type: 'timestamp', nullable: true })
-  lastValuationAt: Date; // Время последнего обновления кэша
+  lastValuationAt: string; // Время последнего обновления кэша
 
   // --- Связи с Активами ---
   @OneToMany(
@@ -85,8 +85,8 @@ export class PortfolioEntity {
   snapshots: PortfolioSnapshotEntity[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt: string;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt: string;
 }
