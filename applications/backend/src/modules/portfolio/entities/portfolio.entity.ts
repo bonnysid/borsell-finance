@@ -12,12 +12,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { AssetEntity } from '@/modules/asset';
+import { PortfolioAssetEntity } from '@/modules';
 import { CurrencyEntity } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
-// import { PortfolioSnapshotEntity } from './snapshot.entity'; // Для истории
 
 @Entity('portfolios')
 export class PortfolioEntity {
@@ -72,10 +71,10 @@ export class PortfolioEntity {
 
   // --- Связи с Активами ---
   @OneToMany(
-    () => AssetEntity,
+    () => PortfolioAssetEntity,
     (asset) => asset.portfolio,
   )
-  assets: AssetEntity[];
+  assets: PortfolioAssetEntity[];
 
   // --- Связи с Историей (Опционально) ---
   @OneToMany(
