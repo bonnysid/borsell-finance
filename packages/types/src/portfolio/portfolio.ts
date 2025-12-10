@@ -1,5 +1,7 @@
-import { AssetDtoShape } from '../asset';
-import { CurrencyDtoShape } from '../currency';
+import { AssetDtoShape } from 'packages/types/src/asset';
+
+import { CurrencyCode, CurrencyDtoShape } from '../currency';
+import { DateString, ID } from '../shared';
 
 export enum PortfolioType {
   MAIN = 'MAIN', // Реальный портфель
@@ -7,9 +9,20 @@ export enum PortfolioType {
   SIMULATION = 'SIMULATION', // Демо-счет
 }
 
+export type PortfolioAssetDtoShape = {
+  id: ID;
+  portfolioId: ID;
+  asset: AssetDtoShape;
+  quantity: number;
+  buyPrice: number;
+  currencyCode: CurrencyCode;
+  createdAt: DateString;
+  updatedAt: DateString;
+};
+
 export type PortfolioDtoShape = {
-  id: string;
-  userId: string;
+  id: ID;
+  userId: ID;
 
   name: string;
   description?: string;
@@ -20,10 +33,10 @@ export type PortfolioDtoShape = {
 
   cachedTotalValue: number;
   cachedDailyChangePercent: number;
-  lastValuationAt: string;
+  lastValuationAt: DateString;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: DateString;
+  updatedAt: DateString;
 
-  assets: AssetDtoShape[];
+  assets: PortfolioAssetDtoShape[];
 };

@@ -1,7 +1,9 @@
+import { DateString, ID } from '../shared';
+
 export type PortfolioSnapshotDtoShape = {
-  id: string;
-  portfolioId: string;
-  snapshotDate: string;
+  id: ID;
+  portfolioId: ID;
+  snapshotDate: DateString;
   totalValue: number;
   totalInvested: number;
   totalWithdrawn: number;

@@ -1,6 +1,8 @@
+import { DateString, ID } from '../shared';
+
 export type UserDtoShape = {
-  id: string;
+  id: ID;
   username: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: DateString;
+  updatedAt: DateString;
 };

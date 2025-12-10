@@ -1,20 +1,26 @@
-import { AssetDtoShape, CurrencyDtoShape, PortfolioDtoShape, PortfolioType } from '@packages/types';
+import {
+  CurrencyDtoShape,
+  DateString,
+  ID,
+  PortfolioDtoShape,
+  PortfolioType,
+} from '@packages/types';
 
-import { AssetDto, CurrencyDto, PortfolioEntity } from '@/modules';
+import { CurrencyDto, PortfolioAssetDto, PortfolioEntity } from '@/modules';
 
 export class PortfolioDto implements PortfolioDtoShape {
-  id: string;
+  id: ID;
   name: string;
   description?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: DateString;
+  updatedAt: DateString;
   cachedTotalValue: number;
-  lastValuationAt: string;
+  lastValuationAt: DateString;
   currency: CurrencyDtoShape;
-  assets: AssetDtoShape[];
+  assets: PortfolioDtoShape['assets'];
   cachedDailyChangePercent: number;
   type: PortfolioType;
-  userId: string;
+  userId: ID;
 
   constructor(portfolio: PortfolioEntity) {
     this.id = portfolio.id;
@@ -25,7 +31,7 @@ export class PortfolioDto implements PortfolioDtoShape {
     this.cachedTotalValue = portfolio.cachedTotalValue;
     this.lastValuationAt = portfolio.lastValuationAt;
     this.currency = new CurrencyDto(portfolio.baseCurrency);
-    this.userId = portfolio.userId;
-    this.assets = portfolio.assets.map((it) => new AssetDto(it));
+    this.userId = portfolio.user.id;
+    this.assets = portfolio.assets.map((it) => new PortfolioAssetDto(it));
   }
 }

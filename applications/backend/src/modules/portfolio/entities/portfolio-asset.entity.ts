@@ -23,19 +23,11 @@ export class PortfolioAssetEntity {
     (portfolio) => portfolio.assets,
     { onDelete: 'CASCADE' },
   )
-  @JoinColumn({ name: 'portfolioId' })
   portfolio: PortfolioEntity;
-
-  @Column()
-  portfolioId: string;
 
   // --- Связь с Каталогом Активов (Главный ключ к решению) ---
   @ManyToOne(() => AssetEntity)
-  @JoinColumn({ name: 'assetId' })
   asset: AssetEntity;
-
-  @Column({ nullable: true })
-  assetId: string;
 
   // --- Поля владения ---
 

@@ -13,7 +13,7 @@ export class PortfolioService {
 
   async findByUserId(userId: string) {
     return this.portfolioRepository.findOne({
-      where: { userId },
+      where: { user: { id: userId } },
     });
   }
 }

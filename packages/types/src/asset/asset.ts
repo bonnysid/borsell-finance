@@ -1,3 +1,4 @@
+import { DateString, ID } from '../shared';
 import { AssetMetadata } from './metadata';
 
 export enum AssetType {
@@ -9,16 +10,12 @@ export enum AssetType {
 }
 
 export type AssetDtoShape = {
-  id: string;
-  portfolioId: string;
-  currencyCode: string;
+  id: ID;
   type: AssetType;
   name: string;
-  quantity: number;
-  averageBuyPrice: number;
   metadata: AssetMetadata;
   cachedMarketPrice: number;
-  lastPriceUpdateAt: string;
-  createdAt: string;
-  updatedAt: string;
+  lastPriceUpdateAt: DateString;
+  createdAt: DateString;
+  updatedAt: DateString;
 };

@@ -1,5 +1,5 @@
 // portfolio-snapshot.entity.ts
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { PortfolioEntity } from './portfolio.entity';
 
@@ -14,11 +14,7 @@ export class PortfolioSnapshotEntity {
     (portfolio) => portfolio.snapshots,
     { onDelete: 'CASCADE' },
   )
-  @JoinColumn({ name: 'portfolioId' })
   portfolio: PortfolioEntity;
-
-  @Column()
-  portfolioId: string;
 
   // ⭐️ Ключевое поле: Дата снимка
   @Column({ type: 'date', unique: true }) // Уникальность по дате в рамках одного портфеля

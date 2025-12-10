@@ -31,11 +31,7 @@ export class PortfolioEntity {
       eager: false,
     },
   )
-  @JoinColumn({ name: 'userId' }) // Указываем, что FK-колонка называется userId
   user: UserEntity;
-
-  @Column()
-  userId: string;
 
   @Column()
   name: string;
