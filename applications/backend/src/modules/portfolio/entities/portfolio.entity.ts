@@ -43,18 +43,12 @@ export class PortfolioEntity {
   @Column({ type: 'enum', enum: PortfolioType, default: PortfolioType.MAIN })
   type: PortfolioType;
 
-  // --- Связь с Базовой валютой ---
-  // Определяет, в какой валюте отображается итоговая стоимость
   @ManyToOne(() => CurrencyEntity)
   @JoinColumn({ name: 'baseCurrencyCode' })
   baseCurrency: CurrencyEntity;
 
   @Column()
-  baseCurrencyCode: string; // FK: USD, RUB, EUR и т.д.
-
-  // --- Денормализация и Кэширование ---
-  // Эти поля обновляются фоновым процессом (Cron Job)
-  // для высокой скорости загрузки главной страницы
+  baseCurrencyCode: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   cachedTotalValue: number; // Общая стоимость портфеля в baseCurrencyCode

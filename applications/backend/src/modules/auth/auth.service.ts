@@ -24,7 +24,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const isValid = bcrypt.compareSync(dto.password, user.password);
+    const isValid = bcrypt.compareSync(dto.password, user.passwordHash);
 
     if (!isValid) {
       throw new UnauthorizedException();

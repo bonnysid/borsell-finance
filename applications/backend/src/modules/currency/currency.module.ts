@@ -2,6 +2,8 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { SettingsModule } from '@/modules/settings';
+
 import { CurrencyEntity } from './entities';
 import {
   CbrApiService,
@@ -12,7 +14,7 @@ import {
 } from './services';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CurrencyEntity]), HttpModule],
+  imports: [TypeOrmModule.forFeature([CurrencyEntity]), HttpModule, SettingsModule],
   providers: [
     CurrencySeederService,
     ExchangeRateApiService,

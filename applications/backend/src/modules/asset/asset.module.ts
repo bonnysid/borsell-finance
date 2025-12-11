@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AssetEntity } from './entities';
+import { AssetEntity, AssetPriceHistoryEntity } from './entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AssetEntity])],
+  imports: [TypeOrmModule.forFeature([AssetEntity, AssetPriceHistoryEntity])],
 })
 export class AssetModule {}

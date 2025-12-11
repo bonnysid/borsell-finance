@@ -3,6 +3,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import {
   AssetEntity,
+  AssetPriceHistoryEntity,
   CurrencyEntity,
   PortfolioAssetEntity,
   PortfolioEntity,
@@ -26,6 +27,7 @@ export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleO
       RefreshTokenEntity,
       CurrencyEntity,
       AssetEntity,
+      AssetPriceHistoryEntity,
       PortfolioEntity,
       PortfolioAssetEntity,
       PortfolioSnapshotEntity,

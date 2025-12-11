@@ -1,5 +1,3 @@
-// asset.entity.ts
-
 import { AssetMetadata, AssetType } from '@packages/types';
 import {
   Column,

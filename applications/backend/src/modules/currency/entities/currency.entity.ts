@@ -16,9 +16,6 @@ export class CurrencyEntity {
   @Column({ type: 'enum', enum: CurrencyType })
   type: CurrencyType;
 
-  @Column({ default: false })
-  isBaseCurrency: boolean; // TRUE только для USD (или EUR)
-
   // Самое важное поле: Курс к базовой валюте (например, к USD)
   // Если code = USD, rate = 1.0
   // Если code = RUB, rate = 0.011 (условно)

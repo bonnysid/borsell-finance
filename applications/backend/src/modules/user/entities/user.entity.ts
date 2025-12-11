@@ -2,12 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { RefreshTokenEntity } from '@/modules/auth/entities/refresh-token.entity';
+import { RefreshTokenEntity } from '@/modules/auth';
+import { CurrencyEntity } from '@/modules/currency';
 import { PortfolioEntity } from '@/modules/portfolio';
 
 @Entity('users')
@@ -25,7 +28,7 @@ export class UserEntity {
   @Column({
     type: 'text',
   })
-  password: string;
+  passwordHash: string;
 
   @CreateDateColumn()
   createdAt: string;
@@ -44,4 +47,11 @@ export class UserEntity {
     (portfolio) => portfolio.user,
   )
   portfolios: PortfolioEntity[];
+
+  @ManyToOne(() => CurrencyEntity)
+  @JoinColumn({ name: 'currencyCode' })
+  currency: CurrencyEntity;
+
+  @Column()
+  currencyCode: string; // FK: USD, RUB, EUR и т.д.
 }

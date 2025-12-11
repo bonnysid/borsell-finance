@@ -1,22 +1,21 @@
-// src/portfolio/services/currency-seeder.service.ts
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BASE_CURRENCY_CODE } from '@packages/constants';
 import { CurrencyType } from '@packages/types';
-import { CurrencyEntity } from 'src/modules/currency/entities';
 import { Repository } from 'typeorm';
 
+import { CurrencyEntity } from '@/modules/currency/entities';
 import { ExchangeRateApiService } from '@/modules/currency/services/exchange-rate-api.service';
+import { SettingsService } from '@/modules/settings';
 
 @Injectable()
 export class CurrencySeederService implements OnModuleInit {
   private readonly logger = new Logger(CurrencySeederService.name);
 
-  // Внедряем репозиторий для доступа к таблице
   constructor(
     @InjectRepository(CurrencyEntity)
     private readonly currencyRepository: Repository<CurrencyEntity>,
     private readonly exchangeRateApiService: ExchangeRateApiService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async onModuleInit() {
@@ -25,12 +24,25 @@ export class CurrencySeederService implements OnModuleInit {
 
   private async seed() {
     const count = await this.currencyRepository.count();
+
     if (count > 0) {
       this.logger.log('Currency table already seeded. Skipping.');
       return;
     }
 
-    const data = await this.exchangeRateApiService.getLatestRates();
+    let baseCurrencyCode: string;
+    try {
+      baseCurrencyCode = await this.settingsService.getBaseCurrencyCode();
+    } catch (e) {
+      this.logger.error(
+        'BASE_CURRENCY_CODE setting not found. Make sure SettingsSeeder runs first.',
+      );
+      throw e;
+    }
+
+    this.logger.log(`Using base currency "${baseCurrencyCode}" from settings`);
+
+    const data = await this.exchangeRateApiService.getLatestRates(baseCurrencyCode);
 
     if (!data) {
       this.logger.warn('No exchange rates received from external API. Skipping seed.');
@@ -57,14 +69,32 @@ export class CurrencySeederService implements OnModuleInit {
         symbol: '₽',
       },
     ].map((it) => {
-      const isBaseCurrency = BASE_CURRENCY_CODE === it.code;
+      const isBaseCurrency = baseCurrencyCode === it.code;
 
       if (isBaseCurrency) {
-        return { isBaseCurrency, rateToBase: 1, ...it };
+        return { rateToBase: 1, ...it };
       }
 
-      return { isBaseCurrency: false, rateToBase: data.rates[it.code] || 0, ...it };
+      return {
+        rateToBase: data.rates[it.code] || 0,
+        ...it,
+      };
     });
+
+    // На всякий случай убеждаемся, что базовая валюта точно есть в списке
+    if (!initialCurrencies.some((c) => c.code === baseCurrencyCode)) {
+      this.logger.warn(
+        `Base currency "${baseCurrencyCode}" is not in initialCurrencies list. Adding it manually with rateToBase = 1.`,
+      );
+
+      initialCurrencies.push({
+        code: baseCurrencyCode,
+        name: baseCurrencyCode,
+        type: CurrencyType.FIAT,
+        symbol: baseCurrencyCode,
+        rateToBase: 1,
+      });
+    }
 
     await this.currencyRepository.save(initialCurrencies);
 

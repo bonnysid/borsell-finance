@@ -15,7 +15,7 @@ export type CbrGetLatestRatesResponse = {
 export class CbrApiService {
   private readonly logger = new Logger(CbrApiService.name);
 
-  private readonly BASE_URL = 'https://www.cbr-xml-daily.ru/'; // Пример API
+  private readonly BASE_URL = 'https://www.cbr-xml-daily.ru'; // Пример API
 
   constructor(private readonly httpService: HttpService) {}
 

@@ -22,7 +22,7 @@ export class UserService {
 
     const newUser = this.usersRepository.create({
       username: createUserDto.username,
-      password: bcrypt.hashSync(createUserDto.password, 10),
+      passwordHash: bcrypt.hashSync(createUserDto.password, 10),
     });
 
     return this.usersRepository.save(newUser);
@@ -41,13 +41,13 @@ export class UserService {
       throw new BadRequestException('Something went wrong');
     }
 
-    const isValid = bcrypt.compareSync(dto.oldPassword, user.password);
+    const isValid = bcrypt.compareSync(dto.oldPassword, user.passwordHash);
 
     if (!isValid) {
       throw new BadRequestException('Неверный пароль');
     }
 
-    user.password = bcrypt.hashSync(dto.newPassword, 10);
+    user.passwordHash = bcrypt.hashSync(dto.newPassword, 10);
 
     return this.usersRepository.save(user);
   }

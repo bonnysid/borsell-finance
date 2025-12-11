@@ -8,7 +8,6 @@ export class CurrencyDto implements CurrencyDtoShape {
   symbol: string;
   type: CurrencyType;
   rateToBase: number;
-  isBaseCurrency: boolean;
   updatedAt: string;
 
   constructor(currency: CurrencyEntity) {
@@ -17,7 +16,6 @@ export class CurrencyDto implements CurrencyDtoShape {
     this.symbol = currency.symbol;
     this.type = currency.type;
     this.rateToBase = currency.rateToBase;
-    this.isBaseCurrency = currency.isBaseCurrency;
     this.updatedAt = currency.updatedAt;
   }
 }

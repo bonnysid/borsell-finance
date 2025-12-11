@@ -6,10 +6,18 @@ import { I18nAppModule } from '@/i18n';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AssetModule, AuthModule, CurrencyModule, PortfolioModule, UserModule } from './modules';
+import {
+  AssetModule,
+  AuthModule,
+  CurrencyModule,
+  PortfolioModule,
+  SettingsModule,
+  UserModule,
+} from './modules';
 
 @Module({
   imports: [
+    SettingsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     I18nAppModule,
     DatabaseModule,

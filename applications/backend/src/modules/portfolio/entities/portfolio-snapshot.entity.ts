@@ -1,4 +1,3 @@
-// portfolio-snapshot.entity.ts
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { PortfolioEntity } from './portfolio.entity';
@@ -17,8 +16,8 @@ export class PortfolioSnapshotEntity {
   portfolio: PortfolioEntity;
 
   // ⭐️ Ключевое поле: Дата снимка
-  @Column({ type: 'date', unique: true }) // Уникальность по дате в рамках одного портфеля
-  snapshotDate: string;
+  @Column({ type: 'timestamp', unique: true }) // Уникальность по дате в рамках одного портфеля
+  snapshotAt: string;
 
   // --- Основные метрики (в baseCurrency портфеля) ---
 
