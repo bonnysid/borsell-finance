@@ -6,7 +6,7 @@ import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
 import { RefreshTokenEntity } from '@/modules/auth/entities';
 import { RefreshTokenService } from '@/modules/auth/refresh-token.service';
-import { UserEntity, UserModule, UserService } from '@/modules/user';
+import { UserModule } from '@/modules/user';
 
 @Module({
   imports: [
@@ -14,9 +14,9 @@ import { UserEntity, UserModule, UserService } from '@/modules/user';
     JwtModule.register({
       global: true,
     }),
-    TypeOrmModule.forFeature([RefreshTokenEntity, UserEntity]),
+    TypeOrmModule.forFeature([RefreshTokenEntity]),
   ],
-  providers: [AuthService, RefreshTokenService, UserService],
+  providers: [AuthService, RefreshTokenService],
   controllers: [AuthController],
   exports: [AuthService],
 })

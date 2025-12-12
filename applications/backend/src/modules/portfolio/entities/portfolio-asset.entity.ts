@@ -2,13 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { AssetEntity, CurrencyEntity } from '@/modules';
+import { AssetEntity } from '@/modules';
 
 import { PortfolioEntity } from './portfolio.entity';
 
@@ -36,14 +35,6 @@ export class PortfolioAssetEntity {
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   buyPrice: number;
-
-  // --- Связь с Валютой Покупки ---
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
-  currency: CurrencyEntity;
-
-  @Column()
-  currencyCode: string;
 
   @CreateDateColumn()
   createdAt: string;

@@ -1,4 +1,4 @@
-import { CurrencyCode, DateString, ID, PortfolioAssetDtoShape } from '@packages/types';
+import { DateString, ID, PortfolioAssetDtoShape } from '@packages/types';
 
 import { AssetDto, PortfolioAssetEntity } from '@/modules';
 
@@ -8,7 +8,6 @@ export class PortfolioAssetDto implements PortfolioAssetDtoShape {
   asset: AssetDto;
   quantity: number;
   buyPrice: number;
-  currencyCode: CurrencyCode;
   createdAt: DateString;
   updatedAt: DateString;
 
@@ -17,7 +16,6 @@ export class PortfolioAssetDto implements PortfolioAssetDtoShape {
     this.asset = new AssetDto(portfolioAsset.asset);
     this.quantity = portfolioAsset.quantity;
     this.buyPrice = portfolioAsset.buyPrice;
-    this.currencyCode = portfolioAsset.currency.code;
     this.createdAt = portfolioAsset.createdAt;
     this.updatedAt = portfolioAsset.updatedAt;
   }

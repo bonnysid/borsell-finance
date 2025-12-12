@@ -1,6 +1,5 @@
 import { AssetDtoShape } from 'packages/types/src/asset';
 
-import { CurrencyCode, CurrencyDtoShape } from '../currency';
 import { DateString, ID } from '../shared';
 
 export enum PortfolioType {
@@ -15,7 +14,6 @@ export type PortfolioAssetDtoShape = {
   asset: AssetDtoShape;
   quantity: number;
   buyPrice: number;
-  currencyCode: CurrencyCode;
   createdAt: DateString;
   updatedAt: DateString;
 };
@@ -26,8 +24,6 @@ export type PortfolioDtoShape = {
 
   name: string;
   description?: string;
-
-  currency: CurrencyDtoShape;
 
   type: PortfolioType;
 

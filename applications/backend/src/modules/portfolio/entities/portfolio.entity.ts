@@ -5,7 +5,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -13,7 +12,6 @@ import {
 } from 'typeorm';
 
 import { PortfolioAssetEntity } from '@/modules';
-import { CurrencyEntity } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
@@ -42,13 +40,6 @@ export class PortfolioEntity {
   // Тип портфеля (важно для фильтрации и логики)
   @Column({ type: 'enum', enum: PortfolioType, default: PortfolioType.MAIN })
   type: PortfolioType;
-
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'baseCurrencyCode' })
-  baseCurrency: CurrencyEntity;
-
-  @Column()
-  baseCurrencyCode: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   cachedTotalValue: number; // Общая стоимость портфеля в baseCurrencyCode

@@ -3,9 +3,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+import { CurrencyEntity } from '@/modules';
 
 @Entity('assets')
 export class AssetEntity {
@@ -29,6 +33,10 @@ export class AssetEntity {
 
   @Column({ type: 'timestamp', nullable: true })
   lastPriceUpdateAt: string;
+
+  @ManyToOne(() => CurrencyEntity)
+  @JoinColumn({ name: 'quoteCurrencyCode' })
+  quoteCurrency: CurrencyEntity;
 
   @CreateDateColumn()
   createdAt: string;
