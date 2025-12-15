@@ -1,6 +1,4 @@
-// portfolio.entity.ts
-
-import { PortfolioType } from '@packages/types';
+import { ID, NumberString, PortfolioType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -19,7 +17,7 @@ import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
 @Entity('portfolios')
 export class PortfolioEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: ID;
 
   @ManyToOne(
     () => UserEntity,
@@ -42,10 +40,10 @@ export class PortfolioEntity {
   type: PortfolioType;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  cachedTotalValue: number; // Общая стоимость портфеля в baseCurrencyCode
+  cachedTotalValue: NumberString; // Общая стоимость портфеля в baseCurrencyCode
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
-  cachedDailyChangePercent: number; // Изменение стоимости за 24 часа в %
+  cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
 
   @Column({ type: 'timestamp', nullable: true })
   lastValuationAt: string; // Время последнего обновления кэша

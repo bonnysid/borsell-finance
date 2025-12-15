@@ -6,8 +6,12 @@ export enum AppRoutes {
   AUTH_SIGN_UP = '/auth/sign-up',
 
   DASHBOARD = '/dashboard',
+
   ASSISTANT = '/assistant',
+
   PORTFOLIO = '/portfolio',
+  PORTFOLIO_CREATE = '/portfolio/create',
+
   TRANSACTIONS = '/transactions',
 }
 

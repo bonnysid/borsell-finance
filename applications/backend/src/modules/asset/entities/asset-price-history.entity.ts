@@ -1,4 +1,4 @@
-import { AssetPriceTimeframe } from '@packages/types';
+import { AssetPriceTimeframe, NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -29,19 +29,19 @@ export class AssetPriceHistoryEntity {
   date: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  openPrice: number;
+  openPrice: NumberString;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  highPrice: number;
+  highPrice: NumberString;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  lowPrice: number;
+  lowPrice: NumberString;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  closePrice: number;
+  closePrice: NumberString;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  volume: number;
+  volume: NumberString;
 
   @Column({ nullable: true })
   source: string;

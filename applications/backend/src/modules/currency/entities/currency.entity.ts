@@ -1,4 +1,4 @@
-import { CurrencyType } from '@packages/types';
+import { CurrencyType, NumberString } from '@packages/types';
 import { Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('currencies')
@@ -21,7 +21,7 @@ export class CurrencyEntity {
   // Если code = RUB, rate = 0.011 (условно)
   // Тип decimal обязателен для денег!
   @Column({ type: 'decimal', precision: 18, scale: 8, default: 1 })
-  rateToBase: number;
+  rateToBase: NumberString;
 
   @UpdateDateColumn()
   updatedAt: string; // Чтобы знать, не протух ли курс

@@ -1,4 +1,4 @@
-import { AssetMetadata, AssetType } from '@packages/types';
+import { AssetMetadata, AssetType, NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -29,7 +29,7 @@ export class AssetEntity {
   metadata: AssetMetadata;
 
   @Column({ type: 'decimal', precision: 18, scale: 8, nullable: true })
-  cachedMarketPrice: number;
+  cachedMarketPrice: NumberString;
 
   @Column({ type: 'timestamp', nullable: true })
   lastPriceUpdateAt: string;
@@ -37,6 +37,9 @@ export class AssetEntity {
   @ManyToOne(() => CurrencyEntity)
   @JoinColumn({ name: 'quoteCurrencyCode' })
   quoteCurrency: CurrencyEntity;
+
+  @Column()
+  quoteCurrencyCode: string;
 
   @CreateDateColumn()
   createdAt: string;

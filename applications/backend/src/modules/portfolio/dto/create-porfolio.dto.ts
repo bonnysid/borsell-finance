@@ -1,9 +1,18 @@
-// create-portfolio.dto.ts
+import { CreatePortfolioDtoShape, PortfolioType } from '@packages/types';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  ValidateNested,
+} from 'class-validator';
 
-import { PortfolioType } from '@packages/types';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
+import { CreatePortfolioAssetDto } from './create-protfolio-asset.dto';
 
-export class CreatePortfolioDto {
+export class CreatePortfolioDto implements CreatePortfolioDtoShape {
   @IsString()
   @IsNotEmpty()
   @Length(3, 100)
@@ -13,13 +22,12 @@ export class CreatePortfolioDto {
   @IsOptional()
   description?: string;
 
-  // Ожидаем код валюты (USD, RUB, BTC). Он должен существовать в БД.
-  @IsString()
-  @IsNotEmpty()
-  @Length(3, 8) // Например, 'BTC' или 'USD'
-  baseCurrencyCode: string;
-
   @IsEnum(PortfolioType)
   @IsOptional()
-  type?: PortfolioType = PortfolioType.MAIN; // По умолчанию MAIN
+  type?: PortfolioType = PortfolioType.MAIN;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePortfolioAssetDto)
+  assets: CreatePortfolioAssetDto[];
 }

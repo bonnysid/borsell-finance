@@ -1,3 +1,4 @@
+import { NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -31,10 +32,10 @@ export class PortfolioAssetEntity {
   // --- Поля владения ---
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  quantity: number;
+  quantity: NumberString;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
-  buyPrice: number;
+  buyPrice: NumberString;
 
   @CreateDateColumn()
   createdAt: string;

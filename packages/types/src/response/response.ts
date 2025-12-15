@@ -16,3 +16,9 @@ export type ValidationErrorResponse = {
   error: string;
   properties: ErrorProperty[];
 };
+
+export type ArrayResponse<T> = {
+  data: T[];
+  totalItems: number;
+  page: number;
+};

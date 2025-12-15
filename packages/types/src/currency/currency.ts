@@ -1,4 +1,4 @@
-import { DateString } from '../shared';
+import { DateString, NumberString } from '../shared';
 
 export enum CurrencyType {
   FIAT = 'FIAT',
@@ -13,6 +13,6 @@ export type CurrencyDtoShape = {
   name: string; // "United States Dollar", "Bitcoin"
   symbol: string; // "$", "₽", "₿"
   type: CurrencyType;
-  rateToBase: number;
+  rateToBase: NumberString;
   updatedAt: DateString; // Чтобы знать, не протух ли курс
 };

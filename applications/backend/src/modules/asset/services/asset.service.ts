@@ -49,6 +49,10 @@ export class AssetService {
     return [];
   }
 
+  async getAllAssets(): Promise<AssetEntity[]> {
+    return this.assetRepo.find();
+  }
+
   async getStockPrice(ticker: string) {
     try {
       const quote = await this.yahooFinance.quote(ticker);

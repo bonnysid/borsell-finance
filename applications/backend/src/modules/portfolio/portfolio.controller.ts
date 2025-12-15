@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
@@ -21,4 +21,7 @@ export class PortfolioController {
 
     return new PortfolioDto(dbPortfolio);
   }
+
+  @Post('/create')
+  async createPortfolio() {}
 }

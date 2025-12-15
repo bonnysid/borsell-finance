@@ -1,10 +1,14 @@
-import { DateString, ID } from '../shared';
+import { DateString, ID, NumberString } from '../shared';
 import { AssetMetadata } from './metadata';
 
 export enum AssetType {
   STOCK = 'STOCK',
+  ETF = 'ETF',
   CRYPTO = 'CRYPTO',
   BOND = 'BOND',
+  INDEX = 'INDEX',
+  FOREX = 'FOREX',
+  COMMODITY = 'COMMODITY',
   CSGO_SKIN = 'CSGO_SKIN',
   CASH = 'CASH',
 }
@@ -20,7 +24,7 @@ export type AssetDtoShape = {
   type: AssetType;
   name: string;
   metadata: AssetMetadata;
-  cachedMarketPrice: number;
+  cachedMarketPrice: NumberString;
   lastPriceUpdateAt: DateString;
   createdAt: DateString;
   updatedAt: DateString;
@@ -31,15 +35,15 @@ export type AssetPriceHistoryDtoShape = {
   timeframe: AssetPriceTimeframe;
   assetId: ID;
 
-  openPrice: number;
+  openPrice: NumberString;
 
-  highPrice: number;
+  highPrice: NumberString;
 
-  lowPrice: number;
+  lowPrice: NumberString;
 
-  closePrice: number;
+  closePrice: NumberString;
 
-  volume: number;
+  volume: NumberString;
 
   source: string;
 

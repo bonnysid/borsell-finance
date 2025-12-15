@@ -1,3 +1,4 @@
+import { NumberString } from '@packages/types';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { PortfolioEntity } from './portfolio.entity';
@@ -23,17 +24,17 @@ export class PortfolioSnapshotEntity {
 
   // Общая рыночная стоимость всех активов на эту дату
   @Column({ type: 'decimal', precision: 18, scale: 4 })
-  totalValue: number;
+  totalValue: NumberString;
 
   // Общая сумма, которую пользователь вложил (депозиты)
   @Column({ type: 'decimal', precision: 18, scale: 4 })
-  totalInvested: number;
+  totalInvested: NumberString;
 
   // Общая сумма, которую пользователь вывел (выводы)
   @Column({ type: 'decimal', precision: 18, scale: 4 })
-  totalWithdrawn: number;
+  totalWithdrawn: NumberString;
 
   // Прибыль/Убыток за период от начала инвестирования
   @Column({ type: 'decimal', precision: 18, scale: 4 })
-  unrealizedGainLoss: number;
+  unrealizedGainLoss: NumberString;
 }

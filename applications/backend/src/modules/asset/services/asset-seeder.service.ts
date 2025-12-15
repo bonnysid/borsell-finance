@@ -2,16 +2,101 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AssetType } from '@packages/types';
 import { Repository } from 'typeorm';
+import YahooFinance from 'yahoo-finance2';
 
-import { AssetEntity } from '../entities';
+import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
+
+export const DEFAULT_ASSETS: Array<{ symbol: string; type: AssetType }> = [
+  // =======================
+  // US Stocks (Large Cap / Popular)
+  // =======================
+  { symbol: 'AAPL', type: AssetType.STOCK },
+  { symbol: 'MSFT', type: AssetType.STOCK },
+  { symbol: 'NVDA', type: AssetType.STOCK },
+  { symbol: 'AMZN', type: AssetType.STOCK },
+  { symbol: 'GOOGL', type: AssetType.STOCK },
+  { symbol: 'META', type: AssetType.STOCK },
+  { symbol: 'TSLA', type: AssetType.STOCK },
+  { symbol: 'BRK-B', type: AssetType.STOCK },
+  { symbol: 'JPM', type: AssetType.STOCK },
+  { symbol: 'V', type: AssetType.STOCK },
+  { symbol: 'MA', type: AssetType.STOCK },
+  { symbol: 'UNH', type: AssetType.STOCK },
+  { symbol: 'XOM', type: AssetType.STOCK },
+  { symbol: 'LLY', type: AssetType.STOCK },
+  { symbol: 'AVGO', type: AssetType.STOCK },
+  { symbol: 'COST', type: AssetType.STOCK },
+  { symbol: 'WMT', type: AssetType.STOCK },
+  { symbol: 'HD', type: AssetType.STOCK },
+  { symbol: 'KO', type: AssetType.STOCK },
+  { symbol: 'PEP', type: AssetType.STOCK },
+  { symbol: 'DIS', type: AssetType.STOCK },
+  { symbol: 'NFLX', type: AssetType.STOCK },
+  { symbol: 'ORCL', type: AssetType.STOCK },
+  { symbol: 'ADBE', type: AssetType.STOCK },
+  { symbol: 'CRM', type: AssetType.STOCK },
+  { symbol: 'INTC', type: AssetType.STOCK },
+  { symbol: 'AMD', type: AssetType.STOCK },
+  { symbol: 'QCOM', type: AssetType.STOCK },
+  { symbol: 'CSCO', type: AssetType.STOCK },
+  { symbol: 'TMO', type: AssetType.STOCK },
+
+  // =======================
+  // ETFs (broad market / sectors)
+  // =======================
+  { symbol: 'SPY', type: AssetType.ETF },
+  { symbol: 'VOO', type: AssetType.ETF },
+  { symbol: 'VTI', type: AssetType.ETF },
+  { symbol: 'QQQ', type: AssetType.ETF },
+  { symbol: 'DIA', type: AssetType.ETF },
+  { symbol: 'IWM', type: AssetType.ETF },
+  { symbol: 'SCHD', type: AssetType.ETF },
+  { symbol: 'ARKK', type: AssetType.ETF },
+  { symbol: 'XLK', type: AssetType.ETF },
+  { symbol: 'XLF', type: AssetType.ETF },
+  { symbol: 'XLE', type: AssetType.ETF },
+  { symbol: 'XLY', type: AssetType.ETF },
+
+  // =======================
+  // Crypto (Yahoo format)
+  // =======================
+  { symbol: 'BTC-USD', type: AssetType.CRYPTO },
+  { symbol: 'ETH-USD', type: AssetType.CRYPTO },
+  { symbol: 'BNB-USD', type: AssetType.CRYPTO },
+  { symbol: 'SOL-USD', type: AssetType.CRYPTO },
+  { symbol: 'XRP-USD', type: AssetType.CRYPTO },
+  { symbol: 'ADA-USD', type: AssetType.CRYPTO },
+  { symbol: 'DOGE-USD', type: AssetType.CRYPTO },
+
+  // =======================
+  // Russia (MOEX) — обычно .ME
+  // =======================
+  // { symbol: 'SBER.ME', type: AssetType.STOCK }, // Сбербанк
+  // { symbol: 'GAZP.ME', type: AssetType.STOCK }, // Газпром
+  // { symbol: 'LKOH.ME', type: AssetType.STOCK }, // Лукойл
+  // { symbol: 'ROSN.ME', type: AssetType.STOCK }, // Роснефть
+  // { symbol: 'NVTK.ME', type: AssetType.STOCK }, // Новатэк
+  // { symbol: 'TATN.ME', type: AssetType.STOCK }, // Татнефть
+  // { symbol: 'YDEX.ME', type: AssetType.STOCK }, // Яндекс (на MOEX может отличаться, см. ниже)
+  // { symbol: 'GMKN.ME', type: AssetType.STOCK }, // Норникель
+  // { symbol: 'ALRS.ME', type: AssetType.STOCK }, // Алроса
+  // { symbol: 'MTSS.ME', type: AssetType.STOCK }, // МТС
+  // { symbol: 'MGNT.ME', type: AssetType.STOCK }, // Магнит
+  // { symbol: 'PLZL.ME', type: AssetType.STOCK }, // Полюс
+];
 
 @Injectable()
-export class AssetCatalogSeederService implements OnModuleInit {
-  private readonly logger = new Logger(AssetCatalogSeederService.name);
+export class AssetSeederService implements OnModuleInit {
+  private readonly logger = new Logger(AssetSeederService.name);
+  private readonly yahooFinance = new YahooFinance({
+    suppressNotices: ['yahooSurvey'],
+  });
 
   constructor(
     @InjectRepository(AssetEntity)
     private readonly assetRepo: Repository<AssetEntity>,
+    @InjectRepository(AssetPriceHistoryEntity)
+    private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
   ) {}
 
   async onModuleInit() {
@@ -26,101 +111,53 @@ export class AssetCatalogSeederService implements OnModuleInit {
       return;
     }
 
-    this.logger.log('Seeding Asset Catalog with default assets...');
+    this.logger.log('Seeding Asset Catalog from Yahoo Finance...');
 
-    const initialAssets: Partial<AssetEntity>[] = [
-      {
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        type: AssetType.CRYPTO,
-        metadata: {
-          ticker: 'BTC',
-          network: 'Bitcoin',
-          iconUrl: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
-        },
-      },
-      {
-        symbol: 'ETH',
-        name: 'Ethereum',
-        type: AssetType.CRYPTO,
-        metadata: {
-          ticker: 'ETH',
-          network: 'Ethereum',
-          iconUrl: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
-        },
-      },
-      {
-        symbol: 'USDT',
-        name: 'Tether',
-        type: AssetType.CRYPTO,
-        metadata: {
-          ticker: 'USDT',
-          network: 'TRC20/ERC20',
-          iconUrl: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
-        },
-      },
+    const assetsToInsert: AssetEntity[] = [];
+    const historyItems: AssetPriceHistoryEntity[] = [];
 
-      {
-        symbol: 'AAPL',
-        name: 'Apple Inc.',
-        type: AssetType.STOCK,
-        metadata: {
-          ticker: 'AAPL',
-          exchange: 'NASDAQ',
-          isin: 'US0378331005',
-          sector: 'Technology',
-        },
-      },
-      {
-        symbol: 'TSLA',
-        name: 'Tesla Inc.',
-        type: AssetType.STOCK,
-        metadata: {
-          ticker: 'TSLA',
-          exchange: 'NASDAQ',
-          isin: 'US88160R1014',
-          sector: 'Automotive',
-        },
-      },
-      {
-        symbol: 'MSFT',
-        name: 'Microsoft Corp.',
-        type: AssetType.STOCK,
-        metadata: {
-          ticker: 'MSFT',
-          exchange: 'NASDAQ',
-          isin: 'US5949181045',
-          sector: 'Technology',
-        },
-      },
-      {
-        symbol: 'NVDA',
-        name: 'NVIDIA Corporation',
-        type: AssetType.STOCK,
-        metadata: {
-          ticker: 'NVDA',
-          exchange: 'NASDAQ',
-          isin: 'US67066G1040',
-          sector: 'Semiconductors',
-        },
-      },
+    for (const item of DEFAULT_ASSETS) {
+      try {
+        const summary = await this.yahooFinance.quoteSummary(item.symbol, {
+          modules: ['price', 'assetProfile'],
+        });
 
-      {
-        symbol: 'GAZP',
-        name: 'Gazprom PAO',
-        type: AssetType.STOCK,
-        metadata: { ticker: 'GAZP', exchange: 'MOEX', isin: 'RU0007661625', sector: 'Energy' },
-      },
-      {
-        symbol: 'SBER',
-        name: 'Sberbank Rossii PAO',
-        type: AssetType.STOCK,
-        metadata: { ticker: 'SBER', exchange: 'MOEX', isin: 'RU0009029540', sector: 'Finance' },
-      },
-    ];
+        const price = summary.price;
 
-    await this.assetRepo.save(initialAssets);
+        if (!price) {
+          this.logger.warn(`No data for ${item.symbol}, skipped`);
+        } else {
+          const asset = this.assetRepo.create({
+            cachedMarketPrice: price.regularMarketPrice,
+            lastPriceUpdateAt: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
+            symbol: price.symbol,
+            type: item.type,
+            name: price.shortName ?? item.symbol,
+            quoteCurrencyCode: price.currency ?? 'USD',
+          });
 
-    this.logger.log(`Seeding complete. Added ${initialAssets.length} assets.`);
+          const assetHistoryItem = this.assetPriceHistoryRepo.create({
+            asset,
+            date: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
+            closePrice: price.regularMarketPrice,
+            openPrice: price.regularMarketOpen,
+            highPrice: price.regularMarketDayHigh,
+            lowPrice: price.regularMarketDayLow,
+            volume: price.regularMarketVolume,
+            source: 'yahoo-finance',
+          });
+
+          assetsToInsert.push(asset);
+          historyItems.push(assetHistoryItem);
+        }
+      } catch (error) {
+        this.logger.error(`Failed to fetch ${item.symbol}: ${error.message}`);
+      }
+    }
+
+    await this.assetRepo.save(assetsToInsert);
+    await this.assetPriceHistoryRepo.save(historyItems);
+
+    this.logger.log(`Seeding complete. Added ${assetsToInsert.length} assets.`);
   }
 }

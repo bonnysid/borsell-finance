@@ -9,5 +9,7 @@
   "Portfolio": "Portfolio",
   "Assistant": "Assistant",
   "Transactions": "Transactions",
-  "Dashboard": "Dashboard"
+  "Dashboard": "Dashboard",
+  "CreatePortfolio": "Create portfolio",
+  "NoData": "No data"
 }

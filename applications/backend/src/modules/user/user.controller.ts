@@ -20,11 +20,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  async getMe(@CurrentUser() user?: UserJWT) {
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  async getMe(@CurrentUser() user: UserJWT) {
     const dbUser = await this.userService.findOne(user.username);
 
     if (!dbUser) {
@@ -40,10 +36,6 @@ export class UserController {
     @Res() res: Response,
     @CurrentUser() user: UserJWT,
   ) {
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
     await this.userService.changePassword(user.username, changePasswordDto);
 
     return res.status(200).json({ message: 'Password changed successfully' });

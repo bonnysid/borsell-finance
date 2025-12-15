@@ -7,6 +7,7 @@ import { SettingsModule } from '@/modules/settings';
 import { CurrencyEntity } from './entities';
 import {
   CbrApiService,
+  CurrencyConverterService,
   CurrencySchedulerService,
   CurrencySeederService,
   CurrencyService,
@@ -22,5 +23,6 @@ import {
     CurrencyService,
     CbrApiService,
   ],
+  exports: [CurrencyConverterService],
 })
 export class CurrencyModule {}
