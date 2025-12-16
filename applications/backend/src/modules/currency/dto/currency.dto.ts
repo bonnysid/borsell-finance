@@ -1,13 +1,13 @@
-import { CurrencyCode, CurrencyDtoShape, CurrencyType } from '@packages/types';
+import { CurrencyCode, CurrencyDtoShape, CurrencyType, NumberString } from '@packages/types';
 
-import { CurrencyEntity } from '@/modules';
+import { CurrencyEntity } from '@/modules/currency';
 
 export class CurrencyDto implements CurrencyDtoShape {
   code: CurrencyCode;
   name: string;
   symbol: string;
   type: CurrencyType;
-  rateToBase: number;
+  rateToBase: NumberString;
   updatedAt: string;
 
   constructor(currency: CurrencyEntity) {
