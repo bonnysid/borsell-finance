@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { UserAssetEntity } from '@/modules/asset/entities/user-asset.entity';
 import { RefreshTokenEntity } from '@/modules/auth';
 import { CurrencyEntity } from '@/modules/currency';
 import { PortfolioEntity } from '@/modules/portfolio';
@@ -48,10 +49,16 @@ export class UserEntity {
   )
   portfolios: PortfolioEntity[];
 
+  @OneToMany(
+    () => UserAssetEntity,
+    (asset) => asset.user,
+  )
+  assets: UserAssetEntity[];
+
   @ManyToOne(() => CurrencyEntity)
   @JoinColumn({ name: 'currencyCode' })
   currency: CurrencyEntity;
 
   @Column()
-  currencyCode: string; // FK: USD, RUB, EUR и т.д.
+  currencyCode: string;
 }

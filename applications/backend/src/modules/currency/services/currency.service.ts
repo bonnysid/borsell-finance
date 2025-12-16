@@ -39,7 +39,7 @@ export class CurrencyService {
 
     const currenciesToUpdate = allCurrencies.map((currency) => {
       if (currency.code === baseCurrencyCode) {
-        currency.rateToBase = 1;
+        currency.rateToBase = '1';
         return currency;
       }
 
@@ -52,7 +52,7 @@ export class CurrencyService {
         return currency;
       }
 
-      currency.rateToBase = newRate;
+      currency.rateToBase = String(newRate);
       return currency;
     });
 

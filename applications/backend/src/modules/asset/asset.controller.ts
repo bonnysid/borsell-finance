@@ -2,8 +2,7 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ArrayResponse } from '@packages/types';
 import { Response } from 'express';
 
-import { AssetDto } from '@/modules';
-
+import { AssetDto } from './dto';
 import { AssetService } from './services';
 
 @Controller('assets')

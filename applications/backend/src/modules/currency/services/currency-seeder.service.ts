@@ -72,11 +72,11 @@ export class CurrencySeederService implements OnModuleInit {
       const isBaseCurrency = baseCurrencyCode === it.code;
 
       if (isBaseCurrency) {
-        return { rateToBase: 1, ...it };
+        return { rateToBase: '1', ...it };
       }
 
       return {
-        rateToBase: data.rates[it.code] || 0,
+        rateToBase: String(data.rates[it.code] || 0),
         ...it,
       };
     });
@@ -92,7 +92,7 @@ export class CurrencySeederService implements OnModuleInit {
         name: baseCurrencyCode,
         type: CurrencyType.FIAT,
         symbol: baseCurrencyCode,
-        rateToBase: 1,
+        rateToBase: '1',
       });
     }
 

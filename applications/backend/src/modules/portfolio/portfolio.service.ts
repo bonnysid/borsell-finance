@@ -4,14 +4,11 @@ import { ID } from '@packages/types';
 import Big from 'big.js';
 import { In, Repository } from 'typeorm';
 
-import {
-  AssetEntity,
-  CreatePortfolioAssetDto,
-  CreatePortfolioDto,
-  PortfolioAssetEntity,
-} from '@/modules';
+import { AssetEntity, PortfolioAssetEntity } from '@/modules/asset';
 import { CurrencyConverterService } from '@/modules/currency';
+import { SettingsService } from '@/modules/settings';
 
+import { CreatePortfolioAssetDto, CreatePortfolioDto } from './dto';
 import { PortfolioEntity } from './entities';
 
 @Injectable()
@@ -24,6 +21,7 @@ export class PortfolioService {
     @InjectRepository(AssetEntity)
     private readonly assetRepository: Repository<AssetEntity>,
     private readonly currencyConverterService: CurrencyConverterService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async findByUserId(userId: string) {
@@ -33,7 +31,7 @@ export class PortfolioService {
   }
 
   async createPortfolio(userId: ID, dto: CreatePortfolioDto) {
-    const assetsDict = dto.assets.reduce((acc: Record<ID, CreatePortfolioAssetDto>, it) => {
+    const assetsDict = dto.userAssetsIds.reduce((acc: Record<ID, CreatePortfolioAssetDto>, it) => {
       acc[it.assetId] = it;
       return acc;
     }, {});
@@ -46,12 +44,17 @@ export class PortfolioService {
       },
     });
 
+    const baseCurrencyCode = await this.settingsService.getBaseCurrencyCode();
+
     const portfolio = this.portfolioRepository.create({
       user: { id: userId },
       name: dto.name,
       description: dto.description,
       type: dto.type,
       lastValuationAt: new Date().toISOString(),
+      currency: {
+        code: baseCurrencyCode,
+      },
     });
 
     const portfolioAssets = assetsEntities.map((asset) =>
@@ -68,14 +71,16 @@ export class PortfolioService {
     const convertedAssetsPrices = await this.currencyConverterService.convertMany(
       assetsEntities.map((it) => ({
         amount: it.cachedMarketPrice,
-        fromCurrency: it.quoteCurrencyCode,
+        fromCurrency: it.currencyCode,
+        toCurrency: portfolio.currencyCode ?? baseCurrencyCode,
       })),
     );
 
     const convertedBuyAssetsPrices = await this.currencyConverterService.convertMany(
       assetsEntities.map((it) => ({
         amount: assetsDict[it.id].buyPrice,
-        fromCurrency: it.quoteCurrencyCode,
+        fromCurrency: it.currencyCode,
+        toCurrency: portfolio.currencyCode ?? baseCurrencyCode,
       })),
     );
 

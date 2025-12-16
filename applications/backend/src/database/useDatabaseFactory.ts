@@ -1,16 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import {
-  AssetEntity,
-  AssetPriceHistoryEntity,
-  CurrencyEntity,
-  PortfolioAssetEntity,
-  PortfolioEntity,
-  PortfolioSnapshotEntity,
-  RefreshTokenEntity,
-  UserEntity,
-} from '@/modules';
+import { AssetEntity, AssetPriceHistoryEntity } from '@/modules/asset';
+import { RefreshTokenEntity } from '@/modules/auth';
+import { CurrencyEntity } from '@/modules/currency';
+import { PortfolioEntity, PortfolioSnapshotEntity } from '@/modules/portfolio';
+import { UserEntity } from '@/modules/user';
 
 export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleOptions => {
   return {

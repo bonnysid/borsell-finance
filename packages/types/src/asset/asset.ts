@@ -1,3 +1,4 @@
+import { CurrencyCode } from '../currency';
 import { DateString, ID, NumberString } from '../shared';
 import { AssetMetadata } from './metadata';
 
@@ -21,13 +22,48 @@ export enum AssetPriceTimeframe {
 
 export type AssetDtoShape = {
   id: ID;
+
   type: AssetType;
   name: string;
   metadata: AssetMetadata;
   cachedMarketPrice: NumberString;
+
+  currencyCode: CurrencyCode;
+
   lastPriceUpdateAt: DateString;
   createdAt: DateString;
   updatedAt: DateString;
+};
+
+export type UserAssetDtoShape = {
+  id: ID;
+
+  asset: AssetDtoShape;
+  userId: ID;
+  quantity: NumberString;
+  buyPrice: NumberString;
+
+  currencyCode: CurrencyCode;
+
+  createdAt: DateString;
+  updatedAt: DateString;
+};
+
+export type PortfolioAssetDtoShape = {
+  id: ID;
+
+  portfolioId: ID;
+  userAsset: UserAssetDtoShape;
+
+  createdAt: DateString;
+  updatedAt: DateString;
+};
+
+export type CreateUserAssetDtoShape = {
+  assetId: ID;
+  quantity: number;
+  buyPrice: number;
+  currencyCode?: CurrencyCode;
 };
 
 export type AssetPriceHistoryDtoShape = {
@@ -44,6 +80,8 @@ export type AssetPriceHistoryDtoShape = {
   closePrice: NumberString;
 
   volume: NumberString;
+
+  currencyCode: CurrencyCode;
 
   source: string;
 

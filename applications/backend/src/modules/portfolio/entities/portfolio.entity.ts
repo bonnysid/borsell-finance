@@ -3,13 +3,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { PortfolioAssetEntity } from '@/modules';
+import { PortfolioAssetEntity } from '@/modules/asset';
+import { CurrencyEntity } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
@@ -54,6 +56,13 @@ export class PortfolioEntity {
     (asset) => asset.portfolio,
   )
   assets: PortfolioAssetEntity[];
+
+  @ManyToOne(() => CurrencyEntity)
+  @JoinColumn({ name: 'currencyCode' })
+  currency: CurrencyEntity;
+
+  @Column()
+  currencyCode: string;
 
   // --- Связи с Историей (Опционально) ---
   @OneToMany(

@@ -1,16 +1,5 @@
-import { CreatePortfolioDtoShape, PortfolioType } from '@packages/types';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Length,
-  ValidateNested,
-} from 'class-validator';
-
-import { CreatePortfolioAssetDto } from './create-protfolio-asset.dto';
+import { CreatePortfolioDtoShape, ID, PortfolioType } from '@packages/types';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreatePortfolioDto implements CreatePortfolioDtoShape {
   @IsString()
@@ -27,7 +16,6 @@ export class CreatePortfolioDto implements CreatePortfolioDtoShape {
   type?: PortfolioType = PortfolioType.MAIN;
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePortfolioAssetDto)
-  assets: CreatePortfolioAssetDto[];
+  @IsNotEmpty()
+  userAssetsIds: ID[];
 }

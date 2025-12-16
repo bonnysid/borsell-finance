@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { CurrencyEntity } from '@/modules';
+import { CurrencyEntity } from '@/modules/currency';
 
 @Entity('assets')
 export class AssetEntity {
@@ -35,11 +35,11 @@ export class AssetEntity {
   lastPriceUpdateAt: string;
 
   @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'quoteCurrencyCode' })
-  quoteCurrency: CurrencyEntity;
+  @JoinColumn({ name: 'currencyCode' })
+  currency: CurrencyEntity;
 
   @Column()
-  quoteCurrencyCode: string;
+  currencyCode: string;
 
   @CreateDateColumn()
   createdAt: string;

@@ -128,22 +128,23 @@ export class AssetSeederService implements OnModuleInit {
           this.logger.warn(`No data for ${item.symbol}, skipped`);
         } else {
           const asset = this.assetRepo.create({
-            cachedMarketPrice: price.regularMarketPrice,
+            cachedMarketPrice: String(price.regularMarketPrice),
             lastPriceUpdateAt: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
             symbol: price.symbol,
             type: item.type,
             name: price.shortName ?? item.symbol,
-            quoteCurrencyCode: price.currency ?? 'USD',
+            currencyCode: price.currency ?? 'USD',
           });
 
           const assetHistoryItem = this.assetPriceHistoryRepo.create({
             asset,
+            currencyCode: asset.currencyCode,
             date: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
-            closePrice: price.regularMarketPrice,
-            openPrice: price.regularMarketOpen,
-            highPrice: price.regularMarketDayHigh,
-            lowPrice: price.regularMarketDayLow,
-            volume: price.regularMarketVolume,
+            closePrice: String(price.regularMarketPrice),
+            openPrice: String(price.regularMarketOpen),
+            highPrice: String(price.regularMarketDayHigh),
+            lowPrice: String(price.regularMarketDayLow),
+            volume: String(price.regularMarketVolume),
             source: 'yahoo-finance',
           });
 
