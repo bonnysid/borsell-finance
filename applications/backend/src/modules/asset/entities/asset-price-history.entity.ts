@@ -1,15 +1,15 @@
-import { AssetPriceTimeframe, NumberString } from '@packages/types';
+import { AssetPriceTimeframe, CurrencyCode, NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { CurrencyEntity } from '@/modules/currency';
+import { DateColumn, NumericColumn, PriceColumn } from '@/database/columns';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 
 import { AssetEntity } from './asset.entity';
 
@@ -28,37 +28,36 @@ export class AssetPriceHistoryEntity {
   })
   timeframe: AssetPriceTimeframe;
 
-  @Column({ type: 'timestamp' })
-  date: string;
+  @DateColumn()
+  date: Date;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @PriceColumn()
   openPrice: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @PriceColumn()
   highPrice: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @PriceColumn()
   lowPrice: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @PriceColumn()
   closePrice: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @NumericColumn()
   volume: NumberString;
 
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
+  @CurrencyRelationColumn()
   currency: CurrencyEntity;
 
-  @Column()
-  currencyCode: string;
+  @CurrencyCodeColumn()
+  currencyCode: CurrencyCode;
 
   @Column({ nullable: true })
   source: string;
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 }

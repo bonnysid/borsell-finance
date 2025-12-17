@@ -17,7 +17,7 @@ export class PortfolioAssetEntity {
 
   @ManyToOne(
     () => UserAssetEntity,
-    (portfolio) => portfolio.portfolioAssets,
+    (userAsset) => userAsset.portfolioAssets,
     { onDelete: 'CASCADE' },
   )
   userAsset: UserAssetEntity;
@@ -30,8 +30,8 @@ export class PortfolioAssetEntity {
   portfolio: PortfolioEntity;
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 }

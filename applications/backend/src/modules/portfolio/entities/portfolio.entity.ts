@@ -42,15 +42,17 @@ export class PortfolioEntity {
   type: PortfolioType;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  cachedTotalValue: NumberString; // Общая стоимость портфеля в baseCurrencyCode
+  cachedTotalValue: NumberString;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  buyPrice: NumberString;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
 
   @Column({ type: 'timestamp', nullable: true })
-  lastValuationAt: string; // Время последнего обновления кэша
+  lastValuationAt: string;
 
-  // --- Связи с Активами ---
   @OneToMany(
     () => PortfolioAssetEntity,
     (asset) => asset.portfolio,
@@ -64,7 +66,6 @@ export class PortfolioEntity {
   @Column()
   currencyCode: string;
 
-  // --- Связи с Историей (Опционально) ---
   @OneToMany(
     () => PortfolioSnapshotEntity,
     (snapshot) => snapshot.portfolio,

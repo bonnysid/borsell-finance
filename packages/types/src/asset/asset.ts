@@ -89,3 +89,35 @@ export type AssetPriceHistoryDtoShape = {
   createdAt: DateString;
   updatedAt: DateString;
 };
+
+export type UserAssetInfoItemDtoShape = {
+  id: ID;
+  quantity: NumberString;
+  buyPrice: NumberString;
+  currencyCode: CurrencyCode;
+  createdAt: DateString;
+  updatedAt: DateString;
+};
+
+export type UserAssetInfoDtoShape = {
+  assetId: ID;
+  quantity: NumberString;
+  buyPrice: NumberString;
+
+  type: AssetType;
+  name: string;
+  metadata: AssetMetadata;
+  cachedMarketPrice: NumberString;
+
+  currencyCode: CurrencyCode;
+
+  lastPriceUpdateAt: DateString;
+
+  userAssets: UserAssetInfoItemDtoShape[];
+};
+
+export enum UserAssetOperationType {
+  BUY = 'BUY',
+  SELL = 'SELL',
+  TRANSFER = 'TRANSFER',
+}

@@ -4,11 +4,11 @@ import { ID } from '@packages/types';
 import Big from 'big.js';
 import { In, Repository } from 'typeorm';
 
-import { AssetEntity, PortfolioAssetEntity } from '@/modules/asset';
+import { AssetEntity, PortfolioAssetEntity, UserAssetEntity } from '@/modules/asset';
 import { CurrencyConverterService } from '@/modules/currency';
 import { SettingsService } from '@/modules/settings';
 
-import { CreatePortfolioAssetDto, CreatePortfolioDto } from './dto';
+import { CreatePortfolioDto } from './dto';
 import { PortfolioEntity } from './entities';
 
 @Injectable()
@@ -18,6 +18,8 @@ export class PortfolioService {
     private readonly portfolioRepository: Repository<PortfolioEntity>,
     @InjectRepository(PortfolioAssetEntity)
     private readonly portfolioAssetRepository: Repository<PortfolioAssetEntity>,
+    @InjectRepository(UserAssetEntity)
+    private readonly userAssetRepository: Repository<UserAssetEntity>,
     @InjectRepository(AssetEntity)
     private readonly assetRepository: Repository<AssetEntity>,
     private readonly currencyConverterService: CurrencyConverterService,
@@ -31,11 +33,6 @@ export class PortfolioService {
   }
 
   async createPortfolio(userId: ID, dto: CreatePortfolioDto) {
-    const assetsDict = dto.userAssetsIds.reduce((acc: Record<ID, CreatePortfolioAssetDto>, it) => {
-      acc[it.assetId] = it;
-      return acc;
-    }, {});
-
     const assetIds = Object.keys(assetsDict);
 
     const assetsEntities = await this.assetRepository.find({

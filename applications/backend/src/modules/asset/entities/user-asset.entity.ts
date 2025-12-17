@@ -1,16 +1,16 @@
-import { NumberString } from '@packages/types';
+import { CurrencyCode, NumberString } from '@packages/types';
 import {
-  Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { CurrencyEntity } from '@/modules/currency';
+import { PriceColumn, QuantityColumn } from '@/database/columns';
+import { UserAssetOperationEntity } from '@/modules/asset/entities/user-asset-operation.entity';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';
 
 import { AssetEntity } from './asset.entity';
@@ -37,22 +37,39 @@ export class UserAssetEntity {
   )
   portfolioAssets: PortfolioAssetEntity[];
 
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
+  @OneToMany(
+    () => UserAssetOperationEntity,
+    (asset) => asset.userAsset,
+  )
+  operations: UserAssetOperationEntity[];
+
+  @CurrencyRelationColumn()
   currency: CurrencyEntity;
 
-  @Column()
-  currencyCode: string;
+  @CurrencyCodeColumn()
+  currencyCode: CurrencyCode;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @QuantityColumn()
   quantity: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
-  buyPrice: NumberString;
+  @PriceColumn()
+  avgBuyPrice: NumberString;
+
+  @PriceColumn()
+  costBasis: NumberString;
+
+  @PriceColumn()
+  totalInvested: NumberString;
+
+  @PriceColumn()
+  totalWithdrawn: NumberString;
+
+  @PriceColumn()
+  realizedPnl: NumberString;
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 }

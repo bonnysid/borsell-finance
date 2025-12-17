@@ -1,15 +1,14 @@
-import { AssetMetadata, AssetType, NumberString } from '@packages/types';
+import { AssetMetadata, AssetType, CurrencyCode, NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { CurrencyEntity } from '@/modules/currency';
+import { DateColumn, PriceColumn } from '@/database/columns';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 
 @Entity('assets')
 export class AssetEntity {
@@ -28,22 +27,21 @@ export class AssetEntity {
   @Column({ type: 'jsonb', default: {} })
   metadata: AssetMetadata;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8, nullable: true })
+  @PriceColumn()
   cachedMarketPrice: NumberString;
 
-  @Column({ type: 'timestamp', nullable: true })
-  lastPriceUpdateAt: string;
+  @DateColumn()
+  lastPriceUpdateAt: Date;
 
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
+  @CurrencyRelationColumn()
   currency: CurrencyEntity;
 
-  @Column()
-  currencyCode: string;
+  @CurrencyCodeColumn()
+  currencyCode: CurrencyCode;
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 }
