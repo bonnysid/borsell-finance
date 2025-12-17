@@ -1,5 +1,6 @@
 import { CurrencyCode, NumberString } from '@packages/types';
 import {
+  Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
@@ -66,6 +67,12 @@ export class UserAssetEntity {
 
   @PriceColumn()
   realizedPnl: NumberString;
+
+  @Column({ type: 'text', nullable: true })
+  note?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  meta?: Record<string, any>;
 
   @CreateDateColumn()
   createdAt: Date;

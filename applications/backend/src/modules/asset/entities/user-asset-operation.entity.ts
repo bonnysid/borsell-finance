@@ -1,9 +1,10 @@
-import { NumberString, UserAssetOperationType } from '@packages/types';
+import { ID, NumberString, UserAssetOperationType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -17,10 +18,14 @@ export class UserAssetOperationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column('uuid')
+  userAssetId: ID;
+
   @ManyToOne(
     () => UserAssetEntity,
     (portfolio) => portfolio.operations,
   )
+  @JoinColumn({ name: 'userAssetId' })
   userAsset: UserAssetEntity;
 
   @Column({ type: 'enum', enum: UserAssetOperationType })

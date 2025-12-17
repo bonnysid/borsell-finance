@@ -119,5 +119,5 @@ export type UserAssetInfoDtoShape = {
 export enum UserAssetOperationType {
   BUY = 'BUY',
   SELL = 'SELL',
-  TRANSFER = 'TRANSFER',
+  TRANSFER_OUT = 'TRANSFER_OUT',
 }
