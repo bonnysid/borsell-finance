@@ -2,8 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -11,7 +9,7 @@ import {
 
 import { UserAssetEntity } from '@/modules/asset/entities/user-asset.entity';
 import { RefreshTokenEntity } from '@/modules/auth';
-import { CurrencyEntity } from '@/modules/currency';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 import { PortfolioEntity } from '@/modules/portfolio';
 
 @Entity('users')
@@ -32,10 +30,10 @@ export class UserEntity {
   passwordHash: string;
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 
   @OneToMany(
     () => RefreshTokenEntity,
@@ -55,10 +53,9 @@ export class UserEntity {
   )
   assets: UserAssetEntity[];
 
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
+  @CurrencyRelationColumn()
   currency: CurrencyEntity;
 
-  @Column()
+  @CurrencyCodeColumn()
   currencyCode: string;
 }

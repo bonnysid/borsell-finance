@@ -1,5 +1,5 @@
 import { Controller, Get, Res } from '@nestjs/common';
-import { ArrayResponse } from '@packages/types';
+import { TableResponse } from '@packages/types';
 import { Response } from 'express';
 
 import { AssetDto } from './dto';
@@ -15,7 +15,7 @@ export class AssetController {
 
     const mappedAssets = assets.map((asset) => new AssetDto(asset));
 
-    const result: ArrayResponse<AssetDto> = {
+    const result: TableResponse<AssetDto> = {
       data: mappedAssets,
       totalItems: mappedAssets.length,
       page: 1,

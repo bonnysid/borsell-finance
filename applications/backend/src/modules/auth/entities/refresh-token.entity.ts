@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
+import { DateColumn } from '@/common/columns';
 import { UserEntity } from '@/modules/user';
 
 @Entity()
@@ -16,6 +17,6 @@ export class RefreshTokenEntity {
   @Column()
   tokenHash: string;
 
-  @Column()
+  @DateColumn()
   expiresAt: Date;
 }

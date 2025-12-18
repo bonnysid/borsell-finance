@@ -61,9 +61,10 @@ export type PortfolioAssetDtoShape = {
 
 export type CreateUserAssetDtoShape = {
   assetId: ID;
-  quantity: number;
-  buyPrice: number;
   currencyCode?: CurrencyCode;
+  type: UserAssetOperationType;
+  quantity: number;
+  amount: number;
 };
 
 export type AssetPriceHistoryDtoShape = {

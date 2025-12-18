@@ -7,8 +7,14 @@ import {
   AssetPriceHistoryEntity,
   PortfolioAssetEntity,
   UserAssetEntity,
+  UserAssetOperationEntity,
 } from './entities';
-import { AssetSeederService, AssetService } from './services';
+import {
+  AssetSeederService,
+  AssetService,
+  PortfolioAssetService,
+  UserAssetService,
+} from './services';
 
 @Module({
   imports: [
@@ -17,9 +23,11 @@ import { AssetSeederService, AssetService } from './services';
       AssetPriceHistoryEntity,
       PortfolioAssetEntity,
       UserAssetEntity,
+      UserAssetOperationEntity,
     ]),
   ],
-  providers: [AssetService, AssetSeederService],
+  providers: [AssetService, AssetSeederService, PortfolioAssetService, UserAssetService],
   controllers: [AssetController],
+  exports: [AssetService, PortfolioAssetService, UserAssetService],
 })
 export class AssetModule {}

@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { PriceColumn, QuantityColumn } from '@/database/columns';
+import { PriceColumn, QuantityColumn } from '@/common/columns';
 import { UserAssetOperationEntity } from '@/modules/asset/entities/user-asset-operation.entity';
 import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';

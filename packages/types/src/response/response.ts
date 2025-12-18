@@ -17,8 +17,13 @@ export type ValidationErrorResponse = {
   properties: ErrorProperty[];
 };
 
-export type ArrayResponse<T> = {
+export type TableResponse<T> = {
   data: T[];
   totalItems: number;
   page: number;
+};
+
+export type PaginationDtoShape = {
+  page?: number;
+  limit?: number;
 };

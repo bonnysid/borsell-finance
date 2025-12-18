@@ -1,15 +1,15 @@
-import { CreateUserAssetDtoShape } from '@packages/types';
-import { IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from 'class-validator';
+import { CreateUserAssetDtoShape, CurrencyCode, ID, UserAssetOperationType } from '@packages/types';
+import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from 'class-validator';
 
 export class CreateUserAssetDto implements CreateUserAssetDtoShape {
   @IsUUID()
   @IsNotEmpty()
-  assetId: string;
+  assetId: ID;
 
   @IsNumber()
   @IsNotEmpty()
   @IsPositive()
-  buyPrice: number;
+  amount: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -17,5 +17,9 @@ export class CreateUserAssetDto implements CreateUserAssetDtoShape {
   quantity: number;
 
   @IsString()
-  currencyCode?: string;
+  currencyCode?: CurrencyCode;
+
+  @IsEnum(UserAssetOperationType)
+  @IsNotEmpty()
+  type: UserAssetOperationType;
 }

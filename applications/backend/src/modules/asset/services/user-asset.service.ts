@@ -1,6 +1,7 @@
+import { InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
 import Big from 'big.js';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { UserAssetEntity, UserAssetOperationEntity } from '../entities';
 
@@ -15,7 +16,15 @@ export type ApplyOperationDto = {
 };
 
 export class UserAssetService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @InjectRepository(UserAssetEntity)
+    private readonly userAssetRepo: Repository<UserAssetEntity>,
+  ) {}
+
+  async getUserAssets(userId: string): Promise<UserAssetEntity[]> {
+    return this.userAssetRepo.find({ where: { user: { id: userId } } });
+  }
 
   async applyOperation(dto: ApplyOperationDto) {
     return this.dataSource.transaction(async (manager) => {
@@ -51,6 +60,7 @@ export class UserAssetService {
         quantity: dto.quantity,
         amount: dto.amount,
         executedAt: dto.executedAt,
+        currencyCode: dto.currencyCode,
       });
       await manager.save(op);
 

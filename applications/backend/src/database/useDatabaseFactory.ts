@@ -6,10 +6,12 @@ import {
   AssetPriceHistoryEntity,
   PortfolioAssetEntity,
   UserAssetEntity,
+  UserAssetOperationEntity,
 } from '@/modules/asset';
 import { RefreshTokenEntity } from '@/modules/auth';
 import { CurrencyEntity } from '@/modules/currency';
 import { PortfolioEntity, PortfolioSnapshotEntity } from '@/modules/portfolio';
+import { SettingsEntity } from '@/modules/settings';
 import { UserEntity } from '@/modules/user';
 
 export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleOptions => {
@@ -32,6 +34,8 @@ export const useDatabaseFactory = (configService: ConfigService): TypeOrmModuleO
       PortfolioAssetEntity,
       UserAssetEntity,
       PortfolioSnapshotEntity,
+      UserAssetOperationEntity,
+      SettingsEntity,
     ],
   };
 };

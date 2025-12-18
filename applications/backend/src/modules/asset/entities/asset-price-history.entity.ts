@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { DateColumn, NumericColumn, PriceColumn } from '@/database/columns';
+import { DateColumn, NumericColumn, PriceColumn } from '@/common/columns';
 import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 
 import { AssetEntity } from './asset.entity';

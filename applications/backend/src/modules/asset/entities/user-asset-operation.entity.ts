@@ -1,4 +1,4 @@
-import { ID, NumberString, UserAssetOperationType } from '@packages/types';
+import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -9,8 +9,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { AmountColumn, DateColumn, QuantityColumn } from '@/database/columns';
+import { AmountColumn, DateColumn, QuantityColumn } from '@/common/columns';
 import { UserAssetEntity } from '@/modules/asset';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 
 @Entity('user_asset_operations')
 @Index(['userAssetId', 'executedAt'])
@@ -36,6 +37,12 @@ export class UserAssetOperationEntity {
 
   @AmountColumn()
   amount: NumberString;
+
+  @CurrencyRelationColumn()
+  currency: CurrencyEntity;
+
+  @CurrencyCodeColumn()
+  currencyCode: CurrencyCode;
 
   @DateColumn()
   executedAt: Date;

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
-import { AssetEntity, PortfolioAssetEntity, UserAssetEntity } from '../entities';
+import { AssetEntity } from '../entities';
 
 @Injectable()
 export class AssetService {
@@ -13,33 +13,7 @@ export class AssetService {
   constructor(
     @InjectRepository(AssetEntity)
     private readonly assetRepo: Repository<AssetEntity>,
-    @InjectRepository(UserAssetEntity)
-    private readonly userAssetRepo: Repository<UserAssetEntity>,
-    @InjectRepository(PortfolioAssetEntity)
-    private readonly portfolioAssetRepo: Repository<PortfolioAssetEntity>,
   ) {}
-
-  async getUserAssets(userId: string): Promise<UserAssetEntity[]> {
-    return this.userAssetRepo.find({ where: { user: { id: userId } } });
-  }
-
-  async getPortfolioAssets(userId: string, portfolioId: string): Promise<PortfolioAssetEntity[]> {
-    return this.portfolioAssetRepo.find({
-      where: {
-        portfolio: { id: portfolioId },
-        userAsset: {
-          user: { id: userId },
-        },
-      },
-    });
-  }
-
-  async getUserAssetInfo(userId: string, assetId: string) {
-    const assets = this.userAssetRepo.find({
-      where: { user: { id: userId }, asset: { id: assetId } },
-      relations: ['asset'],
-    });
-  }
 
   async searchAssets(query: string): Promise<AssetEntity[]> {
     // 1. Ищем в локальной БД
@@ -76,7 +50,7 @@ export class AssetService {
   }
 
   async getAllAssets(): Promise<AssetEntity[]> {
-    return this.assetRepo.find();
+    return this.assetRepo.find({});
   }
 
   async getStockPrice(ticker: string) {

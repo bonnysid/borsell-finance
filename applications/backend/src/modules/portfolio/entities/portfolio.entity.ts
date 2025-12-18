@@ -1,17 +1,17 @@
-import { ID, NumberString, PortfolioType } from '@packages/types';
+import { CurrencyCode, ID, NumberString, PortfolioType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { DateColumn, NumericColumn, PriceColumn } from '@/common/columns';
 import { PortfolioAssetEntity } from '@/modules/asset';
-import { CurrencyEntity } from '@/modules/currency';
+import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
 import { UserEntity } from '@/modules/user';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
@@ -37,21 +37,20 @@ export class PortfolioEntity {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  // Тип портфеля (важно для фильтрации и логики)
   @Column({ type: 'enum', enum: PortfolioType, default: PortfolioType.MAIN })
   type: PortfolioType;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @PriceColumn()
   cachedTotalValue: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @PriceColumn()
   buyPrice: NumberString;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @NumericColumn()
   cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
 
-  @Column({ type: 'timestamp', nullable: true })
-  lastValuationAt: string;
+  @DateColumn({ nullable: true })
+  lastValuationAt: Date;
 
   @OneToMany(
     () => PortfolioAssetEntity,
@@ -59,12 +58,11 @@ export class PortfolioEntity {
   )
   assets: PortfolioAssetEntity[];
 
-  @ManyToOne(() => CurrencyEntity)
-  @JoinColumn({ name: 'currencyCode' })
+  @CurrencyRelationColumn()
   currency: CurrencyEntity;
 
-  @Column()
-  currencyCode: string;
+  @CurrencyCodeColumn()
+  currencyCode: CurrencyCode;
 
   @OneToMany(
     () => PortfolioSnapshotEntity,
@@ -73,8 +71,8 @@ export class PortfolioEntity {
   snapshots: PortfolioSnapshotEntity[];
 
   @CreateDateColumn()
-  createdAt: string;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: string;
+  updatedAt: Date;
 }
