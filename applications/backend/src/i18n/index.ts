@@ -1,1 +1,1 @@
-export * from './I18nAppModule';
+export * from './i18n-app-module';

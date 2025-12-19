@@ -1,24 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
-import { DatabaseModule } from '@/database/DatabaseModule';
+import { DatabaseModule } from '@/database';
 import { I18nAppModule } from '@/i18n';
-import { AssetModule } from '@/modules/asset';
-import { AuthModule } from '@/modules/auth';
-import { CurrencyModule } from '@/modules/currency';
-import { PortfolioModule } from '@/modules/portfolio';
-import { SettingsModule } from '@/modules/settings';
-import { UserModule } from '@/modules/user';
+import { AssetModule } from '@/modules/asset/asset.module';
+import { AuthModule } from '@/modules/auth/auth.module';
+import { CurrencyModule } from '@/modules/currency/currency.module';
+import { PortfolioModule } from '@/modules/portfolio/portfolio.module';
+import { SettingsModule } from '@/modules/settings/settings.module';
+import { UserModule } from '@/modules/user/user.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
   imports: [
-    SettingsModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    I18nAppModule,
     DatabaseModule,
+    I18nAppModule,
+
+    SettingsModule,
     UserModule,
     AuthModule,
     CurrencyModule,

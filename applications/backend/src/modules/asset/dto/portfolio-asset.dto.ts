@@ -19,7 +19,7 @@ export class PortfolioAssetDto implements PortfolioAssetDtoShape {
     this.portfolioId = portfolioAsset.portfolio.id;
     this.userAsset = new UserAssetDto(portfolioAsset.userAsset);
 
-    this.createdAt = portfolioAsset.createdAt;
-    this.updatedAt = portfolioAsset.updatedAt;
+    this.createdAt = portfolioAsset.createdAt.toISOString();
+    this.updatedAt = portfolioAsset.updatedAt.toISOString();
   }
 }

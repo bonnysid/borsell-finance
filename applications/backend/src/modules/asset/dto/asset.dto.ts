@@ -34,8 +34,8 @@ export class AssetDto implements AssetDtoShape {
 
     this.currencyCode = asset.currencyCode;
 
-    this.lastPriceUpdateAt = asset.lastPriceUpdateAt;
-    this.createdAt = asset.createdAt;
-    this.updatedAt = asset.updatedAt;
+    this.lastPriceUpdateAt = asset.lastPriceUpdateAt.toISOString();
+    this.createdAt = asset.createdAt.toISOString();
+    this.updatedAt = asset.updatedAt.toISOString();
   }
 }

@@ -1,1 +1,1 @@
-export * from './ApiValidationPipe';
+export * from './api-validation.pipe';

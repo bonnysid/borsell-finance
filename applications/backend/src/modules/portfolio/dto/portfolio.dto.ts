@@ -8,7 +8,7 @@ import {
   PortfolioType,
 } from '@packages/types';
 
-import { PortfolioAssetDto } from '@/modules/asset';
+import { PortfolioAssetDto } from '@/modules/asset/dto';
 
 import { PortfolioEntity } from '../entities';
 
@@ -43,10 +43,10 @@ export class PortfolioDto implements PortfolioDtoShape {
 
     this.cachedTotalValue = portfolio.cachedTotalValue;
     this.cachedDailyChangePercent = portfolio.cachedDailyChangePercent;
-    this.lastValuationAt = portfolio.lastValuationAt;
+    this.lastValuationAt = portfolio.lastValuationAt.toISOString();
 
-    this.createdAt = portfolio.createdAt;
-    this.updatedAt = portfolio.updatedAt;
+    this.createdAt = portfolio.createdAt.toISOString();
+    this.updatedAt = portfolio.updatedAt.toISOString();
 
     this.assets = portfolio.assets.map((it) => new PortfolioAssetDto(it));
   }

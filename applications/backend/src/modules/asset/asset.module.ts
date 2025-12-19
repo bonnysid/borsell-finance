@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { DatabaseModule } from '@/database';
+
 import { AssetController } from './asset.controller';
 import {
   AssetEntity,
@@ -18,16 +20,17 @@ import {
 
 @Module({
   imports: [
+    DatabaseModule,
     TypeOrmModule.forFeature([
       AssetEntity,
       AssetPriceHistoryEntity,
-      PortfolioAssetEntity,
       UserAssetEntity,
       UserAssetOperationEntity,
+      PortfolioAssetEntity,
     ]),
   ],
-  providers: [AssetService, AssetSeederService, PortfolioAssetService, UserAssetService],
+  providers: [AssetSeederService, AssetService, UserAssetService, PortfolioAssetService],
   controllers: [AssetController],
-  exports: [AssetService, PortfolioAssetService, UserAssetService],
+  exports: [AssetService, UserAssetService, PortfolioAssetService],
 })
 export class AssetModule {}

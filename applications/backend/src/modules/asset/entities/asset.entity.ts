@@ -8,7 +8,8 @@ import {
 } from 'typeorm';
 
 import { DateColumn, PriceColumn } from '@/common/columns';
-import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
+import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
+import { CurrencyEntity } from '@/modules/currency/entities';
 
 @Entity('assets')
 export class AssetEntity {

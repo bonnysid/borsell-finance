@@ -1,6 +1,6 @@
 import { CurrencyCode, CurrencyDtoShape, CurrencyType, NumberString } from '@packages/types';
 
-import { CurrencyEntity } from '@/modules/currency';
+import { CurrencyEntity } from '@/modules/currency/entities';
 
 export class CurrencyDto implements CurrencyDtoShape {
   code: CurrencyCode;
@@ -16,6 +16,6 @@ export class CurrencyDto implements CurrencyDtoShape {
     this.symbol = currency.symbol;
     this.type = currency.type;
     this.rateToBase = currency.rateToBase;
-    this.updatedAt = currency.updatedAt;
+    this.updatedAt = currency.updatedAt.toISOString();
   }
 }

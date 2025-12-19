@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { DateColumn } from '@/common/columns';
-import { UserEntity } from '@/modules/user';
+import { UserEntity } from '@/modules/user/entities';
 
 @Entity()
 export class RefreshTokenEntity {

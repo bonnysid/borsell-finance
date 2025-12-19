@@ -11,8 +11,9 @@ import {
 
 import { PriceColumn, QuantityColumn } from '@/common/columns';
 import { UserAssetOperationEntity } from '@/modules/asset/entities/user-asset-operation.entity';
-import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
-import { UserEntity } from '@/modules/user';
+import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
+import { CurrencyEntity } from '@/modules/currency/entities';
+import { UserEntity } from '@/modules/user/entities';
 
 import { AssetEntity } from './asset.entity';
 import { PortfolioAssetEntity } from './portfolio-asset.entity';

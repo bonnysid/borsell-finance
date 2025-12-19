@@ -4,7 +4,7 @@ import { CurrencyCode, NumberString } from '@packages/types';
 import Big from 'big.js';
 import { In, Repository } from 'typeorm';
 
-import { SettingsService } from '@/modules/settings';
+import { SettingsService } from '@/modules/settings/services';
 
 import { CurrencyEntity } from '../entities';
 

@@ -11,7 +11,7 @@ export class UserDto implements UserDtoShape {
   constructor(user: UserEntity) {
     this.id = user.id;
     this.username = user.username;
-    this.createdAt = user.createdAt;
-    this.updatedAt = user.createdAt;
+    this.createdAt = user.createdAt.toISOString();
+    this.updatedAt = user.createdAt.toISOString();
   }
 }

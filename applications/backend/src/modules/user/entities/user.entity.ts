@@ -8,9 +8,10 @@ import {
 } from 'typeorm';
 
 import { UserAssetEntity } from '@/modules/asset/entities/user-asset.entity';
-import { RefreshTokenEntity } from '@/modules/auth';
-import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
-import { PortfolioEntity } from '@/modules/portfolio';
+import { RefreshTokenEntity } from '@/modules/auth/entities';
+import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
+import { CurrencyEntity } from '@/modules/currency/entities';
+import { PortfolioEntity } from '@/modules/portfolio/entities';
 
 @Entity('users')
 export class UserEntity {

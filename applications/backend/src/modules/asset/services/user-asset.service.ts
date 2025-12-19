@@ -1,4 +1,5 @@
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
 import Big from 'big.js';
 import { DataSource, Repository } from 'typeorm';
@@ -15,8 +16,10 @@ export type ApplyOperationDto = {
   executedAt: Date;
 };
 
+@Injectable()
 export class UserAssetService {
   constructor(
+    @InjectDataSource()
     private readonly dataSource: DataSource,
     @InjectRepository(UserAssetEntity)
     private readonly userAssetRepo: Repository<UserAssetEntity>,

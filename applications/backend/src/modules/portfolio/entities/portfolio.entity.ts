@@ -10,9 +10,10 @@ import {
 } from 'typeorm';
 
 import { DateColumn, NumericColumn, PriceColumn } from '@/common/columns';
-import { PortfolioAssetEntity } from '@/modules/asset';
-import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
-import { UserEntity } from '@/modules/user';
+import { PortfolioAssetEntity } from '@/modules/asset/entities';
+import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
+import { CurrencyEntity } from '@/modules/currency/entities';
+import { UserEntity } from '@/modules/user/entities';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
 

@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { PortfolioEntity } from '@/modules/portfolio';
+import { PortfolioEntity } from '@/modules/portfolio/entities';
 
 import { UserAssetEntity } from './user-asset.entity';
 

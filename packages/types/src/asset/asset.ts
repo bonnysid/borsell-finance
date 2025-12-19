@@ -39,14 +39,20 @@ export type UserAssetDtoShape = {
   id: ID;
 
   asset: AssetDtoShape;
-  userId: ID;
-  quantity: NumberString;
-  buyPrice: NumberString;
 
   currencyCode: CurrencyCode;
+  quantity: NumberString;
+  avgBuyPrice: NumberString;
+  costBasis: NumberString;
+  totalInvested: NumberString;
+  totalWithdrawn: NumberString;
+  realizedPnl: NumberString;
 
-  createdAt: DateString;
-  updatedAt: DateString;
+  note?: string;
+  meta?: Record<string, any>;
+
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PortfolioAssetDtoShape = {

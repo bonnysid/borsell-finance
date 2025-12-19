@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { CONFIG } from '@/config';
 import { UserJWT } from '@/express';
 import { SingInDto, SingUpDto } from '@/modules/auth/dto';
-import { UserService } from '@/modules/user';
+import { UserService } from '@/modules/user/user.service';
 
 import { RefreshTokenService } from './refresh-token.service';
 

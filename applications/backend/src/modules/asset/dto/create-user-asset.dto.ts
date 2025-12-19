@@ -17,7 +17,8 @@ export class CreateUserAssetDto implements CreateUserAssetDtoShape {
   quantity: number;
 
   @IsString()
-  currencyCode?: CurrencyCode;
+  @IsNotEmpty()
+  currencyCode: CurrencyCode;
 
   @IsEnum(UserAssetOperationType)
   @IsNotEmpty()

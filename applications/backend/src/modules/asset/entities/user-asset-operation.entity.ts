@@ -10,8 +10,9 @@ import {
 } from 'typeorm';
 
 import { AmountColumn, DateColumn, QuantityColumn } from '@/common/columns';
-import { UserAssetEntity } from '@/modules/asset';
-import { CurrencyCodeColumn, CurrencyEntity, CurrencyRelationColumn } from '@/modules/currency';
+import { UserAssetEntity } from '@/modules/asset/entities/user-asset.entity';
+import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
+import { CurrencyEntity } from '@/modules/currency/entities';
 
 @Entity('user_asset_operations')
 @Index(['userAssetId', 'executedAt'])

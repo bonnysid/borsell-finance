@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 
 import { CurrencyEntity } from '@/modules/currency/entities';
 import { ExchangeRateApiService } from '@/modules/currency/services/exchange-rate-api.service';
-import { SettingsService } from '@/modules/settings';
+import { SettingsService } from '@/modules/settings/services';
 
 @Injectable()
 export class CurrencySeederService implements OnModuleInit {
@@ -49,6 +49,8 @@ export class CurrencySeederService implements OnModuleInit {
       return;
     }
 
+    const baseCodes = ['USD', 'EUR', 'RUB'];
+
     const initialCurrencies: Partial<CurrencyEntity>[] = [
       {
         code: 'USD',
@@ -68,6 +70,14 @@ export class CurrencySeederService implements OnModuleInit {
         type: CurrencyType.FIAT,
         symbol: '₽',
       },
+      ...Object.keys(data.rates)
+        .filter((it) => !baseCodes.includes(it))
+        .map((code) => ({
+          code,
+          name: code,
+          type: CurrencyType.FIAT,
+          symbol: code,
+        })),
     ].map((it) => {
       const isBaseCurrency = baseCurrencyCode === it.code;
 

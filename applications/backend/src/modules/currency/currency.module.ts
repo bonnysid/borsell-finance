@@ -2,7 +2,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { SettingsModule } from '@/modules/settings';
+import { SettingsModule } from '@/modules/settings/settings.module';
 
 import { CurrencyEntity } from './entities';
 import {
@@ -22,6 +22,7 @@ import {
     CurrencySchedulerService,
     CurrencyService,
     CbrApiService,
+    CurrencyConverterService,
   ],
   exports: [CurrencyConverterService],
 })
