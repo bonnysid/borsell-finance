@@ -1,6 +1,7 @@
 import { Layout } from '@app/Layout';
 import { PrivateLayout } from '@app/PrivateLayout';
 import { PrivateRoute, PublicRoute } from '@entities/auth';
+import { UserAssetsPage } from '@pages/assets';
 import { AssistantPage } from '@pages/assistant';
 import { AuthLayout, SignInPage, SignUpPage } from '@pages/auth';
 import { DashboardPage } from '@pages/dasboard';
@@ -63,6 +64,10 @@ export const ROUTES: RouteObject[] = [
           {
             path: AppRoutes.TRANSACTIONS,
             element: <TransactionsPage />,
+          },
+          {
+            path: AppRoutes.ASSETS_ME,
+            element: <UserAssetsPage />,
           },
           {
             path: '*',

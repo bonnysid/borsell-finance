@@ -26,4 +26,10 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
     caption: 'Transactions',
     icon: 'document',
   },
+  {
+    id: 'Assets',
+    to: AppRoutePaths.ASSETS_ME(),
+    caption: 'Assets',
+    icon: 'coins',
+  },
 ];

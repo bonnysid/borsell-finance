@@ -5,7 +5,7 @@ import { Response } from 'express';
 import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
 
-import { AssetDto, CreateUserAssetDto } from './dto';
+import { ApplyAssetOperationDto, AssetDto, UserAssetDto } from './dto';
 import { AssetService, UserAssetService } from './services';
 
 @Controller('assets')
@@ -31,9 +31,25 @@ export class AssetController {
   }
 
   @UseGuards(AuthGuard)
+  @Get('/me')
+  async getMe(@Res() res: Response, @CurrentUser() user: UserJWT) {
+    const userAssets = await this.userAssetService.getUserAssets(user.userId);
+
+    const mappedAssets = userAssets.map((it) => new UserAssetDto(it));
+
+    const result: TableResponse<UserAssetDto> = {
+      data: mappedAssets,
+      totalItems: mappedAssets.length,
+      page: 1,
+    };
+
+    return res.status(200).json(result);
+  }
+
+  @UseGuards(AuthGuard)
   @Post('/apply/operation')
   async applyOperation(
-    @Body() body: CreateUserAssetDto,
+    @Body() body: ApplyAssetOperationDto,
     @CurrentUser() user: UserJWT,
     @Res() res: Response,
   ) {

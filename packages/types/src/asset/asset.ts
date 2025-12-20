@@ -65,7 +65,7 @@ export type PortfolioAssetDtoShape = {
   updatedAt: DateString;
 };
 
-export type CreateUserAssetDtoShape = {
+export type ApplyAssetOperationDtoShape = {
   assetId: ID;
   currencyCode?: CurrencyCode;
   type: UserAssetOperationType;

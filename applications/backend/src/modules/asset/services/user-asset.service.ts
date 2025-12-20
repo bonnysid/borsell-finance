@@ -26,7 +26,7 @@ export class UserAssetService {
   ) {}
 
   async getUserAssets(userId: string): Promise<UserAssetEntity[]> {
-    return this.userAssetRepo.find({ where: { user: { id: userId } } });
+    return this.userAssetRepo.find({ where: { user: { id: userId } }, relations: ['asset'] });
   }
 
   async applyOperation(dto: ApplyOperationDto) {

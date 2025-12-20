@@ -1,7 +1,12 @@
-import { CreateUserAssetDtoShape, CurrencyCode, ID, UserAssetOperationType } from '@packages/types';
+import {
+  ApplyAssetOperationDtoShape,
+  CurrencyCode,
+  ID,
+  UserAssetOperationType,
+} from '@packages/types';
 import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from 'class-validator';
 
-export class CreateUserAssetDto implements CreateUserAssetDtoShape {
+export class ApplyAssetOperationDto implements ApplyAssetOperationDtoShape {
   @IsUUID()
   @IsNotEmpty()
   assetId: ID;
