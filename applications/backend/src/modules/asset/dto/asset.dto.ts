@@ -15,6 +15,7 @@ export class AssetDto implements AssetDtoShape {
 
   type: AssetType;
   name: string;
+  symbol: string;
   metadata: AssetMetadata;
   cachedMarketPrice: NumberString;
 
@@ -29,6 +30,7 @@ export class AssetDto implements AssetDtoShape {
 
     this.type = asset.type;
     this.name = asset.name;
+    this.symbol = asset.symbol;
     this.metadata = asset.metadata;
     this.cachedMarketPrice = asset.cachedMarketPrice;
 

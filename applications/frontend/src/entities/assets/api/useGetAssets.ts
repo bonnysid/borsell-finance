@@ -12,7 +12,7 @@ export const createKeyGetAssets = () => {
   return ['assets'];
 };
 
-export const useGetUserAssets = () => {
+export const useGetAssets = () => {
   return useQuery({
     queryKey: createKeyGetAssets(),
     queryFn: getAssets,

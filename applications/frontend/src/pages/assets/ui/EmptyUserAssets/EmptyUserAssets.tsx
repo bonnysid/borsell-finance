@@ -3,14 +3,14 @@ import { AppRoutePaths } from '@shared/router';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type EmptyPortfolioProps = {};
+type EmptyUserAssetsProps = {};
 
-export const EmptyPortfolio: FC<EmptyPortfolioProps> = ({}) => {
+export const EmptyUserAssets: FC<EmptyUserAssetsProps> = ({}) => {
   const { t } = useTranslation();
 
   return (
     <Plug title={t('NoData')}>
-      <Button to={AppRoutePaths.PORTFOLIO_CREATE()}>{t('CreatePortfolio')}</Button>
+      <Button to={AppRoutePaths.ASSETS_OPERATIONS_CREATE()}>{t('AddAsset')}</Button>
     </Plug>
   );
 };

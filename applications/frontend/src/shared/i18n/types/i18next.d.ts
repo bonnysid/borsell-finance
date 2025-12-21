@@ -4,7 +4,7 @@ import Resources from './resources';
 declare module 'i18next' {
   interface CustomTypeOptions {
     enableSelector: false;
-    defaultNS: 'borsell-finance';
+    defaultNS: 'common';
     resources: Resources;
   }
 }

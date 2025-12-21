@@ -25,6 +25,7 @@ export type AssetDtoShape = {
 
   type: AssetType;
   name: string;
+  symbol: string;
   metadata: AssetMetadata;
   cachedMarketPrice: NumberString;
 

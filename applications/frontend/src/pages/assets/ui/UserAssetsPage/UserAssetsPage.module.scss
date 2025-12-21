@@ -1,1 +1,15 @@
-.user-assets-page {}
+.user-assets-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  height: 100%;
+}
+
+.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
