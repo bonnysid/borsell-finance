@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { SettingsModule } from '@/modules/settings/settings.module';
 
+import { CurrencyController } from './currency.controller';
 import { CurrencyEntity } from './entities';
 import {
   CbrApiService,
@@ -16,6 +17,7 @@ import {
 
 @Module({
   imports: [TypeOrmModule.forFeature([CurrencyEntity]), HttpModule, SettingsModule],
+  controllers: [CurrencyController],
   providers: [
     CurrencySeederService,
     ExchangeRateApiService,

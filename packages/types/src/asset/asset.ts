@@ -1,6 +1,6 @@
-import { CurrencyCode } from '../currency';
-import { DateString, ID, NumberString } from '../shared';
-import { AssetMetadata } from './metadata';
+import { CurrencyCode } from '../currency/index.js';
+import { DateString, ID, NumberString } from '../shared/index.js';
+import { AssetMetadata } from './metadata.js';
 
 export enum AssetType {
   STOCK = 'STOCK',

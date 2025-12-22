@@ -13,5 +13,15 @@
   "CreatePortfolio": "Create portfolio",
   "NoData": "No data",
   "Assets": "Assets",
-  "AddAsset": "Add asset"
+  "AddAsset": "Add asset",
+  "Asset": "Asset",
+  "Price": "Price",
+  "Quantity": "Quantity",
+  "Currency": "Currency",
+  "Create": "Create",
+  "operationType": {
+    "BUY": "Buy",
+    "SELL": "Sell",
+    "TRANSFER_OUT": "Transfer out"
+  }
 }

@@ -13,5 +13,15 @@
   "CreatePortfolio": "Создать портфель",
   "NoData": "Нет данных",
   "Assets": "Активы",
-  "AddAsset": "Добавить актив"
+  "AddAsset": "Добавить актив",
+  "Asset": "Актив",
+  "Price": "Цена",
+  "Quantity": "Количество",
+  "Currency": "Валюта",
+  "Create": "Создать",
+  "operationType": {
+    "BUY": "Покупка",
+    "SELL": "Продажа",
+    "TRANSFER_OUT": "Вывод"
+  }
 }

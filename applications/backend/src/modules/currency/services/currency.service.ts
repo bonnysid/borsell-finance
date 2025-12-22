@@ -18,6 +18,10 @@ export class CurrencyService {
     private readonly settingsService: SettingsService,
   ) {}
 
+  async getAllCurrencies(): Promise<CurrencyEntity[]> {
+    return this.currencyRepository.find();
+  }
+
   /**
    * Обновляет курсы всех валют относительно базовой валюты,
    * указанной в настройках (settings.base_currency_code).
