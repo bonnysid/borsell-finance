@@ -10,11 +10,13 @@ import { useApplyAssetOperation, useGetAssets } from '@entities/assets';
 import { useGetAllCurrencies } from '@entities/currency';
 import { useGetMe } from '@entities/user';
 import { CurrencyCode, NumberString, UserAssetOperationType } from '@packages/types';
+import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { schemeResolver, yupNumberString, yupSelectOption } from '@shared/utils';
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 
 import styles from './UserAssetCreatePage.module.scss';
@@ -45,6 +47,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
   const currencies = useGetAllCurrencies();
   const applyAssetOperation = useApplyAssetOperation();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const assetOptions = useMemo<SelectOption[]>(() => {
     return (
@@ -92,10 +95,27 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
         amount: Number(value.amount),
         type: value.type?.value,
       });
+
+      navigate(AppRoutePaths.ASSETS_ME());
     } catch (e) {
       console.error(e);
     }
   };
+
+  const asset = form.watch('assetId');
+
+  useEffect(() => {
+    if (assets.data && asset) {
+      const candidate = assets.data.data.find((it) => it.id === asset.value);
+      if (candidate) {
+        form.setValue('currencyCode', {
+          value: candidate.currencyCode,
+          label: candidate.currencyCode,
+        });
+        form.setValue('amount', candidate.cachedMarketPrice);
+      }
+    }
+  }, [asset]);
 
   return (
     <PageWrapper className={cx('user-asset-create-page')}>

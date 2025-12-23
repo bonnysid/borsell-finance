@@ -30,6 +30,8 @@ export class UserAssetService {
   }
 
   async applyOperation(dto: ApplyOperationDto) {
+    console.log(dto);
+
     return this.dataSource.transaction(async (manager) => {
       // 1) get/create агрегат с lock
       let ua = await manager.findOne(UserAssetEntity, {
@@ -43,8 +45,8 @@ export class UserAssetService {
 
       if (!ua) {
         ua = manager.create(UserAssetEntity, {
-          userId: dto.userId,
-          assetId: dto.assetId,
+          user: { id: dto.userId },
+          asset: { id: dto.assetId },
           currencyCode: dto.currencyCode,
           quantity: '0',
           avgBuyPrice: '0',
