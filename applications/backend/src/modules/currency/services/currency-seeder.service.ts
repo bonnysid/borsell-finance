@@ -27,6 +27,9 @@ export class CurrencySeederService implements OnModuleInit {
 
     if (count > 0) {
       this.logger.log('Currency table already seeded. Skipping.');
+
+      await this.update();
+
       return;
     }
 
@@ -109,5 +112,45 @@ export class CurrencySeederService implements OnModuleInit {
     await this.currencyRepository.save(initialCurrencies);
 
     this.logger.log(`Successfully seeded ${initialCurrencies.length} currencies.`);
+  }
+
+  private async update() {
+    const now = new Date();
+    const currencies = await this.currencyRepository.find();
+
+    const baseCurrencyCode = await this.settingsService.getBaseCurrencyCode();
+
+    this.logger.log(`Updating currency rates using base "${baseCurrencyCode}"`);
+
+    const baseCurrency = currencies.find((currency) => currency.code === baseCurrencyCode);
+
+    if (
+      baseCurrency &&
+      now.getMilliseconds() - baseCurrency.updatedAt.getMilliseconds() > 1000 * 60 * 60 * 24
+    ) {
+      this.logger.log(
+        `Base currency "${baseCurrencyCode}" was updated more than 24 hours ago. Skipping updating rates...`,
+      );
+      return;
+    }
+
+    const data = await this.exchangeRateApiService.getLatestRates(baseCurrencyCode);
+
+    if (!data) {
+      this.logger.warn('No exchange rates received from external API. Skipping update.');
+      return;
+    }
+
+    currencies.forEach((currency) => {
+      if (currency.code === baseCurrencyCode) {
+        currency.rateToBase = '1';
+      } else {
+        currency.rateToBase = String(data.rates[currency.code] || 0);
+      }
+    });
+
+    await this.currencyRepository.save(currencies);
+
+    this.logger.log(`Updated ${currencies.length} currency rates.`);
   }
 }

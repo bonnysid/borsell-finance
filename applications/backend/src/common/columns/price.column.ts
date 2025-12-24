@@ -8,14 +8,14 @@ type PriceColumnOptions = Omit<ColumnOptions, 'type' | 'precision' | 'scale'> & 
 export const NumericColumn = (options: PriceColumnOptions = {}) =>
   Column({
     type: 'numeric',
-    precision: 18,
+    precision: 30,
     scale: 8,
     default: '0',
     ...options,
   });
 
 export const PriceColumn = (options: PriceColumnOptions = {}) =>
-  NumericColumn({ scale: 8, ...options });
+  NumericColumn({ precision: 30, scale: 8, ...options });
 
 export const AmountColumn = (options: PriceColumnOptions = {}) =>
   NumericColumn({ scale: 8, ...options });
