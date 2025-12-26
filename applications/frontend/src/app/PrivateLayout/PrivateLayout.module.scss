@@ -8,7 +8,7 @@
 .content {
   &-wrapper {
     display: flex;
-    gap: 8px;
+    gap: 16px;
     padding-right: var(--PaddingS);
     padding-left: var(--PaddingS);
     padding-bottom: var(--PaddingS);
@@ -17,10 +17,6 @@
   }
 
   display: flex;
-  background-color: var(--color-bg-secondary);
-  box-shadow: var(--shadow-primary);
-  border-radius: var(--RoundingM);
-  border: 1px solid var(--color-border-tertiary);
 
   height: 100%;
   flex-grow: 1;

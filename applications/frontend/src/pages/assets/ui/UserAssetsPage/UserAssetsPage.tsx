@@ -1,9 +1,10 @@
-import { bindStyles } from '@devbonnysid/ui-kit-default';
-import { useGetUserAssets } from '@entities/assets';
+import { bindStyles, Table, TableColumnType } from '@devbonnysid/ui-kit-default';
+import { AssetCell, useGetUserAssets } from '@entities/assets';
+import { UserAssetDtoShape } from '@packages/types';
 import { EmptyUserAssets } from '@pages/assets/ui/EmptyUserAssets';
-import { UserAssetInfoCard } from '@pages/assets/ui/UserAssetInfoCard';
 import { PageTitle, PageWrapper } from '@shared/ui';
-import { FC } from 'react';
+import { AmountText } from '@shared/ui/AmountText';
+import { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './UserAssetsPage.module.scss';
@@ -13,22 +14,44 @@ type UserAssetsPageProps = {};
 const cx = bindStyles(styles);
 
 export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
-  const { data } = useGetUserAssets();
+  const { data, isLoading, isFetching } = useGetUserAssets();
   const isEmpty = data?.totalItems === 0;
   const { t } = useTranslation();
+
+  const columns = useMemo<TableColumnType<UserAssetDtoShape>[]>(() => {
+    return [
+      {
+        key: 'asset',
+        title: t('Asset'),
+        render: (asset) => <AssetCell asset={asset} />,
+      },
+      {
+        key: 'custom-column-price',
+        title: t('Price'),
+        render: (_, { asset }) => (
+          <AmountText amount={asset.cachedMarketPrice} currency={asset.currencyCode} />
+        ),
+      },
+    ];
+  }, [t]);
+
+  const rowKey = useCallback((userAsset: UserAssetDtoShape) => {
+    return userAsset.id;
+  }, []);
 
   return (
     <PageWrapper className={cx('user-assets-page')}>
       <PageTitle>{t('Assets')}</PageTitle>
 
-      {isEmpty && <EmptyUserAssets />}
-      {!isEmpty && (
-        <div className={cx('assets')}>
-          {data?.data.map((it) => (
-            <UserAssetInfoCard key={it.id} userAsset={it} />
-          ))}
-        </div>
-      )}
+      <Table
+        columns={columns}
+        rowKey={rowKey}
+        data={data?.data}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        isEmpty={isEmpty}
+        emptyPlug={<EmptyUserAssets />}
+      />
     </PageWrapper>
   );
 };

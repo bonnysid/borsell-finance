@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 
 import '@devbonnysid/ui-kit-default/styles.css';
+import '@shared/assets/styles/global.scss';
 import { initAuthInterceptor } from '@entities/auth';
 import { queryClient } from '@shared/api';
 import i18n, { I18N_NS } from '@shared/i18n';
