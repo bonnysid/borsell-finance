@@ -1,4 +1,4 @@
-import { CurrencyCode, ID, NumberString, PortfolioType } from '@packages/types';
+import { CurrencyCode, ID, PortfolioType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { DateColumn, NumericColumn, PriceColumn } from '@/common/columns';
 import { PortfolioAssetEntity } from '@/modules/asset/entities';
 import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
 import { CurrencyEntity } from '@/modules/currency/entities';
@@ -41,17 +40,17 @@ export class PortfolioEntity {
   @Column({ type: 'enum', enum: PortfolioType, default: PortfolioType.MAIN })
   type: PortfolioType;
 
-  @PriceColumn()
-  cachedTotalValue: NumberString;
-
-  @PriceColumn()
-  buyPrice: NumberString;
-
-  @NumericColumn()
-  cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
-
-  @DateColumn({ nullable: true })
-  lastValuationAt: Date;
+  // @PriceColumn()
+  // cachedTotalValue: NumberString;
+  //
+  // @PriceColumn()
+  // buyPrice: NumberString;
+  //
+  // @NumericColumn()
+  // cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
+  //
+  // @DateColumn({ nullable: true })
+  // lastValuationAt: Date;
 
   @OneToMany(
     () => PortfolioAssetEntity,

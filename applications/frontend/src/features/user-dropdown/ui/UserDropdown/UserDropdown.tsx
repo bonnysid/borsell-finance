@@ -17,7 +17,7 @@ export const UserDropdown: FC<UserDropdownProps> = ({}) => {
 
   const handleClickTrigger = () => {
     if (isReady) {
-      dropdownControls.open();
+      dropdownControls.toggle();
     }
   };
 

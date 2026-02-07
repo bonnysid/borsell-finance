@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 
 import { SettingsService } from '@/modules/settings/services';
+import { ChangeCurrencyDto } from '@/modules/user/dto/change-currency.dto';
 import { ChangePasswordDto } from '@/modules/user/dto/change-password.dto';
 import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
 import { UserEntity } from '@/modules/user/entities';
@@ -53,6 +54,18 @@ export class UserService {
     }
 
     user.passwordHash = bcrypt.hashSync(dto.newPassword, 10);
+
+    return this.usersRepository.save(user);
+  }
+
+  async changeCurrency(username: string, dto: ChangeCurrencyDto) {
+    const user = await this.findOne(username);
+
+    if (!user) {
+      throw new BadRequestException('Something went wrong');
+    }
+
+    user.currencyCode = dto.currencyCode;
 
     return this.usersRepository.save(user);
   }

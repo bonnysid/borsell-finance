@@ -19,9 +19,19 @@
   "Quantity": "Количество",
   "Currency": "Валюта",
   "Create": "Создать",
+  "AvgBuyPrice": "Ср. Цена покупки",
+  "RealizedPnL": "Фактический PnL",
+  "UnrealizedPnL": "Потенциальный PnL",
+  "TotalCost": "Всего стоит",
+  "CostBasis": "Базовая стоимость",
+  "Delete": "Удалить",
+  "Cancel": "Отменить",
   "operationType": {
     "BUY": "Покупка",
     "SELL": "Продажа",
     "TRANSFER_OUT": "Вывод"
+  },
+  "deleteUserAsset": {
+    "title": "Вы уверены что хотите удалить актив {{symbol}}?"
   }
 }

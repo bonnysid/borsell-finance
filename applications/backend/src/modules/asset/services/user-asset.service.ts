@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
 import Big from 'big.js';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, DeleteResult, In, Repository } from 'typeorm';
 
 import { UserAssetEntity, UserAssetOperationEntity } from '../entities';
 
@@ -25,13 +25,26 @@ export class UserAssetService {
     private readonly userAssetRepo: Repository<UserAssetEntity>,
   ) {}
 
-  async getUserAssets(userId: string): Promise<UserAssetEntity[]> {
+  async getUserAssets(userId: ID): Promise<UserAssetEntity[]> {
     return this.userAssetRepo.find({ where: { user: { id: userId } }, relations: ['asset'] });
   }
 
-  async applyOperation(dto: ApplyOperationDto) {
-    console.log(dto);
+  async getUserAsset(id: ID): Promise<UserAssetEntity | null> {
+    return this.userAssetRepo.findOne({ where: { id } });
+  }
 
+  async getUserAssetsByIds(userId: ID, ids: ID[]): Promise<UserAssetEntity[]> {
+    return this.userAssetRepo.find({
+      where: { user: { id: userId }, id: In(ids) },
+      relations: ['asset'],
+    });
+  }
+
+  async deleteUserAsset(userId: ID, userAssetId: ID): Promise<DeleteResult> {
+    return await this.userAssetRepo.delete({ user: { id: userId }, id: userAssetId });
+  }
+
+  async applyOperation(dto: ApplyOperationDto) {
     return this.dataSource.transaction(async (manager) => {
       // 1) get/create агрегат с lock
       let ua = await manager.findOne(UserAssetEntity, {

@@ -8,9 +8,11 @@ const getPortfolio = async () => {
   return res.data;
 };
 
+export const createKeyUseGetPortfolio = () => ['portfolio'];
+
 export const useGetPortfolio = () => {
   return useQuery({
-    queryKey: ['portfolio'],
+    queryKey: createKeyUseGetPortfolio(),
     queryFn: getPortfolio,
   });
 };

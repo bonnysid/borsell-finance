@@ -109,8 +109,6 @@ export class AssetSeederService implements OnModuleInit {
     if (count > 0) {
       this.logger.log('Asset Catalog already seeded. Skipping.');
 
-      await this.update();
-
       return;
     }
 
@@ -121,6 +119,7 @@ export class AssetSeederService implements OnModuleInit {
 
     for (const item of DEFAULT_ASSETS) {
       try {
+        await new Promise((resolve) => setTimeout(resolve, 250));
         const summary = await this.yahooFinance.quoteSummary(item.symbol, {
           modules: ['price', 'assetProfile'],
         });
@@ -163,57 +162,5 @@ export class AssetSeederService implements OnModuleInit {
     await this.assetPriceHistoryRepo.save(historyItems);
 
     this.logger.log(`Seeding complete. Added ${assetsToInsert.length} assets.`);
-  }
-
-  private async update() {
-    const now = new Date();
-
-    this.logger.log('Updating Asset Catalog from Yahoo Finance...');
-
-    const assets = await this.assetRepo.find();
-
-    if (
-      assets[0] &&
-      now.getMilliseconds() - assets[0].updatedAt.getMilliseconds() > 1000 * 60 * 60 * 24
-    ) {
-      this.logger.log('Assets were updated more than 24 hours ago. Skipping updating...');
-      return;
-    }
-
-    const historyItems: AssetPriceHistoryEntity[] = [];
-
-    for (const asset of assets) {
-      const summary = await this.yahooFinance.quoteSummary(asset.symbol, {
-        modules: ['price', 'assetProfile'],
-      });
-
-      const price = summary.price;
-
-      if (!price) {
-        this.logger.warn(`No data for ${asset.symbol}, skipped`);
-      } else {
-        const cachedPrice = String(price.regularMarketPrice?.toFixed(8));
-
-        const assetHistoryItem = this.assetPriceHistoryRepo.create({
-          asset,
-          currencyCode: asset.currencyCode,
-          date: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
-          closePrice: cachedPrice,
-          openPrice: String(price.regularMarketOpen?.toFixed(8)),
-          highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
-          lowPrice: String(price.regularMarketDayLow?.toFixed(8)),
-          volume: String(price.regularMarketVolume?.toFixed(8)),
-          source: 'yahoo-finance',
-        });
-
-        asset.cachedMarketPrice = cachedPrice;
-        historyItems.push(assetHistoryItem);
-      }
-    }
-
-    await this.assetRepo.save(assets);
-    await this.assetPriceHistoryRepo.save(historyItems);
-
-    this.logger.log(`Updated complete. Updated ${assets.length} assets.`);
   }
 }

@@ -2,7 +2,6 @@ import {
   CurrencyCode,
   DateString,
   ID,
-  NumberString,
   PortfolioAssetDtoShape,
   PortfolioDtoShape,
   PortfolioType,
@@ -21,9 +20,9 @@ export class PortfolioDto implements PortfolioDtoShape {
 
   type: PortfolioType;
 
-  cachedTotalValue: NumberString;
-  cachedDailyChangePercent: NumberString;
-  lastValuationAt: DateString;
+  // cachedTotalValue: NumberString;
+  // cachedDailyChangePercent: NumberString;
+  // lastValuationAt: DateString;
 
   currencyCode: CurrencyCode;
 
@@ -41,9 +40,9 @@ export class PortfolioDto implements PortfolioDtoShape {
 
     this.type = portfolio.type;
 
-    this.cachedTotalValue = portfolio.cachedTotalValue;
-    this.cachedDailyChangePercent = portfolio.cachedDailyChangePercent;
-    this.lastValuationAt = portfolio.lastValuationAt.toISOString();
+    // this.cachedTotalValue = portfolio.cachedTotalValue;
+    // this.cachedDailyChangePercent = portfolio.cachedDailyChangePercent;
+    // this.lastValuationAt = portfolio.lastValuationAt.toISOString();
 
     this.createdAt = portfolio.createdAt.toISOString();
     this.updatedAt = portfolio.updatedAt.toISOString();

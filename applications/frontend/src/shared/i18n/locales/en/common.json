@@ -19,9 +19,19 @@
   "Quantity": "Quantity",
   "Currency": "Currency",
   "Create": "Create",
+  "AvgBuyPrice": "Avg. Buy price",
+  "RealizedPnL": "Realized PnL",
+  "UnrealizedPnL": "Unrealized PnL",
+  "TotalCost": "Total Cost",
+  "CostBasis": "Cost Basis",
+  "Delete": "Delete",
+  "Cancel": "Cancel",
   "operationType": {
     "BUY": "Buy",
     "SELL": "Sell",
     "TRANSFER_OUT": "Transfer out"
+  },
+  "deleteUserAsset": {
+    "title": "Are you sure that you want to delete asset {{symbol}}?"
   }
 }

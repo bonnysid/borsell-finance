@@ -1,10 +1,19 @@
-import { bindStyles, Table, TableColumnType } from '@devbonnysid/ui-kit-default';
+import {
+  Button,
+  ButtonVariants,
+  bindStyles,
+  formatNumber,
+  Icon,
+  Table,
+  TableColumnType,
+} from '@devbonnysid/ui-kit-default';
 import { AssetCell, useGetUserAssets } from '@entities/assets';
-import { UserAssetDtoShape } from '@packages/types';
+import { ID, UserAssetDtoShape } from '@packages/types';
+import { DeleteUserAssetModal } from '@pages/assets/ui/DeleteUserAssetModal';
 import { EmptyUserAssets } from '@pages/assets/ui/EmptyUserAssets';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { AmountText } from '@shared/ui/AmountText';
-import { FC, useCallback, useMemo } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './UserAssetsPage.module.scss';
@@ -17,6 +26,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
   const { data, isLoading, isFetching } = useGetUserAssets();
   const isEmpty = data?.totalItems === 0;
   const { t } = useTranslation();
+  const [userAssetIdToDelete, setUserAssetIdToDelete] = useState<ID | null>(null);
 
   const columns = useMemo<TableColumnType<UserAssetDtoShape>[]>(() => {
     return [
@@ -32,12 +42,54 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
           <AmountText amount={asset.cachedMarketPrice} currency={asset.currencyCode} />
         ),
       },
+      {
+        key: 'avgBuyPrice',
+        title: t('AvgBuyPrice'),
+        render: (avgBuyPrice, { currencyCode }) => (
+          <AmountText amount={avgBuyPrice} currency={currencyCode} />
+        ),
+      },
+      {
+        key: 'quantity',
+        title: t('Quantity'),
+        render: (quantity) => formatNumber(quantity, 0),
+      },
+      {
+        key: 'costBasis',
+        title: t('CostBasis'),
+        render: (value, { currencyCode }) => <AmountText amount={value} currency={currencyCode} />,
+      },
+      {
+        key: 'realizedPnl',
+        title: t('RealizedPnL'),
+        render: (avgBuyPrice, { currencyCode }) => (
+          <AmountText amount={avgBuyPrice} currency={currencyCode} />
+        ),
+      },
+      {
+        key: 'custom-column-delete',
+        title: '',
+        width: 'max-content',
+        render: (_, record) => {
+          return (
+            <Button
+              variant={ButtonVariants.QUATERNARY}
+              prefix={<Icon type="delete-alt" />}
+              onClick={() => setUserAssetIdToDelete(record.id)}
+            />
+          );
+        },
+      },
     ];
   }, [t]);
 
   const rowKey = useCallback((userAsset: UserAssetDtoShape) => {
     return userAsset.id;
   }, []);
+
+  const onCloseDeleteModal = () => {
+    setUserAssetIdToDelete(null);
+  };
 
   return (
     <PageWrapper className={cx('user-assets-page')}>
@@ -52,6 +104,10 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
         isEmpty={isEmpty}
         emptyPlug={<EmptyUserAssets />}
       />
+
+      {userAssetIdToDelete && (
+        <DeleteUserAssetModal userAsserId={userAssetIdToDelete} onClose={onCloseDeleteModal} />
+      )}
     </PageWrapper>
   );
 };

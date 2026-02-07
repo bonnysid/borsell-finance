@@ -1,10 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { PortfolioType } from '@packages/types';
 import * as bcrypt from 'bcrypt';
 
 import { CONFIG } from '@/config';
 import { UserJWT } from '@/express';
 import { SingInDto, SingUpDto } from '@/modules/auth/dto';
+import { PortfolioService } from '@/modules/portfolio/portfolio.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { RefreshTokenService } from './refresh-token.service';
@@ -13,6 +15,7 @@ import { RefreshTokenService } from './refresh-token.service';
 export class AuthService {
   constructor(
     private usersService: UserService,
+    private portfolioService: PortfolioService,
     private jwtService: JwtService,
     private refreshTokenService: RefreshTokenService,
   ) {}
@@ -37,6 +40,12 @@ export class AuthService {
 
   async signUp(dto: SingUpDto) {
     const user = await this.usersService.create(dto);
+
+    await this.portfolioService.createPortfolio(user.id, {
+      userAssetsIds: [],
+      name: user.username,
+      type: PortfolioType.MAIN,
+    });
 
     const payload = { userId: user.id, username: user.username };
 

@@ -1,7 +1,11 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { DatabaseModule } from '@/database';
+import { CurrencyModule } from '@/modules/currency/currency.module';
+import { PortfolioEntity } from '@/modules/portfolio/entities';
+import { UserModule } from '@/modules/user/user.module';
 
 import { AssetController } from './asset.controller';
 import {
@@ -14,6 +18,7 @@ import {
 import {
   AssetSeederService,
   AssetService,
+  AssetUpdaterService,
   PortfolioAssetService,
   UserAssetService,
 } from './services';
@@ -27,10 +32,20 @@ import {
       UserAssetEntity,
       UserAssetOperationEntity,
       PortfolioAssetEntity,
+      PortfolioEntity,
     ]),
+    HttpModule,
+    CurrencyModule,
+    UserModule,
   ],
-  providers: [AssetSeederService, AssetService, UserAssetService, PortfolioAssetService],
+  providers: [
+    AssetSeederService,
+    AssetService,
+    AssetUpdaterService,
+    UserAssetService,
+    PortfolioAssetService,
+  ],
   controllers: [AssetController],
-  exports: [AssetService, UserAssetService, PortfolioAssetService],
+  exports: [AssetService, UserAssetService, PortfolioAssetService, AssetUpdaterService],
 })
 export class AssetModule {}

@@ -1,6 +1,6 @@
 import { PortfolioAssetDtoShape } from '../asset';
 import { CurrencyCode } from '../currency';
-import { DateString, ID, NumberString } from '../shared';
+import { DateString, ID } from '../shared';
 
 export enum PortfolioType {
   MAIN = 'MAIN', // Реальный портфель
@@ -17,9 +17,9 @@ export type PortfolioDtoShape = {
 
   type: PortfolioType;
 
-  cachedTotalValue: NumberString;
-  cachedDailyChangePercent: NumberString;
-  lastValuationAt: DateString;
+  // cachedTotalValue: NumberString;
+  // cachedDailyChangePercent: NumberString;
+  // lastValuationAt: DateString;
 
   currencyCode: CurrencyCode;
 

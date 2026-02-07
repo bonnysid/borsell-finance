@@ -8,9 +8,11 @@ const getMe = async () => {
   return res.data;
 };
 
+export const createKeyUseGetMe = () => ['me'];
+
 export const useGetMe = (enabled: boolean = true) => {
   return useQuery({
-    queryKey: ['me'],
+    queryKey: createKeyUseGetMe(),
     queryFn: getMe,
     enabled,
   });

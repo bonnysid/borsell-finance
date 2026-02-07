@@ -1,7 +1,7 @@
 import { NumberString } from '@packages/types';
-import { Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
-import { DateColumn, PriceColumn } from '@/common/columns';
+import { PriceColumn } from '@/common/columns';
 
 import { PortfolioEntity } from './portfolio.entity';
 
@@ -17,12 +17,9 @@ export class PortfolioSnapshotEntity {
   )
   portfolio: PortfolioEntity;
 
-  @DateColumn({ unique: true }) // Уникальность по дате в рамках одного портфеля
-  snapshotAt: Date;
-
   // Общая рыночная стоимость всех активов на эту дату
   @PriceColumn()
-  totalValue: NumberString;
+  costBasis: NumberString;
 
   // Общая сумма, которую пользователь вложил (депозиты)
   @PriceColumn()
@@ -34,5 +31,8 @@ export class PortfolioSnapshotEntity {
 
   // Прибыль/Убыток за период от начала инвестирования
   @PriceColumn()
-  unrealizedGainLoss: NumberString;
+  realizedPnl: NumberString;
+
+  @CreateDateColumn({ unique: true })
+  createdAt: Date;
 }
