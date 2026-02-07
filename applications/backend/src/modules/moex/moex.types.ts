@@ -1,3 +1,5 @@
+import { AssetType, CurrencyCode, NumberString } from '@packages/types';
+
 export enum MoexColumnsVariants {
   SECID = 'SECID',
   BOARDID = 'BOARDID',
@@ -97,20 +99,14 @@ export type MoexHistoryData = {
   };
 };
 
-export type MoexPrices = Record<string, number>;
-
-export type MoexAssetPrice = {
-  ticker: string;
-  price: string;
-  updatedAt: Date;
-};
-
 export type MoexAssetHistoryPrice = {
-  ticker: string;
+  symbol: string;
   date: Date;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
+  open: NumberString;
+  high: NumberString;
+  low: NumberString;
+  close: NumberString;
+  volume: NumberString;
+  currencyCode: CurrencyCode;
+  type: AssetType;
 };

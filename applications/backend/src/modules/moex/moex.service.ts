@@ -1,16 +1,19 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { AssetType, DateString } from '@packages/types';
 import { lastValueFrom } from 'rxjs';
 
 import {
   MoexAssetHistoryPrice,
-  MoexAssetPrice,
   MoexColumnsVariants,
   MoexHistoryColumns,
   MoexHistoryData,
   MoexMarketData,
-  MoexPrices,
 } from '@/modules/moex/moex.types';
+
+// https://iss.moex.com/iss/reference/
+
+const CURRENCY = 'RUB';
 
 @Injectable()
 export class MoexService implements OnModuleInit {
@@ -25,13 +28,13 @@ export class MoexService implements OnModuleInit {
   async onModuleInit() {
     this.logger.log('MoexService initialized');
 
-    // await this.getPrices(['SBER', 'GAZP']);
+    // const res = await this.getPrices(['SBER', 'GAZP']);
+    //
+    // this.logger.log(res);
   }
 
-  async getPrices(tickers: string[]): Promise<MoexPrices> {
+  async getPrices(tickers: string[]): Promise<MoexAssetHistoryPrice[]> {
     try {
-      // Запрашиваем данные по конкретным тикерам через запятую
-      // Это минимизирует количество запросов к API
       const url = `${this.marketUrl}?securities=${tickers.join(',')}&iss.meta=off&iss.only=marketdata`;
 
       const response = await lastValueFrom(this.httpService.get<MoexMarketData>(url));
@@ -39,64 +42,44 @@ export class MoexService implements OnModuleInit {
 
       this.logger.log(`Fetched ${tickers.length} prices from MOEX`);
 
-      // MOEX возвращает данные в виде двух массивов: 'columns' и 'data'
-      // Нам нужно их "склеить" в удобный объект
       const columns = marketData.columns;
       const dataRows = marketData.data;
 
-      const lastPriceIndex = columns.indexOf(MoexColumnsVariants.LAST);
       const tickerIndex = columns.indexOf(MoexColumnsVariants.SECID);
+      const timeIndex = columns.indexOf(MoexColumnsVariants.SYSTIME);
+      const openIndex = columns.indexOf(MoexColumnsVariants.OPEN);
+      const lowIndex = columns.indexOf(MoexColumnsVariants.LOW);
+      const highIndex = columns.indexOf(MoexColumnsVariants.HIGH);
+      const lastPriceIndex = columns.indexOf(MoexColumnsVariants.LAST);
+      const volumeIndex = columns.indexOf(MoexColumnsVariants.VALTODAY);
 
-      const results: MoexPrices = {};
-      dataRows.forEach((row) => {
+      return dataRows.map((row) => {
         const ticker = row[tickerIndex] as string;
-        const price = row[lastPriceIndex] as number;
-        if (ticker) {
-          results[ticker] = price;
-        }
-      });
+        const lastPrice = row[lastPriceIndex] as number;
+        const sysTime = row[timeIndex] as string;
 
-      return results; // Вернет { "SBER": 280.5, "GAZP": 160.2 }
+        return {
+          symbol: ticker,
+          date: sysTime ? new Date(sysTime) : new Date(),
+          open: (row[openIndex] as number)?.toString() || lastPrice?.toString() || '0',
+          high: (row[highIndex] as number)?.toString() || lastPrice?.toString() || '0',
+          low: (row[lowIndex] as number)?.toString() || lastPrice?.toString() || '0',
+          close: lastPrice?.toString() || '0',
+          volume: (row[volumeIndex] as number)?.toString() || '0',
+          currencyCode: CURRENCY,
+          type: AssetType.STOCK,
+        };
+      });
     } catch (error) {
       this.logger.error('Error fetching data from MOEX', error);
       throw error;
     }
   }
 
-  async getAssetPrices(tickers: string[]): Promise<MoexAssetPrice[]> {
-    try {
-      const url = `${this.marketUrl}?securities=${tickers.join(',')}&iss.meta=off&iss.only=marketdata`;
-      const response = await lastValueFrom(this.httpService.get<MoexMarketData>(url));
-      const marketData = response.data.marketdata;
-
-      const columns = marketData.columns;
-      const dataRows = marketData.data;
-
-      const lastPriceIndex = columns.indexOf(MoexColumnsVariants.LAST);
-      const tickerIndex = columns.indexOf(MoexColumnsVariants.SECID);
-      const timeIndex = columns.indexOf(MoexColumnsVariants.SYSTIME);
-
-      return dataRows.map((row) => {
-        const ticker = row[tickerIndex] as string;
-        const price = row[lastPriceIndex] as number;
-        const sysTime = row[timeIndex] as string;
-
-        return {
-          ticker,
-          price: price?.toString() || '0',
-          updatedAt: sysTime ? new Date(sysTime) : new Date(),
-        };
-      });
-    } catch (error) {
-      this.logger.error('Error fetching asset prices from MOEX', error);
-      throw error;
-    }
-  }
-
   async getAssetHistory(
     ticker: string,
-    from: string,
-    to: string,
+    from: DateString,
+    to: DateString,
   ): Promise<MoexAssetHistoryPrice[]> {
     try {
       const url = `${this.historyBaseUrl}/${ticker}.json?from=${from}&till=${to}&iss.meta=off&iss.only=history`;
@@ -114,13 +97,15 @@ export class MoexService implements OnModuleInit {
       const volumeIndex = columns.indexOf(MoexHistoryColumns.VOLUME);
 
       return dataRows.map((row) => ({
-        ticker,
+        symbol: ticker,
         date: new Date(row[dateIndex] as string),
         open: (row[openIndex] as number)?.toString() || '0',
         high: (row[highIndex] as number)?.toString() || '0',
         low: (row[lowIndex] as number)?.toString() || '0',
         close: (row[closeIndex] as number)?.toString() || '0',
         volume: (row[volumeIndex] as number)?.toString() || '0',
+        currencyCode: CURRENCY,
+        type: AssetType.STOCK,
       }));
     } catch (error) {
       this.logger.error(`Error fetching history for ${ticker} from MOEX`, error);
