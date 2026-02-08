@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { AssetType } from '@packages/types';
+import { In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
+
+import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 
@@ -17,7 +21,103 @@ export class AssetUpdaterService {
     private readonly assetRepo: Repository<AssetEntity>,
     @InjectRepository(AssetPriceHistoryEntity)
     private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
+    private readonly moexService: MoexService,
   ) {}
+
+  @Cron('0 55 23 * * *')
+  async handleDailyUpdateCron() {
+    this.logger.log('⏰ Running daily asset price update cron...');
+    await this.updateAllAssetsFromMoex();
+  }
+
+  async updateAllAssetsFromMoex() {
+    this.logger.log('🚀 Start updating assets from MOEX...');
+
+    const assets = await this.assetRepo.find({
+      where: { metadata: { source: 'MOEX' } as any },
+    });
+
+    if (assets.length === 0) {
+      this.logger.log('No MOEX assets to update.');
+      return;
+    }
+
+    const tickers = assets.map((a) => a.symbol);
+    await this.updateAssetsByTickers(tickers, assets);
+  }
+
+  async updateAssetsByTickers(tickers: string[], existingAssets: AssetEntity[] = []) {
+    if (tickers.length === 0) return;
+
+    if (existingAssets.length === 0) {
+      existingAssets = await this.assetRepo.find({
+        where: { symbol: In(tickers) },
+      });
+    }
+
+    const chunkSize = 20;
+    const historyItems: AssetPriceHistoryEntity[] = [];
+    const assetsToSave: AssetEntity[] = [];
+
+    for (let i = 0; i < tickers.length; i += chunkSize) {
+      const chunk = tickers.slice(i, i + chunkSize);
+      this.logger.log(`Fetching MOEX chunk ${i / chunkSize + 1}: ${chunk.join(', ')}`);
+
+      try {
+        const data = await this.moexService.getMarketData(chunk);
+
+        for (const it of data) {
+          let asset = existingAssets.find((a) => a.symbol === it.symbol);
+
+          if (!asset) {
+            asset = this.assetRepo.create({
+              symbol: it.symbol,
+              type: it.type ?? AssetType.STOCK,
+              currencyCode: it.currencyCode,
+            });
+          }
+
+          asset.name = String(it.name || it.shortName);
+          asset.cachedMarketPrice = it.lastPrice.toFixed(8);
+          asset.lastPriceUpdateAt = it.date;
+          asset.metadata = {
+            ...asset.metadata,
+            isin: it.isin,
+            ticker: it.symbol,
+            lotSize: it.lotSize?.toFixed(8),
+            shortName: it.shortName,
+            source: 'MOEX',
+          };
+
+          assetsToSave.push(asset);
+
+          const historyItem = this.assetPriceHistoryRepo.create({
+            asset,
+            currencyCode: asset.currencyCode,
+            date: it.date,
+            closePrice: it.close?.toFixed(8) ?? it.lastPrice.toFixed(8),
+            openPrice: it.open?.toFixed(8),
+            highPrice: it.high?.toFixed(8),
+            lowPrice: it.low?.toFixed(8),
+            volume: it.volume?.toFixed(8),
+            source: 'MOEX',
+          });
+          historyItems.push(historyItem);
+        }
+      } catch (error) {
+        this.logger.error(`Error updating chunk ${chunk.join(', ')}`, error);
+      }
+    }
+
+    if (assetsToSave.length > 0) {
+      await this.assetRepo.save(assetsToSave);
+    }
+    if (historyItems.length > 0) {
+      await this.assetPriceHistoryRepo.save(historyItems);
+    }
+
+    this.logger.log(`Update complete. Processed ${assetsToSave.length} assets.`);
+  }
 
   async update() {
     const now = new Date();

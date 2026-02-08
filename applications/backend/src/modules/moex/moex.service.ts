@@ -1,14 +1,17 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AssetType, DateString } from '@packages/types';
+import Big from 'big.js';
 import { lastValueFrom } from 'rxjs';
 
 import {
   MoexAssetHistoryPrice,
+  MoexAssetInfo,
+  MoexAssetInfoResponse,
+  MoexBlock,
   MoexColumnsVariants,
-  MoexHistoryColumns,
+  MoexColumnValue,
   MoexHistoryData,
-  MoexMarketData,
 } from '@/modules/moex/moex.types';
 
 // https://iss.moex.com/iss/reference/
@@ -16,63 +19,134 @@ import {
 const CURRENCY = 'RUB';
 
 @Injectable()
-export class MoexService implements OnModuleInit {
+export class MoexService {
   private readonly logger = new Logger(MoexService.name);
+  private readonly baseUrl = 'https://iss.moex.com/iss';
   private readonly marketUrl =
-    'https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json';
+    `${this.baseUrl}/engines/stock/markets/shares/boards/TQBR/securities.json`;
   private readonly historyBaseUrl =
-    'https://iss.moex.com/iss/history/engines/stock/markets/shares/boards/TQBR/securities';
+    `${this.baseUrl}/history/engines/stock/markets/shares/boards/TQBR/securities`;
 
   constructor(private readonly httpService: HttpService) {}
 
-  async onModuleInit() {
-    this.logger.log('MoexService initialized');
+  async getMarketData(tickers: string[]): Promise<MoexAssetInfo[]> {
+    this.logger.log(`Fetching prices for ${tickers.length} tickers`);
 
-    // const res = await this.getPrices(['SBER', 'GAZP']);
-    //
-    // this.logger.log(res);
+    if (tickers.length === 0) return [];
+
+    try {
+      const url = `${this.marketUrl}?securities=${tickers.join(',')}&iss.meta=off&iss.only=securities,marketdata`;
+
+      const response = await lastValueFrom(this.httpService.get<MoexAssetInfoResponse>(url));
+      return this._parseMarketDataResponse(response.data);
+    } catch (error) {
+      this.logger.error('Error fetching data', error);
+      throw error;
+    }
   }
 
-  async getPrices(tickers: string[]): Promise<MoexAssetHistoryPrice[]> {
+  async getTopTickers(limit = 100): Promise<string[]> {
     try {
-      const url = `${this.marketUrl}?securities=${tickers.join(',')}&iss.meta=off&iss.only=marketdata`;
+      this.logger.log(`Fetching top ${limit} tickers from MOEX`);
 
-      const response = await lastValueFrom(this.httpService.get<MoexMarketData>(url));
+      const url = `${this.marketUrl}?iss.meta=off&iss.only=marketdata`;
+      const response = await lastValueFrom(this.httpService.get<MoexAssetInfoResponse>(url));
       const marketData = response.data.marketdata;
 
-      this.logger.log(`Fetched ${tickers.length} prices from MOEX`);
-
-      const columns = marketData.columns;
-      const dataRows = marketData.data;
-
-      const tickerIndex = columns.indexOf(MoexColumnsVariants.SECID);
-      const timeIndex = columns.indexOf(MoexColumnsVariants.SYSTIME);
-      const openIndex = columns.indexOf(MoexColumnsVariants.OPEN);
-      const lowIndex = columns.indexOf(MoexColumnsVariants.LOW);
-      const highIndex = columns.indexOf(MoexColumnsVariants.HIGH);
-      const lastPriceIndex = columns.indexOf(MoexColumnsVariants.LAST);
-      const volumeIndex = columns.indexOf(MoexColumnsVariants.VALTODAY);
-
-      return dataRows.map((row) => {
-        const ticker = row[tickerIndex] as string;
-        const lastPrice = row[lastPriceIndex] as number;
-        const sysTime = row[timeIndex] as string;
-
-        return {
-          symbol: ticker,
-          date: sysTime ? new Date(sysTime) : new Date(),
-          open: (row[openIndex] as number)?.toString() || lastPrice?.toString() || '0',
-          high: (row[highIndex] as number)?.toString() || lastPrice?.toString() || '0',
-          low: (row[lowIndex] as number)?.toString() || lastPrice?.toString() || '0',
-          close: lastPrice?.toString() || '0',
-          volume: (row[volumeIndex] as number)?.toString() || '0',
-          currencyCode: CURRENCY,
-          type: AssetType.STOCK,
-        };
+      const tickersWithCap = this._mapData(marketData, (getValue) => {
+        const symbol = this._mapString(getValue(MoexColumnsVariants.SECID));
+        const capitalization = this._mapPrice(getValue(MoexColumnsVariants.ISSUECAPITALIZATION));
+        return { symbol, capitalization };
       });
+
+      return tickersWithCap
+        .sort((a, b) => (b.capitalization.gt(a.capitalization) ? 1 : -1))
+        .slice(0, limit)
+        .map((t) => t.symbol);
     } catch (error) {
-      this.logger.error('Error fetching data from MOEX', error);
-      throw error;
+      this.logger.error('Error fetching top tickers', error);
+      return [];
+    }
+  }
+
+  private _parseMarketDataResponse(data: MoexAssetInfoResponse): MoexAssetInfo[] {
+    const marketData = data.marketdata;
+    const securities = data.securities;
+
+    const infoMap = this._mapData(securities, (getValue) => {
+      const symbol = this._mapString(getValue(MoexColumnsVariants.SECID));
+      const name = this._mapString(getValue(MoexColumnsVariants.SEQNAME));
+      const shortName = this._mapString(getValue(MoexColumnsVariants.SHORTNAME));
+      const lotSize = this._mapPrice(getValue(MoexColumnsVariants.LOTSIZE));
+      const isin = this._mapString(getValue(MoexColumnsVariants.ISIN));
+
+      return {
+        symbol,
+        name,
+        shortName,
+        lotSize,
+        isin,
+      };
+    });
+
+    const priceMap = this._mapData(marketData, (getValue) => {
+      const symbol = this._mapString(getValue(MoexColumnsVariants.SECID));
+      const lastPrice = this._mapPrice(getValue(MoexColumnsVariants.LAST));
+      const date = this._mapDate(getValue(MoexColumnsVariants.SYSTIME)) ?? new Date();
+      const open = this._mapPrice(getValue(MoexColumnsVariants.OPEN));
+      const high = this._mapPrice(getValue(MoexColumnsVariants.HIGH));
+      const low = this._mapPrice(getValue(MoexColumnsVariants.LOW));
+      const close = this._mapPrice(getValue(MoexColumnsVariants.CLOSE));
+      const volume = this._mapPrice(getValue(MoexColumnsVariants.VOLUME));
+      const changePercent = this._mapPrice(getValue(MoexColumnsVariants.LASTCHANGEPRCNT));
+
+      return {
+        symbol,
+        lastPrice,
+        date,
+        open,
+        high,
+        low,
+        close,
+        volume,
+        changePercent,
+      };
+    });
+
+    return priceMap.map((priceInfo) => {
+      const info = infoMap.find((p) => p.symbol === priceInfo.symbol);
+
+      return {
+        ...info,
+        ...priceInfo,
+        lastPrice: priceInfo?.lastPrice,
+        currencyCode: CURRENCY,
+        type: AssetType.STOCK,
+      };
+    });
+  }
+
+  async getAssetInfo(ticker: string) {
+    try {
+      this.logger.log(`Fetching info for ${ticker}`);
+
+      const boardsUrl = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}.json?iss.meta=off&iss.only=securities`;
+      const boardsData = await lastValueFrom(this.httpService.get(boardsUrl));
+
+      const securities = boardsData.data.securities;
+
+      if (!securities || !securities.data.length) return null;
+
+      return this._mapData(boardsData.data, (row, idx) => ({
+        ticker: row[idx[MoexColumnsVariants.SECID]],
+        name: row[idx[MoexColumnsVariants.SEQNAME]], // "Сбербанк России ПАО ао"
+        shortName: row[idx[MoexColumnsVariants.SHORTNAME]], // "Сбербанк"
+        lotSize: row[idx[MoexColumnsVariants.LOTSIZE]], // Например, 10
+        isin: row[idx[MoexColumnsVariants.ISIN]], // Уникальный код (RU0009029540)
+      }))[0];
+    } catch (error) {
+      this.logger.warn(`Info not found for ${ticker}`);
+      return null;
     }
   }
 
@@ -82,34 +156,67 @@ export class MoexService implements OnModuleInit {
     to: DateString,
   ): Promise<MoexAssetHistoryPrice[]> {
     try {
+      this.logger.log(`Fetching history for ${ticker}`);
+
       const url = `${this.historyBaseUrl}/${ticker}.json?from=${from}&till=${to}&iss.meta=off&iss.only=history`;
       const response = await lastValueFrom(this.httpService.get<MoexHistoryData>(url));
       const historyData = response.data.history;
 
-      const columns = historyData.columns;
-      const dataRows = historyData.data;
-
-      const dateIndex = columns.indexOf(MoexHistoryColumns.TRADEDATE);
-      const openIndex = columns.indexOf(MoexHistoryColumns.OPEN);
-      const highIndex = columns.indexOf(MoexHistoryColumns.HIGH);
-      const lowIndex = columns.indexOf(MoexHistoryColumns.LOW);
-      const closeIndex = columns.indexOf(MoexHistoryColumns.CLOSE);
-      const volumeIndex = columns.indexOf(MoexHistoryColumns.VOLUME);
-
-      return dataRows.map((row) => ({
+      return this._mapData(historyData, (row, idx) => ({
         symbol: ticker,
-        date: new Date(row[dateIndex] as string),
-        open: (row[openIndex] as number)?.toString() || '0',
-        high: (row[highIndex] as number)?.toString() || '0',
-        low: (row[lowIndex] as number)?.toString() || '0',
-        close: (row[closeIndex] as number)?.toString() || '0',
-        volume: (row[volumeIndex] as number)?.toString() || '0',
+        date: new Date(row[idx[MoexColumnsVariants.TRADEDATE]] as string),
+        open: (row[idx[MoexColumnsVariants.OPEN]] as number)?.toString() || '0',
+        high: (row[idx[MoexColumnsVariants.HIGH]] as number)?.toString() || '0',
+        low: (row[idx[MoexColumnsVariants.LOW]] as number)?.toString() || '0',
+        close: (row[idx[MoexColumnsVariants.CLOSE]] as number)?.toString() || '0',
+        volume: (row[idx[MoexColumnsVariants.VOLUME]] as number)?.toString() || '0',
         currencyCode: CURRENCY,
+        changePercent: (row[idx[MoexColumnsVariants.LASTCHANGEPRCNT]] as number)?.toString() || '0',
         type: AssetType.STOCK,
       }));
     } catch (error) {
-      this.logger.error(`Error fetching history for ${ticker} from MOEX`, error);
+      this.logger.error(`Error fetching history for ${ticker}`, error);
       throw error;
     }
+  }
+
+  private _mapData<T>(
+    block: MoexBlock,
+    transform: (
+      getValue: (column: MoexColumnsVariants) => MoexColumnValue,
+      row: MoexColumnValue[],
+    ) => T,
+  ): T[] {
+    const { columns, data } = block;
+
+    const columnsMap = columns.reduce(
+      (acc, col, index) => {
+        acc[col] = index;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    return data.map((row) => {
+      const getValue = (column: MoexColumnsVariants): MoexColumnValue => {
+        return row[columnsMap[column]];
+      };
+
+      return transform(getValue, row);
+    });
+  }
+
+  private _mapPrice(value: MoexColumnValue) {
+    return new Big(value ?? 0);
+  }
+
+  private _mapDate(value: MoexColumnValue) {
+    if (value === null) return null;
+
+    return new Date(value);
+  }
+
+  private _mapString(value: MoexColumnValue) {
+    return value ? String(value) : '';
   }
 }

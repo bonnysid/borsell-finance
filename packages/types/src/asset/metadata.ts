@@ -10,6 +10,9 @@ export type StockMetadata = {
   exchange?: string; // NASDAQ
   sector?: string; // Technology
   dividendYield?: number; // % дивидендов
+  lotSize?: string | number;
+  shortName?: string;
+  source?: string;
 };
 
 // 3. Специфика для Крипты (Crypto)

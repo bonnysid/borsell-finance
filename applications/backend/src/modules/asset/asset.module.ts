@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { DatabaseModule } from '@/database';
 import { CurrencyModule } from '@/modules/currency/currency.module';
+import { MoexModule } from '@/modules/moex/moex.module';
 import { PortfolioEntity } from '@/modules/portfolio/entities';
 import { UserModule } from '@/modules/user/user.module';
 
@@ -37,6 +38,7 @@ import {
     HttpModule,
     CurrencyModule,
     UserModule,
+    MoexModule,
   ],
   providers: [
     AssetSeederService,

@@ -1,4 +1,5 @@
 import { AssetType, CurrencyCode, NumberString } from '@packages/types';
+import Big from 'big.js';
 
 export enum MoexColumnsVariants {
   SECID = 'SECID',
@@ -14,7 +15,10 @@ export enum MoexColumnsVariants {
   LOW = 'LOW',
   HIGH = 'HIGH',
   LAST = 'LAST',
+  SEQNAME = 'SEQNAME',
+  ISIN = 'ISIN',
   LASTCHANGE = 'LASTCHANGE',
+  LOTSIZE = 'LOTSIZE',
   LASTCHANGEPRCNT = 'LASTCHANGEPRCNT',
   QTY = 'QTY',
   VALUE = 'VALUE',
@@ -57,46 +61,34 @@ export enum MoexColumnsVariants {
   VALTODAY_RUR = 'VALTODAY_RUR',
   TRADINGSESSION = 'TRADINGSESSION',
   TRENDISSUECAPITALIZATION = 'TRENDISSUECAPITALIZATION',
-}
 
-export enum MoexHistoryColumns {
-  BOARDID = 'BOARDID',
   TRADEDATE = 'TRADEDATE',
   SHORTNAME = 'SHORTNAME',
-  SECID = 'SECID',
-  NUMTRADES = 'NUMTRADES',
-  VALUE = 'VALUE',
-  OPEN = 'OPEN',
-  LOW = 'LOW',
-  HIGH = 'HIGH',
   LEGALCLOSEPRICE = 'LEGALCLOSEPRICE',
-  WAPRICE = 'WAPRICE',
   CLOSE = 'CLOSE',
   VOLUME = 'VOLUME',
-  MARKETPRICE2 = 'MARKETPRICE2',
   MARKETPRICE3 = 'MARKETPRICE3',
   ADMITTEDQUOTE = 'ADMITTEDQUOTE',
   MP2VALTRD = 'MP2VALTRD',
   MARKETPRICE3TRADESVALUE = 'MARKETPRICE3TRADESVALUE',
   ADMITTEDVALUE = 'ADMITTEDVALUE',
   WAVAL = 'WAVAL',
-  TRADINGSESSION = 'TRADINGSESSION',
 }
 
 export type MoexColumnValue = string | number | null;
 
-export type MoexMarketData = {
-  marketdata: {
-    columns: MoexColumnsVariants[];
-    data: MoexColumnValue[][];
-  };
+export type MoexBlock = {
+  columns: MoexColumnsVariants[];
+  data: MoexColumnValue[][];
+};
+
+export type MoexAssetInfoResponse = {
+  marketdata: MoexBlock;
+  securities: MoexBlock;
 };
 
 export type MoexHistoryData = {
-  history: {
-    columns: MoexHistoryColumns[];
-    data: MoexColumnValue[][];
-  };
+  history: MoexBlock;
 };
 
 export type MoexAssetHistoryPrice = {
@@ -107,6 +99,27 @@ export type MoexAssetHistoryPrice = {
   low: NumberString;
   close: NumberString;
   volume: NumberString;
+  currencyCode: CurrencyCode;
+  changePercent: NumberString;
+  type: AssetType;
+};
+
+export type MoexAssetInfo = {
+  symbol: string;
+  isin?: string;
+  name?: string;
+  shortName?: string;
+  lotSize?: Big.Big;
+  date: Date;
+
+  open: Big.Big;
+  high: Big.Big;
+  low: Big.Big;
+  close: Big.Big;
+  lastPrice: Big.Big;
+  volume: Big.Big;
+  changePercent: Big.Big;
+
   currencyCode: CurrencyCode;
   type: AssetType;
 };
