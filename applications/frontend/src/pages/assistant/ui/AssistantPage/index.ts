@@ -1,3 +1,3 @@
-import { lazy } from 'react';
+import AssistantPage from './AssistantPage';
 
-export const AssistantPage = lazy(() => import('./AssistantPage'));
+export default AssistantPage;

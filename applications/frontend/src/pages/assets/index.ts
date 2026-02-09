@@ -1,1 +1,3 @@
-export * from './ui';
+import AssetsPage from './ui';
+
+export default AssetsPage;

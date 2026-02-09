@@ -1,3 +1,3 @@
-import { lazy } from 'react';
+import TransactionsPage from './TransactionsPage';
 
-export const TransactionsPage = lazy(() => import('./TransactionsPage'));
+export default TransactionsPage;

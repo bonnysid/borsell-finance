@@ -1,1 +1,3 @@
-export * from './TransactionsPage';
+import TransactionsPage from './TransactionsPage';
+
+export default TransactionsPage;

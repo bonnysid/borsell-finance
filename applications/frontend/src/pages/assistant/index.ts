@@ -1,1 +1,3 @@
-export * from './ui';
+import AssistantPage from './ui';
+
+export default AssistantPage;
