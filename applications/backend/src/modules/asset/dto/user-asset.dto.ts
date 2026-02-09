@@ -1,4 +1,5 @@
 import { AssetDtoShape, CurrencyCode, ID, NumberString, UserAssetDtoShape } from '@packages/types';
+import Big from 'big.js';
 
 import { UserAssetEntity } from '../entities';
 import { AssetDto } from './asset.dto';
@@ -15,6 +16,7 @@ export class UserAssetDto implements UserAssetDtoShape {
   totalInvested: NumberString;
   totalWithdrawn: NumberString;
   realizedPnl: NumberString;
+  unrealizedPnl: NumberString;
 
   note?: string;
   meta?: Record<string, any>;
@@ -33,6 +35,10 @@ export class UserAssetDto implements UserAssetDtoShape {
     this.totalInvested = userAsset.totalInvested;
     this.totalWithdrawn = userAsset.totalWithdrawn;
     this.realizedPnl = userAsset.realizedPnl;
+    this.unrealizedPnl = new Big(this.asset.cachedMarketPrice)
+      .minus(this.avgBuyPrice)
+      .mul(this.quantity)
+      .toFixed(8);
 
     this.note = userAsset.note;
     this.meta = userAsset.meta;

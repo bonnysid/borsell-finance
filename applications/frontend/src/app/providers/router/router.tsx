@@ -1,10 +1,10 @@
-import { AuthLayout, Layout, PrivateLayout } from '@app/ui';
 import { AppRoutePaths, AppRoutes } from '@shared/router';
 import { lazy } from 'react';
 import { Navigate } from 'react-router';
 import { createBrowserRouter } from 'react-router-dom';
 
 import { AuthGuard, GuestGuard } from './guards';
+import { AuthLayout, Layout, PrivateLayout } from './layouts';
 
 const SignInPage = lazy(() => import('@pages/sign-in'));
 const SignUpPage = lazy(() => import('@pages/sign-up'));

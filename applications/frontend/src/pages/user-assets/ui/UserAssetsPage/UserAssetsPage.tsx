@@ -60,10 +60,17 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
         render: (value, { currencyCode }) => <AmountText amount={value} currency={currencyCode} />,
       },
       {
+        key: 'unrealizedPnl',
+        title: t('UnrealizedPnL'),
+        render: (unrealizedPnl, { currencyCode }) => (
+          <AmountText amount={unrealizedPnl} currency={currencyCode} />
+        ),
+      },
+      {
         key: 'realizedPnl',
         title: t('RealizedPnL'),
-        render: (avgBuyPrice, { currencyCode }) => (
-          <AmountText amount={avgBuyPrice} currency={currencyCode} />
+        render: (realizedPnl, { currencyCode }) => (
+          <AmountText amount={realizedPnl} currency={currencyCode} />
         ),
       },
       {

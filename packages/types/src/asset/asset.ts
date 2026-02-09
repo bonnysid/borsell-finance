@@ -48,6 +48,7 @@ export type UserAssetDtoShape = {
   totalInvested: NumberString;
   totalWithdrawn: NumberString;
   realizedPnl: NumberString;
+  unrealizedPnl: NumberString;
 
   note?: string;
   meta?: Record<string, any>;
