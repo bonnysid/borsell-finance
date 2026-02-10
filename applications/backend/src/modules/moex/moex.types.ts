@@ -49,6 +49,7 @@ export enum MoexColumnsVariants {
   TIME = 'TIME',
   HIGHBID = 'HIGHBID',
   LOWOFFER = 'LOWOFFER',
+  PREVWAPRICE = 'PREVWAPRICE',
   PRICEMINUSPREVWAPRICE = 'PRICEMINUSPREVWAPRICE',
   OPENPERIODPRICE = 'OPENPERIODPRICE',
   SEQNUM = 'SEQNUM',
@@ -62,10 +63,10 @@ export enum MoexColumnsVariants {
   TRADINGSESSION = 'TRADINGSESSION',
   TRENDISSUECAPITALIZATION = 'TRENDISSUECAPITALIZATION',
 
+  PREVDATE = 'PREVDATE',
   TRADEDATE = 'TRADEDATE',
   SHORTNAME = 'SHORTNAME',
   LEGALCLOSEPRICE = 'LEGALCLOSEPRICE',
-  CLOSE = 'CLOSE',
   VOLUME = 'VOLUME',
   MARKETPRICE3 = 'MARKETPRICE3',
   ADMITTEDQUOTE = 'ADMITTEDQUOTE',
@@ -101,6 +102,7 @@ export type MoexAssetHistoryPrice = {
   volume: NumberString;
   currencyCode: CurrencyCode;
   changePercent: NumberString;
+  prevWaPrice?: NumberString;
   type: AssetType;
 };
 
@@ -117,6 +119,8 @@ export type MoexAssetInfo = {
   low: Big.Big;
   close: Big.Big;
   lastPrice: Big.Big;
+  prevWaPrice?: Big.Big;
+  prevDate?: Date | null;
   volume: Big.Big;
   changePercent: Big.Big;
 

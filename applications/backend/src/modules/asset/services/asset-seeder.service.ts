@@ -11,7 +11,7 @@ import { AssetUpdaterService } from './asset-updater.service';
 export class AssetSeederService implements OnModuleInit {
   private readonly logger = new Logger(AssetSeederService.name);
 
-  private readonly initialTickers = ['SBER', 'GAZP', 'LKOH', 'NVTK', 'YNDX', 'ROSN', 'CHMF'];
+  private readonly initialTickers = ['SBER', 'GAZP', 'LKOH', 'NVTK', 'YDEX', 'ROSN', 'CHMF'];
 
   constructor(
     @InjectRepository(AssetEntity)
@@ -35,12 +35,12 @@ export class AssetSeederService implements OnModuleInit {
     });
 
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const symbolsToUpdate = tickers.filter((symbol) => {
       const asset = existingAssets.find((a) => a.symbol === symbol);
       if (!asset) return true;
-      return asset.lastPriceUpdateAt < oneDayAgo;
+      return asset.lastPriceUpdateAt < today;
     });
 
     if (symbolsToUpdate.length <= 0) {

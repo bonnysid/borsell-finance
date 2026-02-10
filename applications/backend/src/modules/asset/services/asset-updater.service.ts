@@ -5,6 +5,7 @@ import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
+import { formatDateToSqlDate } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
@@ -34,7 +35,7 @@ export class AssetUpdaterService {
     this.logger.log('🚀 Start updating assets from MOEX...');
 
     const assets = await this.assetRepo.find({
-      where: { metadata: { source: 'MOEX' } as any },
+      where: { metadata: { source: 'MOEX' } },
     });
 
     if (assets.length === 0) {
@@ -66,6 +67,21 @@ export class AssetUpdaterService {
       try {
         const data = await this.moexService.getMarketData(chunk);
 
+        const currentChunkAssets = existingAssets.filter((a) => chunk.includes(a.symbol));
+        const assetIds = currentChunkAssets.map((a) => a.id);
+        const prevDates = data.map((it) => it.prevDate).filter((d): d is Date => !!d);
+
+        const existingHistory =
+          assetIds.length > 0 && prevDates.length > 0
+            ? await this.assetPriceHistoryRepo.find({
+                where: {
+                  asset: { id: In(assetIds) },
+                  date: In(prevDates),
+                },
+                relations: ['asset'],
+              })
+            : [];
+
         for (const it of data) {
           let asset = existingAssets.find((a) => a.symbol === it.symbol);
 
@@ -91,11 +107,35 @@ export class AssetUpdaterService {
 
           assetsToSave.push(asset);
 
+          if (it.prevDate && it.prevWaPrice && it.prevWaPrice.gt(0)) {
+            const itPrevDateStr = formatDateToSqlDate(it.prevDate);
+            const prevHistoryItem = existingHistory.find((h) => {
+              return h.asset?.id === asset?.id && formatDateToSqlDate(h.date) === itPrevDateStr;
+            });
+
+            if (prevHistoryItem) {
+              if (!prevHistoryItem.closePrice || Number(prevHistoryItem.closePrice) === 0) {
+                prevHistoryItem.closePrice = it.prevWaPrice.toFixed(8);
+                historyItems.push(prevHistoryItem);
+              }
+            } else {
+              historyItems.push(
+                this.assetPriceHistoryRepo.create({
+                  asset,
+                  currencyCode: asset.currencyCode,
+                  date: it.prevDate,
+                  closePrice: it.prevWaPrice.toFixed(8),
+                  source: 'MOEX',
+                }),
+              );
+            }
+          }
+
           const historyItem = this.assetPriceHistoryRepo.create({
             asset,
             currencyCode: asset.currencyCode,
             date: it.date,
-            closePrice: it.close?.toFixed(8) ?? it.lastPrice.toFixed(8),
+            closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
             openPrice: it.open?.toFixed(8),
             highPrice: it.high?.toFixed(8),
             lowPrice: it.low?.toFixed(8),

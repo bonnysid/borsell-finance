@@ -79,6 +79,8 @@ export class MoexService {
       const shortName = this._mapString(getValue(MoexColumnsVariants.SHORTNAME));
       const lotSize = this._mapPrice(getValue(MoexColumnsVariants.LOTSIZE));
       const isin = this._mapString(getValue(MoexColumnsVariants.ISIN));
+      const prevWaPrice = this._mapPrice(getValue(MoexColumnsVariants.PREVWAPRICE));
+      const prevDate = this._mapDate(getValue(MoexColumnsVariants.PREVDATE));
 
       return {
         symbol,
@@ -86,6 +88,8 @@ export class MoexService {
         shortName,
         lotSize,
         isin,
+        prevWaPrice,
+        prevDate,
       };
     });
 
@@ -96,7 +100,7 @@ export class MoexService {
       const open = this._mapPrice(getValue(MoexColumnsVariants.OPEN));
       const high = this._mapPrice(getValue(MoexColumnsVariants.HIGH));
       const low = this._mapPrice(getValue(MoexColumnsVariants.LOW));
-      const close = this._mapPrice(getValue(MoexColumnsVariants.CLOSE));
+      const close = this._mapPrice(getValue(MoexColumnsVariants.CLOSEPRICE));
       const volume = this._mapPrice(getValue(MoexColumnsVariants.VOLUME));
       const changePercent = this._mapPrice(getValue(MoexColumnsVariants.LASTCHANGEPRCNT));
 
@@ -168,7 +172,8 @@ export class MoexService {
         open: (row[idx[MoexColumnsVariants.OPEN]] as number)?.toString() || '0',
         high: (row[idx[MoexColumnsVariants.HIGH]] as number)?.toString() || '0',
         low: (row[idx[MoexColumnsVariants.LOW]] as number)?.toString() || '0',
-        close: (row[idx[MoexColumnsVariants.CLOSE]] as number)?.toString() || '0',
+        close: (row[idx[MoexColumnsVariants.CLOSEPRICE]] as number)?.toString() || '0',
+        prevWaPrice: (row[idx[MoexColumnsVariants.PREVWAPRICE]] as number)?.toString() || '0',
         volume: (row[idx[MoexColumnsVariants.VOLUME]] as number)?.toString() || '0',
         currencyCode: CURRENCY,
         changePercent: (row[idx[MoexColumnsVariants.LASTCHANGEPRCNT]] as number)?.toString() || '0',
