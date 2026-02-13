@@ -1,12 +1,7 @@
-import {
-  ApplyAssetOperationDtoShape,
-  CurrencyCode,
-  ID,
-  UserAssetOperationType,
-} from '@packages/types';
+import { CreateTransactionDtoShape, CurrencyCode, ID, TransactionType } from '@packages/types';
 import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from 'class-validator';
 
-export class ApplyAssetOperationDto implements ApplyAssetOperationDtoShape {
+export class CreateTransactionDto implements CreateTransactionDtoShape {
   @IsUUID()
   @IsNotEmpty()
   assetId: ID;
@@ -14,7 +9,7 @@ export class ApplyAssetOperationDto implements ApplyAssetOperationDtoShape {
   @IsNumber()
   @IsNotEmpty()
   @IsPositive()
-  amount: number;
+  price: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -25,7 +20,7 @@ export class ApplyAssetOperationDto implements ApplyAssetOperationDtoShape {
   @IsNotEmpty()
   currencyCode: CurrencyCode;
 
-  @IsEnum(UserAssetOperationType)
+  @IsEnum(TransactionType)
   @IsNotEmpty()
-  type: UserAssetOperationType;
+  type: TransactionType;
 }

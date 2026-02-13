@@ -1,4 +1,4 @@
-import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
+import { CurrencyCode, ID, NumberString, TransactionType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -9,14 +9,14 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { AmountColumn, DateColumn, QuantityColumn } from '@/common/columns';
-import { UserAssetEntity } from '@/modules/asset/entities/user-asset.entity';
+import { AmountColumn, DateColumn, PriceColumn, QuantityColumn } from '@/common/columns';
 import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
 import { CurrencyEntity } from '@/modules/currency/entities';
+import { UserAssetEntity } from '@/modules/user-asset/entities';
 
-@Entity('user_asset_operations')
+@Entity('transactions')
 @Index(['userAssetId', 'executedAt'])
-export class UserAssetOperationEntity {
+export class TransactionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -25,19 +25,22 @@ export class UserAssetOperationEntity {
 
   @ManyToOne(
     () => UserAssetEntity,
-    (portfolio) => portfolio.operations,
+    (portfolio) => portfolio.transactions,
   )
   @JoinColumn({ name: 'userAssetId' })
   userAsset: UserAssetEntity;
 
-  @Column({ type: 'enum', enum: UserAssetOperationType })
-  type: UserAssetOperationType;
+  @Column({ type: 'enum', enum: TransactionType })
+  type: TransactionType;
 
   @QuantityColumn()
   quantity: NumberString;
 
   @AmountColumn()
   amount: NumberString;
+
+  @PriceColumn()
+  price: NumberString;
 
   @CurrencyRelationColumn()
   currency: CurrencyEntity;

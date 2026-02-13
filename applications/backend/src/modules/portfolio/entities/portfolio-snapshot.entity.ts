@@ -17,6 +17,9 @@ export class PortfolioSnapshotEntity {
   )
   portfolio: PortfolioEntity;
 
+  @PriceColumn()
+  marketPrice: NumberString;
+
   // Общая рыночная стоимость всех активов на эту дату
   @PriceColumn()
   costBasis: NumberString;

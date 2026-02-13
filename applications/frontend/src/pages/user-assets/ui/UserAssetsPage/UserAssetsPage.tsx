@@ -11,7 +11,7 @@ import { AssetCell, useGetUserAssets } from '@entities/assets';
 import { DeleteUserAssetModal } from '@features/delete-user-asset';
 import { ID, UserAssetDtoShape } from '@packages/types';
 import { PageTitle, PageWrapper } from '@shared/ui';
-import { AmountText } from '@shared/ui/AmountText';
+import { AmountText, AmountTextTypes } from '@shared/ui/AmountText';
 import { FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,18 +60,39 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
         render: (value, { currencyCode }) => <AmountText amount={value} currency={currencyCode} />,
       },
       {
+        key: 'cost',
+        title: t('TotalCost'),
+        render: (value, { currencyCode }) => <AmountText amount={value} currency={currencyCode} />,
+      },
+      {
         key: 'unrealizedPnl',
         title: t('UnrealizedPnL'),
-        render: (unrealizedPnl, { currencyCode }) => (
-          <AmountText amount={unrealizedPnl} currency={currencyCode} />
-        ),
+        render: (unrealizedPnl, { currencyCode }) => {
+          const numUnrealizedPnl = Number(unrealizedPnl);
+          const type =
+            numUnrealizedPnl > 0
+              ? AmountTextTypes.POSITIVE
+              : numUnrealizedPnl === 0
+                ? AmountTextTypes.DEFAULT
+                : AmountTextTypes.NEGATIVE;
+
+          return <AmountText amount={unrealizedPnl} currency={currencyCode} type={type} />;
+        },
       },
       {
         key: 'realizedPnl',
         title: t('RealizedPnL'),
-        render: (realizedPnl, { currencyCode }) => (
-          <AmountText amount={realizedPnl} currency={currencyCode} />
-        ),
+        render: (realizedPnl, { currencyCode }) => {
+          const numRealizedPnl = Number(realizedPnl);
+          const type =
+            numRealizedPnl > 0
+              ? AmountTextTypes.POSITIVE
+              : numRealizedPnl === 0
+                ? AmountTextTypes.DEFAULT
+                : AmountTextTypes.NEGATIVE;
+
+          return <AmountText amount={realizedPnl} currency={currencyCode} type={type} />;
+        },
       },
       {
         key: 'custom-column-delete',

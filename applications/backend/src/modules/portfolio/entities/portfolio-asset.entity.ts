@@ -7,8 +7,7 @@ import {
 } from 'typeorm';
 
 import { PortfolioEntity } from '@/modules/portfolio/entities';
-
-import { UserAssetEntity } from './user-asset.entity';
+import { UserAssetEntity } from '@/modules/user-asset/entities';
 
 @Entity('portfolio_assets')
 export class PortfolioAssetEntity {

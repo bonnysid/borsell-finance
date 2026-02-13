@@ -1,6 +1,6 @@
-import { PortfolioAssetDtoShape } from '../asset';
 import { CurrencyCode } from '../currency';
 import { DateString, ID } from '../shared';
+import { PortfolioAssetDtoShape } from './portfolio-asset';
 
 export enum PortfolioType {
   MAIN = 'MAIN', // Реальный портфель

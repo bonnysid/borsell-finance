@@ -1,0 +1,13 @@
+.transaction-type-cell {
+  &.BUY {
+    color: var(--color-text-success);
+  }
+
+  &.SELL {
+    color: var(--color-text-error);
+  }
+
+  &.TRANSFER_OUT {
+    color: var(--color-text-info);
+  }
+}

@@ -16,6 +16,8 @@
   "AddAsset": "Add asset",
   "Asset": "Asset",
   "Price": "Price",
+  "Amount": "Amount",
+  "Date": "Date",
   "Quantity": "Quantity",
   "Currency": "Currency",
   "Create": "Create",
@@ -27,6 +29,8 @@
   "Delete": "Delete",
   "Cancel": "Cancel",
   "operationType": {
+    "title": "Operation type",
+
     "BUY": "Buy",
     "SELL": "Sell",
     "TRANSFER_OUT": "Transfer out"

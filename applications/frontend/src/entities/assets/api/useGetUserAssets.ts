@@ -3,7 +3,7 @@ import { restService } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
 const getUserAssets = async () => {
-  const res = await restService.GET<TableResponse<UserAssetDtoShape>>('/assets/me');
+  const res = await restService.GET<TableResponse<UserAssetDtoShape>>('/user-assets/');
 
   return res.data;
 };

@@ -1,12 +1,25 @@
 .amount-text {
+  --amount-text-color: var(--color-text-primary);
+  --currency-text-color: var(--color-text-secondary);
+
   display: flex;
   gap: 4px;
+
+  &.positive {
+    --amount-text-color: var(--color-text-success);
+    --currency-text-color: var(--color-success-secondary);
+  }
+
+  &.negative {
+    --amount-text-color: var(--color-text-error);
+    --currency-text-color: var(--color-error-secondary);
+  }
 }
 
 .amount {
-  color: var(--color-text-primary);
+  color: var(--amount-text-color);
 }
 
 .currency {
-  color: var(--color-text-secondary);
+  color: var(--currency-text-color);
 }

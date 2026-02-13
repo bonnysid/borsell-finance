@@ -6,10 +6,11 @@ import {
   FormSelect,
   SelectOption,
 } from '@devbonnysid/ui-kit-default';
-import { useApplyAssetOperation, useGetAssets } from '@entities/assets';
+import { useGetAssets } from '@entities/assets';
 import { useGetAllCurrencies } from '@entities/currency';
+import { useCreateTransaction } from '@entities/transaction';
 import { useGetMe } from '@entities/user';
-import { CurrencyCode, NumberString, UserAssetOperationType } from '@packages/types';
+import { CurrencyCode, NumberString, TransactionType } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { schemeResolver, yupNumberString, yupSelectOption } from '@shared/utils';
@@ -27,17 +28,17 @@ const cx = bindStyles(styles);
 
 type FormValues = {
   assetId: SelectOption;
-  type: SelectOption<UserAssetOperationType>;
+  type: SelectOption<TransactionType>;
   currencyCode?: SelectOption<CurrencyCode>;
-  amount: NumberString;
+  price: NumberString;
   quantity: NumberString;
 };
 
 const validationSchema = yup.object({
   assetId: yupSelectOption().required('Required'),
-  type: yupSelectOption<UserAssetOperationType>().required('Required'),
+  type: yupSelectOption<TransactionType>().required('Required'),
   currencyCode: yupSelectOption<CurrencyCode>(),
-  amount: yupNumberString().required('Required'),
+  price: yupNumberString().required('Required'),
   quantity: yupNumberString().required('Required'),
 });
 
@@ -45,7 +46,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
   const assets = useGetAssets();
   const me = useGetMe();
   const currencies = useGetAllCurrencies();
-  const applyAssetOperation = useApplyAssetOperation();
+  const createTransactionMutation = useCreateTransaction();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -67,8 +68,8 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
     );
   }, [currencies.data]);
 
-  const operationTypeOptions = useMemo<SelectOption<UserAssetOperationType>[]>(() => {
-    return Object.values(UserAssetOperationType).map((it) => ({
+  const operationTypeOptions = useMemo<SelectOption<TransactionType>[]>(() => {
+    return Object.values(TransactionType).map((it) => ({
       label: t(`operationType.${it}`),
       value: it,
     }));
@@ -76,7 +77,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
 
   const form = useForm<FormValues>({
     defaultValues: {
-      amount: '',
+      price: '',
       quantity: '',
       type: operationTypeOptions[0],
       currencyCode: me.data?.currencyCode
@@ -88,11 +89,11 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
 
   const onSubmit = async (value: FormValues) => {
     try {
-      await applyAssetOperation.mutateAsync({
+      await createTransactionMutation.mutateAsync({
         assetId: value.assetId.value,
         currencyCode: value.currencyCode?.value,
         quantity: Number(value.quantity),
-        amount: Number(value.amount),
+        price: Number(value.price),
         type: value.type?.value,
       });
 
@@ -112,7 +113,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
           value: candidate.currencyCode,
           label: candidate.currencyCode,
         });
-        form.setValue('amount', candidate.cachedMarketPrice);
+        form.setValue('price', candidate.cachedMarketPrice);
       }
     }
   }, [asset]);
@@ -131,7 +132,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
 
         <FormInput
           type="number"
-          name="amount"
+          name="price"
           decimals={6}
           caption={t('Price')}
           placeholder={t('Price')}

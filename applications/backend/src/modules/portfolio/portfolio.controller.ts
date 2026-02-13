@@ -5,7 +5,7 @@ import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
 
 import { CreatePortfolioDto, PortfolioDto } from './dto';
-import { PortfolioService } from './portfolio.service';
+import { PortfolioService } from './services';
 
 @UseGuards(AuthGuard)
 @Controller('portfolio')

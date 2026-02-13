@@ -19,6 +19,8 @@
   "Quantity": "Количество",
   "Currency": "Валюта",
   "Create": "Создать",
+  "Amount": "Сумма",
+  "Date": "Дата",
   "AvgBuyPrice": "Ср. Цена покупки",
   "RealizedPnL": "Фактический PnL",
   "UnrealizedPnL": "Потенциальный PnL",
@@ -27,6 +29,8 @@
   "Delete": "Удалить",
   "Cancel": "Отменить",
   "operationType": {
+    "title": "Тип операции",
+
     "BUY": "Покупка",
     "SELL": "Продажа",
     "TRANSFER_OUT": "Вывод"

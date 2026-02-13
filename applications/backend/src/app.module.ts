@@ -10,7 +10,9 @@ import { CurrencyModule } from '@/modules/currency/currency.module';
 import { MoexModule } from '@/modules/moex/moex.module';
 import { PortfolioModule } from '@/modules/portfolio/portfolio.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
+import { TransactionModule } from '@/modules/transaction/transaction.module';
 import { UserModule } from '@/modules/user/user.module';
+import { UserAssetModule } from '@/modules/user-asset/user-asset.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -29,6 +31,8 @@ import { AppService } from './app.service';
     MoexModule,
     AssetModule,
     PortfolioModule,
+    TransactionModule,
+    UserAssetModule,
   ],
   controllers: [AppController],
   providers: [AppService],

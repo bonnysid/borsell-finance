@@ -1,6 +1,6 @@
 import { DateString, ID, PortfolioAssetDtoShape, UserAssetDtoShape } from '@packages/types';
 
-import { UserAssetDto } from '@/modules/asset/dto/user-asset.dto';
+import { UserAssetDto } from '@/modules/user-asset/dto';
 
 import { PortfolioAssetEntity } from '../entities';
 

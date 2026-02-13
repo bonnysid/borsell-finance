@@ -1,4 +1,4 @@
-import { CurrencyCode, ID, PortfolioType } from '@packages/types';
+import { CurrencyCode, ID, NumberString, PortfolioType } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
@@ -9,9 +9,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { PortfolioAssetEntity } from '@/modules/asset/entities';
+import { DateColumn, PriceColumn } from '@/common';
 import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
 import { CurrencyEntity } from '@/modules/currency/entities';
+import { PortfolioAssetEntity } from '@/modules/portfolio/entities/portfolio-asset.entity';
 import { UserEntity } from '@/modules/user/entities';
 
 import { PortfolioSnapshotEntity } from './portfolio-snapshot.entity';
@@ -40,17 +41,25 @@ export class PortfolioEntity {
   @Column({ type: 'enum', enum: PortfolioType, default: PortfolioType.MAIN })
   type: PortfolioType;
 
-  // @PriceColumn()
-  // cachedTotalValue: NumberString;
-  //
-  // @PriceColumn()
-  // buyPrice: NumberString;
-  //
-  // @NumericColumn()
-  // cachedDailyChangePercent: NumberString; // Изменение стоимости за 24 часа в %
-  //
-  // @DateColumn({ nullable: true })
-  // lastValuationAt: Date;
+  @PriceColumn()
+  marketPrice: NumberString;
+
+  @PriceColumn()
+  costBasis: NumberString;
+
+  @PriceColumn()
+  totalInvested: NumberString;
+
+  // Общая сумма, которую пользователь вывел (выводы)
+  @PriceColumn()
+  totalWithdrawn: NumberString;
+
+  // Прибыль/Убыток за период от начала инвестирования
+  @PriceColumn()
+  realizedPnl: NumberString;
+
+  @DateColumn({ nullable: true })
+  lastValuationAt: Date;
 
   @OneToMany(
     () => PortfolioAssetEntity,

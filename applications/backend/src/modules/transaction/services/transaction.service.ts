@@ -1,50 +1,64 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { CurrencyCode, ID, NumberString, UserAssetOperationType } from '@packages/types';
+import { CurrencyCode, ID, NumberString, TransactionType } from '@packages/types';
 import Big from 'big.js';
-import { DataSource, DeleteResult, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
-import { UserAssetEntity, UserAssetOperationEntity } from '../entities';
+import { UserAssetEntity } from '@/modules/user-asset/entities';
 
-export type ApplyOperationDto = {
+import { GetTransactionsDto } from '../dto';
+import { TransactionEntity } from '../entities';
+
+export type CreateTransactionDto = {
   userId: ID;
   assetId: ID;
   currencyCode: CurrencyCode;
-  type: UserAssetOperationType;
+  type: TransactionType;
   quantity: NumberString;
-  amount: NumberString;
+  price: NumberString;
   executedAt: Date;
 };
 
 @Injectable()
-export class UserAssetService {
+export class TransactionService {
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
-    @InjectRepository(UserAssetEntity)
-    private readonly userAssetRepo: Repository<UserAssetEntity>,
+    @InjectRepository(TransactionEntity)
+    private readonly transactionRepo: Repository<TransactionEntity>,
   ) {}
 
-  async getUserAssets(userId: ID): Promise<UserAssetEntity[]> {
-    return this.userAssetRepo.find({ where: { user: { id: userId } }, relations: ['asset'] });
+  async getTransactions(
+    userId: ID,
+    query: GetTransactionsDto,
+  ): Promise<[TransactionEntity[], number]> {
+    const { page = 1, limit = 20, assetId, type, currencyCode } = query;
+    const skip = (page - 1) * limit;
+
+    const qb = this.transactionRepo
+      .createQueryBuilder('op')
+      .innerJoinAndSelect('op.userAsset', 'ua')
+      .leftJoinAndSelect('ua.asset', 'asset')
+      .where('ua.userId = :userId', { userId });
+
+    if (assetId) {
+      qb.andWhere('ua.assetId = :assetId', { assetId });
+    }
+
+    if (type) {
+      qb.andWhere('op.type = :type', { type });
+    }
+
+    if (currencyCode) {
+      qb.andWhere('op.currencyCode = :currencyCode', { currencyCode });
+    }
+
+    qb.orderBy('op.executedAt', 'DESC').addOrderBy('op.createdAt', 'DESC').skip(skip).take(limit);
+
+    return qb.getManyAndCount();
   }
 
-  async getUserAsset(id: ID): Promise<UserAssetEntity | null> {
-    return this.userAssetRepo.findOne({ where: { id } });
-  }
-
-  async getUserAssetsByIds(userId: ID, ids: ID[]): Promise<UserAssetEntity[]> {
-    return this.userAssetRepo.find({
-      where: { user: { id: userId }, id: In(ids) },
-      relations: ['asset'],
-    });
-  }
-
-  async deleteUserAsset(userId: ID, userAssetId: ID): Promise<DeleteResult> {
-    return await this.userAssetRepo.delete({ user: { id: userId }, id: userAssetId });
-  }
-
-  async applyOperation(dto: ApplyOperationDto) {
+  async createTransaction(dto: CreateTransactionDto) {
     return this.dataSource.transaction(async (manager) => {
       // 1) get/create агрегат с lock
       let ua = await manager.findOne(UserAssetEntity, {
@@ -71,12 +85,17 @@ export class UserAssetService {
         ua = await manager.save(ua);
       }
 
+      const dQty = new Big(dto.quantity);
+      const dPrice = new Big(dto.price);
+      const dAmount = dQty.mul(dPrice);
+
       // 2) сохраняем операцию
-      const op = manager.create(UserAssetOperationEntity, {
+      const op = manager.create(TransactionEntity, {
         userAssetId: ua.id,
         type: dto.type,
         quantity: dto.quantity,
-        amount: dto.amount,
+        price: dto.price,
+        amount: dAmount.toFixed(8),
         executedAt: dto.executedAt,
         currencyCode: dto.currencyCode,
       });
@@ -90,11 +109,8 @@ export class UserAssetService {
       const withdrawn = new Big(ua.totalWithdrawn);
       const realized = new Big(ua.realizedPnl);
 
-      const dQty = new Big(dto.quantity);
-      const dPrice = new Big(dto.amount);
-
-      if (dto.type === UserAssetOperationType.BUY) {
-        const addCost = dQty.mul(dPrice);
+      if (dto.type === TransactionType.BUY) {
+        const addCost = dAmount;
         const newQty = qty.plus(dQty);
         const newCostBasis = costBasis.plus(addCost);
         const newAvg = newQty.eq(0) ? new Big(0) : newCostBasis.div(newQty);
@@ -103,7 +119,7 @@ export class UserAssetService {
         ua.costBasis = newCostBasis.toFixed(8);
         ua.avgBuyPrice = newAvg.toFixed(8);
         ua.totalInvested = invested.plus(addCost).toFixed(8);
-      } else if (dto.type === UserAssetOperationType.TRANSFER_OUT) {
+      } else if (dto.type === TransactionType.TRANSFER_OUT) {
         if (dQty.gt(qty)) throw new Error('Not enough quantity to transfer');
 
         const transferredCost = avg.mul(dQty);
@@ -124,7 +140,7 @@ export class UserAssetService {
       } else {
         if (dQty.gt(qty)) throw new Error('Not enough quantity to sell');
 
-        const proceeds = dQty.mul(dPrice);
+        const proceeds = dAmount;
         const soldCost = avg.mul(dQty);
 
         const newQty = qty.minus(dQty);

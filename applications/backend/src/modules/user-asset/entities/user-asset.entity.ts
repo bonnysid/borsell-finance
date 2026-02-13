@@ -10,13 +10,12 @@ import {
 } from 'typeorm';
 
 import { PriceColumn, QuantityColumn } from '@/common/columns';
-import { UserAssetOperationEntity } from '@/modules/asset/entities/user-asset-operation.entity';
+import { AssetEntity } from '@/modules/asset/entities';
 import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
 import { CurrencyEntity } from '@/modules/currency/entities';
+import { PortfolioAssetEntity } from '@/modules/portfolio/entities';
+import { TransactionEntity } from '@/modules/transaction/entities/transaction.entity';
 import { UserEntity } from '@/modules/user/entities';
-
-import { AssetEntity } from './asset.entity';
-import { PortfolioAssetEntity } from './portfolio-asset.entity';
 
 @Entity('user_assets')
 export class UserAssetEntity {
@@ -40,10 +39,10 @@ export class UserAssetEntity {
   portfolioAssets: PortfolioAssetEntity[];
 
   @OneToMany(
-    () => UserAssetOperationEntity,
+    () => TransactionEntity,
     (asset) => asset.userAsset,
   )
-  operations: UserAssetOperationEntity[];
+  transactions: TransactionEntity[];
 
   @CurrencyRelationColumn()
   currency: CurrencyEntity;

@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { CONFIG } from '@/config';
 import { UserJWT } from '@/express';
 import { SingInDto, SingUpDto } from '@/modules/auth/dto';
-import { PortfolioService } from '@/modules/portfolio/portfolio.service';
+import { PortfolioService } from '@/modules/portfolio/services';
 import { UserService } from '@/modules/user/user.service';
 
 import { RefreshTokenService } from './refresh-token.service';

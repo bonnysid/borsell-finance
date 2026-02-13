@@ -1,23 +1,23 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AssetModule } from '@/modules/asset/asset.module';
 import { CurrencyModule } from '@/modules/currency/currency.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
+import { UserAssetModule } from '@/modules/user-asset/user-asset.module';
 
-import { PortfolioEntity, PortfolioSnapshotEntity } from './entities';
+import { PortfolioAssetEntity, PortfolioEntity, PortfolioSnapshotEntity } from './entities';
 import { PortfolioController } from './portfolio.controller';
-import { PortfolioService } from './portfolio.service';
+import { PortfolioAssetService, PortfolioService } from './services';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PortfolioEntity, PortfolioSnapshotEntity]),
+    TypeOrmModule.forFeature([PortfolioEntity, PortfolioSnapshotEntity, PortfolioAssetEntity]),
     CurrencyModule,
     SettingsModule,
-    AssetModule,
+    UserAssetModule,
   ],
   controllers: [PortfolioController],
-  providers: [PortfolioService],
-  exports: [PortfolioService],
+  providers: [PortfolioService, PortfolioAssetService],
+  exports: [PortfolioService, PortfolioAssetService],
 })
 export class PortfolioModule {}

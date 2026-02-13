@@ -8,12 +8,12 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
     caption: 'Dashboard',
     icon: 'grid',
   },
-  {
-    id: 'Portfolio',
-    to: AppRoutePaths.PORTFOLIO(),
-    caption: 'Portfolio',
-    icon: 'folder',
-  },
+  // {
+  //   id: 'Portfolio',
+  //   to: AppRoutePaths.PORTFOLIO(),
+  //   caption: 'Portfolio',
+  //   icon: 'folder',
+  // },
   {
     id: 'Assistant',
     to: AppRoutePaths.ASSISTANT(),

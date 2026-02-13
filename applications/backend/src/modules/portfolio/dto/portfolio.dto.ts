@@ -7,9 +7,8 @@ import {
   PortfolioType,
 } from '@packages/types';
 
-import { PortfolioAssetDto } from '@/modules/asset/dto';
-
 import { PortfolioEntity } from '../entities';
+import { PortfolioAssetDto } from './portfolio-asset.dto';
 
 export class PortfolioDto implements PortfolioDtoShape {
   id: ID;

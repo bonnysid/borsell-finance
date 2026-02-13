@@ -4,12 +4,13 @@ import { ID } from '@packages/types';
 import Big from 'big.js';
 import { Repository } from 'typeorm';
 
-import { PortfolioAssetService, UserAssetService } from '@/modules/asset/services';
 import { CurrencyConverterService } from '@/modules/currency/services';
+import { CreatePortfolioDto } from '@/modules/portfolio/dto';
+import { PortfolioEntity, PortfolioSnapshotEntity } from '@/modules/portfolio/entities';
 import { SettingsService } from '@/modules/settings/services';
+import { UserAssetService } from '@/modules/user-asset/services';
 
-import { CreatePortfolioDto } from './dto';
-import { PortfolioEntity, PortfolioSnapshotEntity } from './entities';
+import { PortfolioAssetService } from './protfolio-asset.service';
 
 @Injectable()
 export class PortfolioService {

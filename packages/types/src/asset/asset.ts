@@ -36,45 +36,6 @@ export type AssetDtoShape = {
   updatedAt: DateString;
 };
 
-export type UserAssetDtoShape = {
-  id: ID;
-
-  asset: AssetDtoShape;
-
-  currencyCode: CurrencyCode;
-  quantity: NumberString;
-  avgBuyPrice: NumberString;
-  costBasis: NumberString;
-  totalInvested: NumberString;
-  totalWithdrawn: NumberString;
-  realizedPnl: NumberString;
-  unrealizedPnl: NumberString;
-
-  note?: string;
-  meta?: Record<string, any>;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type PortfolioAssetDtoShape = {
-  id: ID;
-
-  portfolioId: ID;
-  userAsset: UserAssetDtoShape;
-
-  createdAt: DateString;
-  updatedAt: DateString;
-};
-
-export type ApplyAssetOperationDtoShape = {
-  assetId: ID;
-  currencyCode?: CurrencyCode;
-  type: UserAssetOperationType;
-  quantity: number;
-  amount: number;
-};
-
 export type AssetPriceHistoryDtoShape = {
   id: ID;
   timeframe: AssetPriceTimeframe;
@@ -98,35 +59,3 @@ export type AssetPriceHistoryDtoShape = {
   createdAt: DateString;
   updatedAt: DateString;
 };
-
-export type UserAssetInfoItemDtoShape = {
-  id: ID;
-  quantity: NumberString;
-  buyPrice: NumberString;
-  currencyCode: CurrencyCode;
-  createdAt: DateString;
-  updatedAt: DateString;
-};
-
-export type UserAssetInfoDtoShape = {
-  assetId: ID;
-  quantity: NumberString;
-  buyPrice: NumberString;
-
-  type: AssetType;
-  name: string;
-  metadata: AssetMetadata;
-  cachedMarketPrice: NumberString;
-
-  currencyCode: CurrencyCode;
-
-  lastPriceUpdateAt: DateString;
-
-  userAssets: UserAssetInfoItemDtoShape[];
-};
-
-export enum UserAssetOperationType {
-  BUY = 'BUY',
-  SELL = 'SELL',
-  TRANSFER_OUT = 'TRANSFER_OUT',
-}
