@@ -1,5 +1,5 @@
 import { Button, bindStyles, Form, FormInput, Link } from '@devbonnysid/ui-kit-default';
-import { useSignIn } from '@entities/auth';
+import { useSignIn } from '@features/sign-in';
 import { SignInDtoShape } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
 import { FC, useMemo } from 'react';

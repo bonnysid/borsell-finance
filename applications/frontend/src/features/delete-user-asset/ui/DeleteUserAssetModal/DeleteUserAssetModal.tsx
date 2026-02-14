@@ -5,11 +5,11 @@ import {
   Modal,
   ModalSharedProps,
 } from '@devbonnysid/ui-kit-default';
-import { useDeleteUserAsset } from '@entities/assets';
 import { ID } from '@packages/types';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useDeleteUserAsset } from '../../api';
 import styles from './DeleteUserAssetModal.module.scss';
 
 type DeleteUserAssetModalProps = ModalSharedProps & {

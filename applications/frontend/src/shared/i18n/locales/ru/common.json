@@ -28,6 +28,7 @@
   "CostBasis": "Базовая стоимость",
   "Delete": "Удалить",
   "Cancel": "Отменить",
+  "Logout": "Выйти",
   "operationType": {
     "title": "Тип операции",
 

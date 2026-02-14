@@ -1,20 +1,11 @@
-import { AssetDtoShape, TableResponse } from '@packages/types';
-import { restService } from '@shared/api';
+import { ASSETS_QUERY_KEYS } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
-const getAssets = async () => {
-  const res = await restService.GET<TableResponse<AssetDtoShape>>('/assets');
-
-  return res.data;
-};
-
-export const createKeyGetAssets = () => {
-  return ['assets'];
-};
+import { assetsApi } from './AssetsApi';
 
 export const useGetAssets = () => {
   return useQuery({
-    queryKey: createKeyGetAssets(),
-    queryFn: getAssets,
+    queryKey: ASSETS_QUERY_KEYS.assetsList(),
+    queryFn: assetsApi.getAssets,
   });
 };

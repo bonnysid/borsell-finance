@@ -1,5 +1,5 @@
 import { Button, bindStyles, Form, FormInput, Link } from '@devbonnysid/ui-kit-default';
-import { useSignUp } from '@entities/auth';
+import { useSignUp } from '@features/sign-up';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { SignUpDtoShape } from '@packages/types';
 import { handleApiError } from '@shared/api/handleApiError';

@@ -28,6 +28,7 @@
   "CostBasis": "Cost Basis",
   "Delete": "Delete",
   "Cancel": "Cancel",
+  "Logout": "Logout",
   "operationType": {
     "title": "Operation type",
 
