@@ -16,8 +16,11 @@ export class UserAssetService {
     return this.userAssetRepo.find({ where: { user: { id: userId } }, relations: ['asset'] });
   }
 
-  async getUserAsset(id: ID): Promise<UserAssetEntity | null> {
-    return this.userAssetRepo.findOne({ where: { id } });
+  async getUserAsset(userId: ID, assetId: ID): Promise<UserAssetEntity | null> {
+    return this.userAssetRepo.findOne({
+      where: { id: assetId, user: { id: userId } },
+      relations: ['asset'],
+    });
   }
 
   async getUserAssetsByIds(userId: ID, ids: ID[]): Promise<UserAssetEntity[]> {

@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
-import { TableResponse } from '@packages/types';
+import { Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { ID, TableResponse } from '@packages/types';
 import { Response } from 'express';
 
 import { AuthGuard, CurrentUser } from '@/common';
@@ -7,7 +7,7 @@ import { UserJWT } from '@/express';
 import { CurrencyConverterService } from '@/modules/currency/services';
 import { UserService } from '@/modules/user/user.service';
 
-import { AssetDto } from './dto';
+import { AssetDto, AssetHistoryQueryDto, AssetPriceHistoryDto } from './dto';
 import { AssetService, AssetUpdaterService } from './services';
 
 @Controller('assets')
@@ -53,6 +53,23 @@ export class AssetController {
     };
 
     res.status(200).json(result);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/:id/history')
+  async getAssetHistory(
+    @Param('id') id: ID,
+    @Query() query: AssetHistoryQueryDto,
+    @Res() res?: Response,
+  ) {
+    const history = await this.appService.getAssetPriceHistory(id, query);
+
+    const result = history.map((h) => new AssetPriceHistoryDto(h));
+
+    if (res) {
+      return res.status(200).json(result);
+    }
+    return result;
   }
 
   @UseGuards(AuthGuard)
