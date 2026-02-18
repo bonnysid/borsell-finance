@@ -10,10 +10,12 @@ import {
 import { AssetCell, useGetUserAssets } from '@entities/assets';
 import { DeleteUserAssetModal } from '@features/delete-user-asset';
 import { ID, UserAssetDtoShape } from '@packages/types';
+import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { AmountText, AmountTextTypes } from '@shared/ui/AmountText';
 import { FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 import { EmptyUserAssets } from '../EmptyUserAssets';
 import styles from './UserAssetsPage.module.scss';
@@ -27,6 +29,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
   const isEmpty = data?.totalItems === 0;
   const { t } = useTranslation();
   const [userAssetIdToDelete, setUserAssetIdToDelete] = useState<ID | null>(null);
+  const navigate = useNavigate();
 
   const columns = useMemo<TableColumnType<UserAssetDtoShape>[]>(() => {
     return [
@@ -119,6 +122,10 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
     setUserAssetIdToDelete(null);
   };
 
+  const handleRowClick = (record: UserAssetDtoShape) => {
+    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.asset.symbol }));
+  };
+
   return (
     <PageWrapper className={cx('user-assets-page')}>
       <PageTitle>{t('Assets')}</PageTitle>
@@ -130,6 +137,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
         isLoading={isLoading}
         isFetching={isFetching}
         isEmpty={isEmpty}
+        onRowClick={handleRowClick}
         emptyPlug={<EmptyUserAssets />}
       />
 

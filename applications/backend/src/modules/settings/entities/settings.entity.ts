@@ -2,6 +2,7 @@ import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } fro
 
 export enum SettingKey {
   BASE_CURRENCY_CODE = 'base_currency_code',
+  LAST_TOP_TICKERS_SYNC_AT = 'last_top_tickers_sync_at',
 }
 
 @Entity('settings')

@@ -59,3 +59,9 @@ export type AssetPriceHistoryDtoShape = {
   createdAt: DateString;
   updatedAt: DateString;
 };
+
+export type AssetPriceHistoryQueryDtoShape = {
+  from?: Date;
+  to?: Date;
+  timeframe?: AssetPriceTimeframe;
+};

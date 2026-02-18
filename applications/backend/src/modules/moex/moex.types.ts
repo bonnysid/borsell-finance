@@ -1,4 +1,4 @@
-import { AssetType, CurrencyCode, NumberString } from '@packages/types';
+import { AssetType, CurrencyCode } from '@packages/types';
 import Big from 'big.js';
 
 export enum MoexColumnsVariants {
@@ -28,6 +28,7 @@ export enum MoexColumnsVariants {
   WAPTOPREVWAPRICEPRCNT = 'WAPTOPREVWAPRICEPRCNT',
   WAPTOPREVWAPRICE = 'WAPTOPREVWAPRICE',
   CLOSEPRICE = 'CLOSEPRICE',
+  CLOSE = 'CLOSE',
   MARKETPRICETODAY = 'MARKETPRICETODAY',
   MARKETPRICE = 'MARKETPRICE',
   LASTTOPREVPRICE = 'LASTTOPREVPRICE',
@@ -92,18 +93,34 @@ export type MoexHistoryData = {
   history: MoexBlock;
 };
 
+export type MoexCandlesType = {
+  id: string;
+  slug: string;
+  type: string;
+  data: [number, number, number, number, number][]; // [timestamp, open, high, low, close]
+};
+
+export type MoexVolumesType = {
+  id: string;
+  slug: string;
+  type: string;
+  data: [number, number][]; // [timestamp, volume]
+};
+
+export type MoexChartResponse = {
+  candles: MoexCandlesType[];
+  volumes?: MoexVolumesType[];
+};
+
 export type MoexAssetHistoryPrice = {
   symbol: string;
   date: Date;
-  open: NumberString;
-  high: NumberString;
-  low: NumberString;
-  close: NumberString;
-  volume: NumberString;
+  open: Big.Big;
+  high: Big.Big;
+  low: Big.Big;
+  close: Big.Big;
+  volume: Big.Big;
   currencyCode: CurrencyCode;
-  changePercent: NumberString;
-  prevWaPrice?: NumberString;
-  type: AssetType;
 };
 
 export type MoexAssetInfo = {

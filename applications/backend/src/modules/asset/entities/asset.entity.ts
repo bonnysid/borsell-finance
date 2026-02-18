@@ -22,7 +22,7 @@ export class AssetEntity {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ unique: true })
   symbol: string;
 
   @Column({ type: 'jsonb', default: {} })

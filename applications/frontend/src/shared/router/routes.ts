@@ -13,6 +13,7 @@ export enum AppRoutes {
   PORTFOLIO_CREATE = '/portfolio/create',
 
   ASSETS = '/assets',
+  ASSETS_DETAILS = '/assets/:symbol',
   ASSETS_ME = '/assets/me',
   ASSETS_OPERATIONS = '/assets/operations',
   ASSETS_OPERATIONS_CREATE = '/assets/operations/create',

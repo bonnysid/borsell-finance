@@ -9,9 +9,9 @@ import {
   MoexAssetInfo,
   MoexAssetInfoResponse,
   MoexBlock,
+  MoexChartResponse,
   MoexColumnsVariants,
   MoexColumnValue,
-  MoexHistoryData,
 } from '@/modules/moex/moex.types';
 
 // https://iss.moex.com/iss/reference/
@@ -154,33 +154,88 @@ export class MoexService {
     }
   }
 
+  async getAssetPriceHistory(ticker: string): Promise<MoexAssetHistoryPrice[]> {
+    try {
+      this.logger.log(`Fetching last 500 daily candles for ${ticker}`);
+
+      // interval=24 (Дневные свечи), candles=500 (Лимит)
+      const url = `https://iss.moex.com/cs/engines/stock/markets/shares/boardgroups/57/securities/${ticker}.hs?s1.type=candles&interval=24&candles=500`;
+
+      this.logger.log(`URL: ${url}`);
+
+      const response = await lastValueFrom(this.httpService.get<MoexChartResponse>(url));
+
+      const candlesData = response.data.candles?.[0]?.data || [];
+      const volumesData = response.data.volumes?.[0]?.data || [];
+
+      const volumeMap = new Map<number, number>();
+      for (const [timestamp, volume] of volumesData) {
+        volumeMap.set(timestamp, volume);
+      }
+
+      // Собираем итоговый массив
+      return candlesData.map(([timestamp, open, high, low, close]) => {
+        const volume = volumeMap.get(timestamp) || 0;
+
+        return {
+          symbol: ticker,
+          date: new Date(timestamp), // MOEX отдает timestamp в миллисекундах
+          open: new Big(open),
+          high: new Big(high),
+          low: new Big(low),
+          close: new Big(close),
+          volume: new Big(volume),
+          currencyCode: CURRENCY,
+        };
+      });
+    } catch (error) {
+      this.logger.error(`Error fetching 500 candles for ${ticker}`, error);
+      throw error;
+    }
+  }
+
   async getAssetHistory(
     ticker: string,
     from: DateString,
     to: DateString,
   ): Promise<MoexAssetHistoryPrice[]> {
     try {
-      this.logger.log(`Fetching history for ${ticker}`);
+      this.logger.log(`Fetching chart history for ${ticker}`);
 
-      const url = `${this.historyBaseUrl}/${ticker}.json?from=${from}&till=${to}&iss.meta=off&iss.only=history`;
-      const response = await lastValueFrom(this.httpService.get<MoexHistoryData>(url));
-      const historyData = response.data.history;
+      // interval=24 (1 день), interval=7 (1 неделя)
+      const url = `https://iss.moex.com/cs/engines/stock/markets/shares/boardgroups/57/securities/${ticker}.hs?s1.type=candles&interval=24&from=${from}&till=${to}`;
 
-      return this._mapData(historyData, (row, idx) => ({
-        symbol: ticker,
-        date: new Date(row[idx[MoexColumnsVariants.TRADEDATE]] as string),
-        open: (row[idx[MoexColumnsVariants.OPEN]] as number)?.toString() || '0',
-        high: (row[idx[MoexColumnsVariants.HIGH]] as number)?.toString() || '0',
-        low: (row[idx[MoexColumnsVariants.LOW]] as number)?.toString() || '0',
-        close: (row[idx[MoexColumnsVariants.CLOSEPRICE]] as number)?.toString() || '0',
-        prevWaPrice: (row[idx[MoexColumnsVariants.PREVWAPRICE]] as number)?.toString() || '0',
-        volume: (row[idx[MoexColumnsVariants.VOLUME]] as number)?.toString() || '0',
-        currencyCode: CURRENCY,
-        changePercent: (row[idx[MoexColumnsVariants.LASTCHANGEPRCNT]] as number)?.toString() || '0',
-        type: AssetType.STOCK,
-      }));
+      this.logger.log(`URL: ${url}`);
+
+      const response = await lastValueFrom(this.httpService.get<MoexChartResponse>(url));
+
+      const candlesData = response.data.candles?.[0]?.data || [];
+      const volumesData = response.data.volumes?.[0]?.data || [];
+
+      // Создаем словарь объемов { timestamp: volume } для быстрого поиска
+      const volumeMap = new Map<number, number>();
+      for (const [timestamp, volume] of volumesData) {
+        volumeMap.set(timestamp, volume);
+      }
+
+      // Мапим массивы в наш стандартный формат
+      return candlesData.map(([timestamp, open, high, low, close]) => {
+        const volume = volumeMap.get(timestamp) || 0;
+
+        return {
+          symbol: ticker,
+          // API графиков MOEX отдает timestamp в миллисекундах
+          date: new Date(timestamp),
+          open: new Big(open),
+          high: new Big(high),
+          low: new Big(low),
+          close: new Big(close),
+          volume: new Big(volume),
+          currencyCode: CURRENCY,
+        };
+      });
     } catch (error) {
-      this.logger.error(`Error fetching history for ${ticker}`, error);
+      this.logger.error(`Error fetching chart history for ${ticker}`, error);
       throw error;
     }
   }

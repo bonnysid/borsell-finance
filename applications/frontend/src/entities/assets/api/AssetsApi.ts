@@ -1,4 +1,10 @@
-import { AssetDtoShape, ID, TableResponse, UserAssetDtoShape } from '@packages/types';
+import {
+  AssetDtoShape,
+  AssetPriceHistoryQueryDtoShape,
+  ID,
+  TableResponse,
+  UserAssetDtoShape,
+} from '@packages/types';
 import { restService } from '@shared/api';
 
 export class AssetsApi {
@@ -14,6 +20,14 @@ export class AssetsApi {
 
   getUserAssets = async () => {
     const res = await restService.GET<TableResponse<UserAssetDtoShape>>('/user-assets/');
+
+    return res.data;
+  };
+
+  getAssetPriceHistory = async (symbol: string, query?: AssetPriceHistoryQueryDtoShape) => {
+    const res = await restService.GET<AssetPriceHistoryQueryDtoShape>(`/assets/${symbol}/history`, {
+      params: query,
+    });
 
     return res.data;
   };

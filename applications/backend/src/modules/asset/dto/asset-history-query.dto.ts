@@ -1,8 +1,8 @@
-import { AssetPriceTimeframe } from '@packages/types';
+import { AssetPriceHistoryQueryDtoShape, AssetPriceTimeframe } from '@packages/types';
 import { Type } from 'class-transformer';
 import { IsDate, IsEnum, IsOptional } from 'class-validator';
 
-export class AssetHistoryQueryDto {
+export class AssetHistoryQueryDto implements AssetPriceHistoryQueryDtoShape {
   @IsOptional()
   @Type(() => Date)
   @IsDate()

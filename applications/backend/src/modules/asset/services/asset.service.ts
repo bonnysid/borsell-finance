@@ -4,6 +4,7 @@ import { AssetPriceTimeframe, ID } from '@packages/types';
 import { Between, ILike, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
+import { formatDateToSqlDate, isSameDay } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetHistoryQueryDto } from '../dto';
@@ -75,20 +76,23 @@ export class AssetService {
   }
 
   async getAssetPriceHistory(
-    assetId: ID,
+    symbol: string,
     { from, to, timeframe = AssetPriceTimeframe.DAY }: AssetHistoryQueryDto,
   ): Promise<AssetPriceHistoryEntity[]> {
-    const asset = await this.assetRepo.findOne({ where: { id: assetId } });
+    this.logger.log(`Fetching history for asset ${symbol} from ${from} to ${to}`);
+    const asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
     if (!asset) {
-      throw new NotFoundException(`Asset with id ${assetId} not found`);
+      throw new NotFoundException(`Asset with symbol ${symbol} not found`);
     }
 
-    const endDate = to || new Date();
-    const startDate = from || new Date(new Date().setDate(endDate.getDate() - 30));
+    const endDate = new Date(formatDateToSqlDate(to || new Date()));
+    const startDate = new Date(
+      formatDateToSqlDate(from || new Date(new Date().setDate(endDate.getDate() - 30))),
+    );
 
     const localHistory = await this.assetPriceHistoryRepo.find({
       where: {
-        asset: { id: assetId },
+        asset: { symbol: symbol },
         timeframe,
         date: Between(startDate, endDate),
       },
@@ -97,14 +101,14 @@ export class AssetService {
 
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (localHistory.length < diffDays) {
+    if (localHistory.length < diffDays - 2) {
       this.logger.log(
         `Fetching history for ${asset.symbol} from MOEX for period ${startDate.toISOString()} - ${endDate.toISOString()}`,
       );
 
       try {
-        const fromStr = startDate.toISOString().split('T')[0];
-        const toStr = endDate.toISOString().split('T')[0];
+        const fromStr = formatDateToSqlDate(startDate);
+        const toStr = formatDateToSqlDate(endDate);
 
         const moexHistory = await this.moexService.getAssetHistory(asset.symbol, fromStr, toStr);
 
@@ -112,20 +116,18 @@ export class AssetService {
 
         for (const record of moexHistory) {
           // Проверяем, нет ли уже такой записи в БД по дате и таймфрейму
-          const exists = localHistory.find(
-            (h) => h.date.toISOString().split('T')[0] === record.date.toISOString().split('T')[0],
-          );
+          const exists = localHistory.find((h) => isSameDay(h.date, record.date));
 
           if (!exists) {
             const historyEntry = this.assetPriceHistoryRepo.create({
               asset,
               timeframe,
               date: record.date,
-              openPrice: record.open,
-              highPrice: record.high,
-              lowPrice: record.low,
-              closePrice: record.close,
-              volume: record.volume,
+              openPrice: record.open.toFixed(8),
+              highPrice: record.high.toFixed(8),
+              lowPrice: record.low.toFixed(8),
+              closePrice: record.close.toFixed(8),
+              volume: record.volume.toFixed(8),
               currencyCode: record.currencyCode,
               source: 'MOEX',
             });
@@ -139,7 +141,7 @@ export class AssetService {
           // Возвращаем обновленный список
           return this.assetPriceHistoryRepo.find({
             where: {
-              asset: { id: assetId },
+              asset: { symbol: symbol },
               timeframe,
               date: Between(startDate, endDate),
             },

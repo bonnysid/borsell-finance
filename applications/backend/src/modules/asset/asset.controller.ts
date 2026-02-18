@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
-import { ID, TableResponse } from '@packages/types';
+import { TableResponse } from '@packages/types';
 import { Response } from 'express';
 
 import { AuthGuard, CurrentUser } from '@/common';
@@ -55,14 +55,13 @@ export class AssetController {
     res.status(200).json(result);
   }
 
-  @UseGuards(AuthGuard)
-  @Get('/:id/history')
+  @Get('/:symbol/history')
   async getAssetHistory(
-    @Param('id') id: ID,
+    @Param('symbol') symbol: string,
     @Query() query: AssetHistoryQueryDto,
     @Res() res?: Response,
   ) {
-    const history = await this.appService.getAssetPriceHistory(id, query);
+    const history = await this.appService.getAssetPriceHistory(symbol, query);
 
     const result = history.map((h) => new AssetPriceHistoryDto(h));
 

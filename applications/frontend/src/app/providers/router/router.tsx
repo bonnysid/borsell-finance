@@ -14,6 +14,7 @@ const AssistantPage = lazy(() => import('@pages/assistant'));
 const TransactionsPage = lazy(() => import('@pages/transactions'));
 const UserAssetsPage = lazy(() => import('@pages/user-assets'));
 const UserAssetCreatePage = lazy(() => import('@pages/user-asset-create'));
+const AssetDetailsPage = lazy(() => import('@pages/asset-details'));
 
 export const router = createBrowserRouter([
   {
@@ -73,6 +74,10 @@ export const router = createBrowserRouter([
           {
             path: AppRoutes.ASSETS_ME,
             element: <UserAssetsPage />,
+          },
+          {
+            path: AppRoutes.ASSETS_DETAILS,
+            element: <AssetDetailsPage />,
           },
           {
             path: AppRoutes.ASSETS_OPERATIONS_CREATE,

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -12,12 +12,8 @@ export class SettingsService {
   ) {}
   private readonly logger = new Logger(SettingsService.name);
 
-  async getRaw(key: SettingKey): Promise<SettingsEntity> {
+  async getRaw(key: SettingKey): Promise<SettingsEntity | null> {
     const setting = await this.settingsRepo.findOne({ where: { key } });
-
-    if (!setting) {
-      throw new NotFoundException(`Setting "${key}" not found`);
-    }
 
     return setting;
   }
@@ -41,9 +37,9 @@ export class SettingsService {
     return this.settingsRepo.save(setting);
   }
 
-  async getString(key: SettingKey): Promise<string> {
-    const { value } = await this.getRaw(key);
-    return value;
+  async getString(key: SettingKey): Promise<string | null> {
+    const raw = await this.getRaw(key);
+    return raw?.value ?? null;
   }
 
   async getNumber(key: SettingKey): Promise<number> {
@@ -57,8 +53,10 @@ export class SettingsService {
     return num;
   }
 
-  async getBoolean(key: SettingKey): Promise<boolean> {
-    const value = (await this.getString(key)).trim().toLowerCase();
+  async getBoolean(key: SettingKey): Promise<boolean | null> {
+    const value = (await this.getString(key))?.trim().toLowerCase();
+
+    if (!value) return null;
 
     if (['true', '1', 'yes', 'y', 'on'].includes(value)) return true;
     if (['false', '0', 'no', 'n', 'off'].includes(value)) return false;
@@ -66,8 +64,12 @@ export class SettingsService {
     throw new BadRequestException(`Setting "${key}" value "${value}" is not a valid boolean`);
   }
 
-  async getJson<T = unknown>(key: SettingKey): Promise<T> {
+  async getJson<T = unknown>(key: SettingKey): Promise<T | null> {
     const value = await this.getString(key);
+
+    if (!value) {
+      return null;
+    }
 
     try {
       return JSON.parse(value) as T;
@@ -81,7 +83,7 @@ export class SettingsService {
   async getBaseCurrencyCode(): Promise<string> {
     const code = await this.getString(SettingKey.BASE_CURRENCY_CODE);
 
-    return code;
+    return code ?? 'USD';
   }
 
   async setBaseCurrency(code: string): Promise<void> {
