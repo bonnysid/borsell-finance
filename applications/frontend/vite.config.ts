@@ -17,6 +17,7 @@ export default defineConfig({
   plugins: [react(), svgr()],
   server: {
     host: true,
+    open: true,
   },
   resolve: {
     alias: {

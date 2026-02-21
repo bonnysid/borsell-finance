@@ -65,3 +65,7 @@ export type AssetPriceHistoryQueryDtoShape = {
   to?: Date;
   timeframe?: AssetPriceTimeframe;
 };
+
+export type AssetCandlesQueryDtoShape = {
+  candles?: number;
+};

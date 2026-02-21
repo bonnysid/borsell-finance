@@ -7,7 +7,7 @@ import { UserJWT } from '@/express';
 import { CurrencyConverterService } from '@/modules/currency/services';
 import { UserService } from '@/modules/user/user.service';
 
-import { AssetDto, AssetHistoryQueryDto, AssetPriceHistoryDto } from './dto';
+import { AssetCandlesQueryDto, AssetDto, AssetHistoryQueryDto, AssetPriceHistoryDto } from './dto';
 import { AssetService, AssetUpdaterService } from './services';
 
 @Controller('assets')
@@ -62,6 +62,22 @@ export class AssetController {
     @Res() res?: Response,
   ) {
     const history = await this.appService.getAssetPriceHistory(symbol, query);
+
+    const result = history.map((h) => new AssetPriceHistoryDto(h));
+
+    if (res) {
+      return res.status(200).json(result);
+    }
+    return result;
+  }
+
+  @Get('/:symbol/candles')
+  async getAssetCandles(
+    @Param('symbol') symbol: string,
+    @Query() query: AssetCandlesQueryDto,
+    @Res() res?: Response,
+  ) {
+    const history = await this.appService.getAssetPriceCandles(symbol, query);
 
     const result = history.map((h) => new AssetPriceHistoryDto(h));
 

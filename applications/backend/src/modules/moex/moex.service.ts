@@ -154,12 +154,12 @@ export class MoexService {
     }
   }
 
-  async getAssetPriceHistory(ticker: string): Promise<MoexAssetHistoryPrice[]> {
+  async getAssetPriceCandles(ticker: string, candles = 500): Promise<MoexAssetHistoryPrice[]> {
     try {
-      this.logger.log(`Fetching last 500 daily candles for ${ticker}`);
+      this.logger.log(`Fetching last ${candles} daily candles for ${ticker}`);
 
       // interval=24 (Дневные свечи), candles=500 (Лимит)
-      const url = `https://iss.moex.com/cs/engines/stock/markets/shares/boardgroups/57/securities/${ticker}.hs?s1.type=candles&interval=24&candles=500`;
+      const url = `https://iss.moex.com/cs/engines/stock/markets/shares/boardgroups/57/securities/${ticker}.hs?s1.type=candles&interval=24&candles=${candles}`;
 
       this.logger.log(`URL: ${url}`);
 

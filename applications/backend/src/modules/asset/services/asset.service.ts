@@ -7,7 +7,7 @@ import YahooFinance from 'yahoo-finance2';
 import { formatDateToSqlDate, isSameDay } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 
-import { AssetHistoryQueryDto } from '../dto';
+import { AssetCandlesQueryDto, AssetHistoryQueryDto } from '../dto';
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 
 @Injectable()
@@ -154,5 +154,80 @@ export class AssetService {
     }
 
     return localHistory;
+  }
+
+  async getAssetPriceCandles(symbol: string, { candles = 500 }: AssetCandlesQueryDto) {
+    const asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
+
+    if (!asset) {
+      throw new NotFoundException(`Asset with symbol ${symbol} not found`);
+    }
+
+    const timeframe = AssetPriceTimeframe.DAY;
+
+    // Сначала ищем в базе
+    const localHistory = await this.assetPriceHistoryRepo.find({
+      where: {
+        asset: { symbol: symbol },
+        timeframe,
+      },
+      order: { date: 'DESC' },
+      take: candles,
+    });
+
+    // Если данных меньше, чем нужно - фетчим из MOEX
+    if (localHistory.length < candles) {
+      this.logger.log(
+        `Insufficient local candles for ${symbol} (found ${localHistory.length}, requested ${candles}). Fetching from MOEX.`,
+      );
+
+      try {
+        const moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
+
+        const newEntities: AssetPriceHistoryEntity[] = [];
+
+        for (const record of moexCandles) {
+          // Проверяем, нет ли уже такой записи в БД по дате
+          const exists = localHistory.some((h) => isSameDay(h.date, record.date));
+
+          if (!exists) {
+            const historyEntry = this.assetPriceHistoryRepo.create({
+              asset,
+              timeframe,
+              date: record.date,
+              openPrice: record.open.toFixed(8),
+              highPrice: record.high.toFixed(8),
+              lowPrice: record.low.toFixed(8),
+              closePrice: record.close.toFixed(8),
+              volume: record.volume.toFixed(8),
+              currencyCode: record.currencyCode,
+              source: 'MOEX',
+            });
+            newEntities.push(historyEntry);
+          }
+        }
+
+        if (newEntities.length > 0) {
+          await this.assetPriceHistoryRepo.save(newEntities);
+
+          // После сохранения перечитываем данные, чтобы вернуть актуальный список нужной длины
+          const updatedHistory = await this.assetPriceHistoryRepo.find({
+            where: {
+              asset: { symbol: symbol },
+              timeframe,
+            },
+            order: { date: 'DESC' },
+            take: candles,
+          });
+
+          return updatedHistory.sort((a, b) => a.date.getTime() - b.date.getTime());
+        }
+      } catch (e) {
+        this.logger.error(`Failed to fetch candles from MOEX for ${asset.symbol}`, e);
+      }
+    }
+
+    // Возвращаем локальную историю, сортируя по возрастанию для графиков
+    return localHistory.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 }
