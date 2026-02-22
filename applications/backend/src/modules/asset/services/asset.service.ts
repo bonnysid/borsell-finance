@@ -185,10 +185,11 @@ export class AssetService {
         const moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
 
         const newEntities: AssetPriceHistoryEntity[] = [];
+        const updatedEntities: AssetPriceHistoryEntity[] = [];
 
         for (const record of moexCandles) {
           // Проверяем, нет ли уже такой записи в БД по дате
-          const exists = localHistory.some((h) => isSameDay(h.date, record.date));
+          const exists = localHistory.find((h) => isSameDay(h.date, record.date));
 
           if (!exists) {
             const historyEntry = this.assetPriceHistoryRepo.create({
@@ -204,7 +205,19 @@ export class AssetService {
               source: 'MOEX',
             });
             newEntities.push(historyEntry);
+          } else {
+            exists.openPrice = record.open.toFixed(8);
+            exists.highPrice = record.high.toFixed(8);
+            exists.lowPrice = record.low.toFixed(8);
+            exists.closePrice = record.close.toFixed(8);
+            exists.volume = record.volume.toFixed(8);
+
+            updatedEntities.push(exists);
           }
+        }
+
+        if (updatedEntities.length > 0) {
+          await this.assetPriceHistoryRepo.save(updatedEntities);
         }
 
         if (newEntities.length > 0) {

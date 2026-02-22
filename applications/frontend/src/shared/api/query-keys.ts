@@ -1,4 +1,4 @@
-import { AssetPriceHistoryQueryDtoShape } from '@packages/types';
+import { AssetCandlesQueryDtoShape, AssetPriceHistoryQueryDtoShape } from '@packages/types';
 
 export const ASSETS_QUERY_KEYS = {
   all: ['assets'] as const,
@@ -8,6 +8,8 @@ export const ASSETS_QUERY_KEYS = {
 
   assetPriceHistory: (symbol: string, query?: AssetPriceHistoryQueryDtoShape) =>
     [...ASSETS_QUERY_KEYS.all, 'history', symbol, query] as const,
+  assetCandles: (symbol: string, query?: AssetCandlesQueryDtoShape) =>
+    [...ASSETS_QUERY_KEYS.all, 'candles', symbol, query] as const,
 
   deleteUserAsset: () => [...ASSETS_QUERY_KEYS.all, 'delete'] as const,
 } as const;

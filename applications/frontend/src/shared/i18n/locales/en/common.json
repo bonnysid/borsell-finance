@@ -38,5 +38,12 @@
   },
   "deleteUserAsset": {
     "title": "Are you sure that you want to delete asset {{symbol}}?"
+  },
+  "chart": {
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "volume": "Volume"
   }
 }
