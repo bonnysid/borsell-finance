@@ -6,6 +6,9 @@ export const ASSETS_QUERY_KEYS = {
   userAssetsList: () => [...ASSETS_QUERY_KEYS.lists(), 'user-assets'] as const,
   assetsList: () => [...ASSETS_QUERY_KEYS.lists(), 'assets'] as const,
 
+  assetInfo: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'info', symbol] as const,
+  assetPrice: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'price', symbol] as const,
+
   assetPriceHistory: (symbol: string, query?: AssetPriceHistoryQueryDtoShape) =>
     [...ASSETS_QUERY_KEYS.all, 'history', symbol, query] as const,
   assetCandles: (symbol: string, query?: AssetCandlesQueryDtoShape) =>

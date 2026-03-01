@@ -69,3 +69,13 @@ export type AssetPriceHistoryQueryDtoShape = {
 export type AssetCandlesQueryDtoShape = {
   candles?: number;
 };
+
+export type AssetPriceDtoShape = {
+  symbol: string;
+  currentPrice: NumberString;
+  previousPrice: NumberString;
+  currencyCode: CurrencyCode;
+  change: NumberString;
+  changePercent: NumberString;
+  lastUpdateAt: DateString;
+};

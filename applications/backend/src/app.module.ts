@@ -7,6 +7,7 @@ import { I18nAppModule } from '@/i18n';
 import { AssetModule } from '@/modules/asset/asset.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { CurrencyModule } from '@/modules/currency/currency.module';
+import { HolidayModule } from '@/modules/holiday/holiday.module';
 import { MoexModule } from '@/modules/moex/moex.module';
 import { PortfolioModule } from '@/modules/portfolio/portfolio.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
@@ -28,6 +29,7 @@ import { AppService } from './app.service';
     UserModule,
     AuthModule,
     CurrencyModule,
+    HolidayModule,
     MoexModule,
     AssetModule,
     PortfolioModule,

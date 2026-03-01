@@ -1,0 +1,21 @@
+.asset-price {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.badge {
+  border-radius: var(--RoundingM);
+  font: var(--font-body-r-12);
+  padding: var(--PaddingXS);
+
+  &.positive {
+    background-color: var(--color-bg-success);
+    color: var(--color-text-success);
+  }
+
+  &.negative {
+    background-color: var(--color-bg-error);
+    color: var(--color-text-error);
+  }
+}

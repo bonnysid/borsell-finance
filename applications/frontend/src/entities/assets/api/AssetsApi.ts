@@ -1,6 +1,7 @@
 import {
   AssetCandlesQueryDtoShape,
   AssetDtoShape,
+  AssetPriceDtoShape,
   AssetPriceHistoryDtoShape,
   AssetPriceHistoryQueryDtoShape,
   ID,
@@ -38,6 +39,18 @@ export class AssetsApi {
     const res = await restService.GET<AssetPriceHistoryDtoShape[]>(`/assets/${symbol}/candles`, {
       params: query,
     });
+
+    return res.data;
+  };
+
+  getAssetInfo = async (symbol: string) => {
+    const res = await restService.GET<AssetDtoShape>(`/assets/${symbol}`);
+
+    return res.data;
+  };
+
+  getAssetPrice = async (symbol: string) => {
+    const res = await restService.GET<AssetPriceDtoShape>(`/assets/${symbol}/price`);
 
     return res.data;
   };

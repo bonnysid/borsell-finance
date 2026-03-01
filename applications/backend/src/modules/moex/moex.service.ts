@@ -8,6 +8,7 @@ import {
   MoexAssetHistoryPrice,
   MoexAssetInfo,
   MoexAssetInfoResponse,
+  MoexAssetInfoWithPriceResponse,
   MoexBlock,
   MoexChartResponse,
   MoexColumnsVariants,
@@ -130,26 +131,34 @@ export class MoexService {
     });
   }
 
-  async getAssetInfo(ticker: string) {
+  async getAssetInfo(ticker: string): Promise<MoexAssetInfo | null> {
     try {
       this.logger.log(`Fetching info for ${ticker}`);
 
-      const boardsUrl = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}.json?iss.meta=off&iss.only=securities`;
-      const boardsData = await lastValueFrom(this.httpService.get(boardsUrl));
+      const boardsUrl = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}.jsonp?iss.meta=off&iss.json=extended&iss.only=marketdata`;
+      const response = await lastValueFrom(
+        this.httpService.get<MoexAssetInfoWithPriceResponse>(boardsUrl),
+      );
 
-      const securities = boardsData.data.securities;
+      const marketdata = response.data[1].marketdata[0];
 
-      if (!securities || !securities.data.length) return null;
+      if (!marketdata) return null;
 
-      return this._mapData(boardsData.data, (row, idx) => ({
-        ticker: row[idx[MoexColumnsVariants.SECID]],
-        name: row[idx[MoexColumnsVariants.SEQNAME]], // "Сбербанк России ПАО ао"
-        shortName: row[idx[MoexColumnsVariants.SHORTNAME]], // "Сбербанк"
-        lotSize: row[idx[MoexColumnsVariants.LOTSIZE]], // Например, 10
-        isin: row[idx[MoexColumnsVariants.ISIN]], // Уникальный код (RU0009029540)
-      }))[0];
+      return {
+        symbol: this._mapString(marketdata.SECID!),
+        lastPrice: this._mapPrice(marketdata.LAST!),
+        date: this._mapDate(marketdata.SYSTIME!) ?? new Date(),
+        open: this._mapPrice(marketdata.OPEN!),
+        high: this._mapPrice(marketdata.HIGH!),
+        low: this._mapPrice(marketdata.LOW!),
+        close: this._mapPrice(marketdata.CLOSE!),
+        volume: this._mapPrice(marketdata.VOLUME!),
+        changePercent: this._mapPrice(marketdata.LASTCHANGEPRCNT!),
+        currencyCode: CURRENCY,
+        type: AssetType.STOCK,
+      };
     } catch (error) {
-      this.logger.warn(`Info not found for ${ticker}`);
+      this.logger.error(`Error fetching info for ${ticker}`, error);
       return null;
     }
   }

@@ -89,6 +89,19 @@ export type MoexAssetInfoResponse = {
   securities: MoexBlock;
 };
 
+export type MoexCharsetInfo = {
+  charsetinfo: {
+    name: string;
+  };
+};
+
+export type MoexAssetInfoWithPrice = {
+  marketdata: Array<Partial<Record<MoexColumnsVariants, MoexColumnValue>>>;
+  securities: Array<Partial<Record<MoexColumnsVariants, MoexColumnValue>>>;
+};
+
+export type MoexAssetInfoWithPriceResponse = [MoexCharsetInfo, MoexAssetInfoWithPrice];
+
 export type MoexHistoryData = {
   history: MoexBlock;
 };
