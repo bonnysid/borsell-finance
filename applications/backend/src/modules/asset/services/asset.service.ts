@@ -4,9 +4,11 @@ import { AssetPriceTimeframe } from '@packages/types';
 import { Between, ILike, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
-import { formatDateToSqlDate, isSameDay } from '@/common/utils/date.utils';
-import { HolidayService } from '@/modules/holiday/services/holiday.service';
+import { formatDateToSqlDate, getDaysDifference, isSameDay } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
+import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
+import { SettingKey } from '@/modules/settings/entities';
+import { SettingsService } from '@/modules/settings/services';
 
 import { AssetCandlesQueryDto, AssetHistoryQueryDto } from '../dto';
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
@@ -22,7 +24,7 @@ export class AssetService {
     @InjectRepository(AssetPriceHistoryEntity)
     private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
     private readonly moexService: MoexService,
-    private readonly holidayService: HolidayService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async searchAssets(query: string): Promise<AssetEntity[]> {
@@ -81,56 +83,25 @@ export class AssetService {
         asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
         asset.lastPriceUpdateAt = assetInfo.date;
         await this.assetRepo.save(asset);
+
+        const currentPrice = assetInfo.lastPrice;
+        const openPrice = assetInfo.open;
+        const change = currentPrice.minus(openPrice);
+        const changePercent = change.div(openPrice).mul(100);
+
+        return {
+          symbol: asset.symbol,
+          currentPrice: asset.cachedMarketPrice,
+          previousPrice: openPrice.toFixed(8),
+          currencyCode: asset.currencyCode,
+          change: change.toFixed(8),
+          changePercent: changePercent.toFixed(2),
+          lastUpdateAt: asset.lastPriceUpdateAt,
+        };
       }
     } catch (e) {
       this.logger.error(`Failed to fetch and update asset info from MOEX for ${symbol}`, e);
     }
-
-    // Получаем последнюю запись из истории (это может быть сегодняшний день, если рынок открыт, или вчерашний)
-    // Нам нужна цена ПРЕДЫДУЩЕГО закрытого дня для расчета изменения.
-    const history = await this.assetPriceHistoryRepo.find({
-      where: {
-        asset: { symbol },
-        timeframe: AssetPriceTimeframe.DAY,
-      },
-      order: { date: 'DESC' },
-      take: 2,
-    });
-
-    const currentPrice = Number.parseFloat(asset.cachedMarketPrice);
-    let previousPrice = currentPrice;
-    let change = 0;
-    let changePercent = 0;
-
-    if (history.length > 0) {
-      // Если у нас есть история, то:
-      // Если первая запись в истории (самая свежая) - это СЕГОДНЯ, то берем вторую запись как "предыдущий день".
-      // Если первая запись - это ВЧЕРА (или раньше), то берем её как "предыдущий день".
-
-      const latestHistoryDate = new Date(history[0].date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      latestHistoryDate.setHours(0, 0, 0, 0);
-
-      if (latestHistoryDate.getTime() === today.getTime() && history.length > 1) {
-        previousPrice = Number.parseFloat(history[1].closePrice);
-      } else {
-        previousPrice = Number.parseFloat(history[0].closePrice);
-      }
-
-      change = currentPrice - previousPrice;
-      changePercent = previousPrice !== 0 ? (change / previousPrice) * 100 : 0;
-    }
-
-    return {
-      symbol: asset.symbol,
-      currentPrice: asset.cachedMarketPrice,
-      previousPrice: previousPrice.toFixed(8),
-      currencyCode: asset.currencyCode,
-      change: change.toFixed(8),
-      changePercent: changePercent.toFixed(2),
-      lastUpdateAt: asset.lastPriceUpdateAt,
-    };
   }
 
   async getStockPrice(ticker: string) {
@@ -233,7 +204,6 @@ export class AssetService {
 
     const timeframe = AssetPriceTimeframe.DAY;
 
-    // Сначала ищем в базе
     const localHistory = await this.assetPriceHistoryRepo.find({
       where: {
         asset: { symbol: symbol },
@@ -243,90 +213,84 @@ export class AssetService {
       take: candles,
     });
 
-    // Проверка на валидность данных (отсутствие дырок)
-    let isDataValid = true;
-    if (localHistory.length > 0) {
-      const sortedLocal = [...localHistory].sort((a, b) => a.date.getTime() - b.date.getTime());
-      for (let i = 0; i < sortedLocal.length - 1; i++) {
-        const currentDate = sortedLocal[i].date;
-        const nextDate = sortedLocal[i + 1].date;
+    const today = new Date();
 
-        const diffTime = Math.abs(nextDate.getTime() - currentDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const lastUpdateSetting = await this.settingsService.getRaw(
+      SettingKey.ASSET_CANDLES_LAST_UPDATE_AT,
+    );
+    const lastUpdateAt = lastUpdateSetting ? new Date(lastUpdateSetting.value) : null;
 
-        // Если разница больше 1 дня, проверяем, не выходные или праздничные ли это дни
-        if (diffDays > 1) {
-          let hasGap = false;
-          for (let d = 1; d < diffDays; d++) {
-            const checkDate = new Date(currentDate.getTime() + d * 24 * 60 * 60 * 1000);
-            const isDayOff = await this.holidayService.isDayOff(checkDate);
+    const needsUpdate = !lastUpdateAt || !isSameDay(lastUpdateAt, today);
 
-            if (!isDayOff) {
-              hasGap = true;
-              break;
-            }
-          }
-
-          if (hasGap) {
-            this.logger.warn(
-              `Found gap in local history for ${symbol} between ${currentDate.toISOString()} and ${nextDate.toISOString()}`,
-            );
-            isDataValid = false;
-            break;
-          }
-        }
-      }
-    }
-
-    // Если данных меньше, чем нужно ИЛИ есть пропуски - фетчим из MOEX
-    if (localHistory.length < candles || !isDataValid) {
+    if (needsUpdate) {
       this.logger.log(
-        `Insufficient or invalid local candles for ${symbol} (found ${localHistory.length}, valid: ${isDataValid}, requested ${candles}). Fetching from MOEX.`,
+        `Checking for new candles for ${symbol}. Last date in DB: ${
+          lastUpdateAt ? formatDateToSqlDate(lastUpdateAt) : 'none'
+        }. Requested: ${candles}`,
       );
 
       try {
-        const moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
+        let moexCandles: MoexAssetHistoryPrice[] = [];
 
-        const newEntities: AssetPriceHistoryEntity[] = [];
-        const updatedEntities: AssetPriceHistoryEntity[] = [];
+        if (!lastUpdateAt) {
+          moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
+        } else {
+          const diff = getDaysDifference(lastUpdateAt);
 
-        for (const record of moexCandles) {
-          // Проверяем, нет ли уже такой записи в БД по дате
-          const exists = localHistory.find((h) => isSameDay(h.date, record.date));
-
-          if (!exists) {
-            const historyEntry = this.assetPriceHistoryRepo.create({
-              asset,
-              timeframe,
-              date: record.date,
-              openPrice: record.open.toFixed(8),
-              highPrice: record.high.toFixed(8),
-              lowPrice: record.low.toFixed(8),
-              closePrice: record.close.toFixed(8),
-              volume: record.volume.toFixed(8),
-              currencyCode: record.currencyCode,
-              source: 'MOEX',
-            });
-            newEntities.push(historyEntry);
-          } else {
-            exists.openPrice = record.open.toFixed(8);
-            exists.highPrice = record.high.toFixed(8);
-            exists.lowPrice = record.low.toFixed(8);
-            exists.closePrice = record.close.toFixed(8);
-            exists.volume = record.volume.toFixed(8);
-
-            updatedEntities.push(exists);
+          if (diff >= 1) {
+            moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, diff + 1);
           }
         }
 
-        if (updatedEntities.length > 0) {
-          await this.assetPriceHistoryRepo.save(updatedEntities);
-        }
+        if (moexCandles.length > 0) {
+          const newEntities: AssetPriceHistoryEntity[] = [];
+          const updatedEntities: AssetPriceHistoryEntity[] = [];
 
-        if (newEntities.length > 0) {
-          await this.assetPriceHistoryRepo.save(newEntities);
+          for (const record of moexCandles) {
+            // Проверяем, нет ли уже такой записи в БД по дате
+            const exists = localHistory.find((h) => isSameDay(h.date, record.date));
 
-          // После сохранения перечитываем данные, чтобы вернуть актуальный список нужной длины
+            if (!exists) {
+              const historyEntry = this.assetPriceHistoryRepo.create({
+                asset,
+                timeframe,
+                date: record.date,
+                openPrice: record.open.toFixed(8),
+                highPrice: record.high.toFixed(8),
+                lowPrice: record.low.toFixed(8),
+                closePrice: record.close.toFixed(8),
+                volume: record.volume.toFixed(8),
+                currencyCode: record.currencyCode,
+                source: 'MOEX',
+              });
+              newEntities.push(historyEntry);
+            } else {
+              // Обновляем существующую (особенно актуально для сегодняшней свечи, которая может меняться)
+              exists.openPrice = record.open.toFixed(8);
+              exists.highPrice = record.high.toFixed(8);
+              exists.lowPrice = record.low.toFixed(8);
+              exists.closePrice = record.close.toFixed(8);
+              exists.volume = record.volume.toFixed(8);
+
+              updatedEntities.push(exists);
+            }
+          }
+
+          if (updatedEntities.length > 0) {
+            await this.assetPriceHistoryRepo.save(updatedEntities);
+          }
+
+          if (newEntities.length > 0) {
+            await this.assetPriceHistoryRepo.save(newEntities);
+          }
+
+          await this.settingsService.setRaw(
+            SettingKey.ASSET_CANDLES_LAST_UPDATE_AT,
+            new Date().toISOString(),
+            'Last time candles were updated from MOEX',
+          );
+
+          // Если были изменения, перечитываем данные
           const updatedHistory = await this.assetPriceHistoryRepo.find({
             where: {
               asset: { symbol: symbol },

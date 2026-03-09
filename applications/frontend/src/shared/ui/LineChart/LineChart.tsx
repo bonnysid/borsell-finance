@@ -75,7 +75,18 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
 
       lineSeriesRef.current.setData(sortedData);
 
-      chartApiRef.current?.timeScale().fitContent();
+      // Устанавливаем видимый диапазон на последний месяц
+      if (sortedData.length > 0) {
+        const lastDataPoint = sortedData[sortedData.length - 1];
+        const lastDate = new Date(lastDataPoint.time);
+        const oneMonthAgo = new Date(lastDate);
+        oneMonthAgo.setMonth(lastDate.getMonth() - 3);
+
+        chartApiRef.current?.timeScale().setVisibleRange({
+          from: oneMonthAgo.toISOString().split('T')[0],
+          to: lastDate.toISOString().split('T')[0],
+        });
+      }
     }
   }, [data, i18n.language]);
 

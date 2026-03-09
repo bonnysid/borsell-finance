@@ -23,6 +23,13 @@ export class UserAssetService {
     });
   }
 
+  async getUserAssetBySymbol(userId: ID, symbol: string): Promise<UserAssetEntity | null> {
+    return this.userAssetRepo.findOne({
+      where: { asset: { symbol }, user: { id: userId } },
+      relations: ['asset'],
+    });
+  }
+
   async getUserAssetsByIds(userId: ID, ids: ID[]): Promise<UserAssetEntity[]> {
     return this.userAssetRepo.find({
       where: { user: { id: userId }, id: In(ids) },

@@ -28,6 +28,7 @@
   "CostBasis": "Базовая стоимость",
   "Delete": "Удалить",
   "Cancel": "Отменить",
+  "MyPosition": "Моя позиция",
   "Logout": "Выйти",
   "operationType": {
     "title": "Тип операции",
@@ -39,6 +40,7 @@
   "deleteUserAsset": {
     "title": "Вы уверены что хотите удалить актив {{symbol}}?"
   },
+  "last_update": "Последнее обновление",
   "chart": {
     "open": "Открытие",
     "high": "Макс",

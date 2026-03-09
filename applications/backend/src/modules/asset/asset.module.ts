@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { DatabaseModule } from '@/database';
 import { CurrencyModule } from '@/modules/currency/currency.module';
-import { HolidayModule } from '@/modules/holiday/holiday.module';
 import { MoexModule } from '@/modules/moex/moex.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
 import { UserModule } from '@/modules/user/user.module';
@@ -19,7 +18,6 @@ import { AssetSeederService, AssetService, AssetUpdaterService } from './service
     TypeOrmModule.forFeature([AssetEntity, AssetPriceHistoryEntity]),
     HttpModule,
     CurrencyModule,
-    HolidayModule,
     UserModule,
     MoexModule,
     SettingsModule,

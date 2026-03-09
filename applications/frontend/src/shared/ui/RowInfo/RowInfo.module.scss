@@ -1,0 +1,12 @@
+.row-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.caption {
+  font: var(--font-body-r-14);
+  color: var(--color-text-secondary);
+}

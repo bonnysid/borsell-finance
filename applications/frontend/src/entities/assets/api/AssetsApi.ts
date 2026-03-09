@@ -27,6 +27,12 @@ export class AssetsApi {
     return res.data;
   };
 
+  getUserAssetBySymbol = async (symbol: string) => {
+    const res = await restService.GET<UserAssetDtoShape>(`/user-assets/${symbol}`);
+
+    return res.data;
+  };
+
   getAssetPriceHistory = async (symbol: string, query?: AssetPriceHistoryQueryDtoShape) => {
     const res = await restService.GET<AssetPriceHistoryDtoShape[]>(`/assets/${symbol}/history`, {
       params: query,

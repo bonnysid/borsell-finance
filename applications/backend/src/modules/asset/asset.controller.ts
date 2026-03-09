@@ -113,6 +113,10 @@ export class AssetController {
   ) {
     const result = await this.appService.getAssetPriceWithChange(symbol);
 
+    if (!result) {
+      throw new NotFoundException('Asset not found');
+    }
+
     const userFromDB = user ? await this.userService.findOne(user?.username) : null;
 
     if (userFromDB) {

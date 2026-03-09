@@ -1,0 +1,12 @@
+import { ASSETS_QUERY_KEYS } from '@shared/api';
+import { useQuery } from '@tanstack/react-query';
+
+import { assetsApi } from './AssetsApi';
+
+export const useGetUserAsset = (symbol: string) => {
+  return useQuery({
+    queryKey: ASSETS_QUERY_KEYS.userAsset(symbol),
+    queryFn: () => assetsApi.getUserAssetBySymbol(symbol),
+    enabled: !!symbol,
+  });
+};

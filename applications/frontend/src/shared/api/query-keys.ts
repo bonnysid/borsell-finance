@@ -4,6 +4,7 @@ export const ASSETS_QUERY_KEYS = {
   all: ['assets'] as const,
   lists: () => [...ASSETS_QUERY_KEYS.all, 'list'] as const,
   userAssetsList: () => [...ASSETS_QUERY_KEYS.lists(), 'user-assets'] as const,
+  userAsset: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'user-asset', symbol] as const,
   assetsList: () => [...ASSETS_QUERY_KEYS.lists(), 'assets'] as const,
 
   assetInfo: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'info', symbol] as const,
