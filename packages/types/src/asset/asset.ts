@@ -27,13 +27,21 @@ export type AssetDtoShape = {
   name: string;
   symbol: string;
   metadata: AssetMetadata;
-  cachedMarketPrice: NumberString;
 
   currencyCode: CurrencyCode;
+  cachedMarketPrice: NumberString;
+  volume: NumberString;
+  changePercent1h: NumberString;
+  changePercent24h: NumberString;
+  changePercent7d: NumberString;
 
   lastPriceUpdateAt: DateString;
   createdAt: DateString;
   updatedAt: DateString;
+};
+
+export type AssetWithHistoryDtoShape = AssetDtoShape & {
+  history: AssetPriceHistoryDtoShape[];
 };
 
 export type AssetPriceHistoryDtoShape = {

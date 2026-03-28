@@ -17,7 +17,7 @@ import { schemeResolver, yupNumberString, yupSelectOption } from '@shared/utils'
 import { FC, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as yup from 'yup';
 
 import styles from './UserAssetCreatePage.module.scss';
@@ -49,6 +49,7 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
   const createTransactionMutation = useCreateTransaction();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const assetOptions = useMemo<SelectOption[]>(() => {
     return (
@@ -104,6 +105,21 @@ export const UserAssetCreatePage: FC<UserAssetCreatePageProps> = ({}) => {
   };
 
   const asset = form.watch('assetId');
+
+  useEffect(() => {
+    const symbol = searchParams.get('symbol');
+
+    if (symbol && assets.data && !asset) {
+      const candidate = assets.data.data.find((it) => it.symbol === symbol);
+
+      if (candidate) {
+        form.setValue('assetId', {
+          value: candidate.id,
+          label: `${candidate.symbol} ${candidate.symbol !== candidate.name ? `(${candidate.name})` : ''}`,
+        });
+      }
+    }
+  }, [assets.data, searchParams]);
 
   useEffect(() => {
     if (assets.data && asset) {

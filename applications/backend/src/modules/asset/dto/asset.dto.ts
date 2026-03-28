@@ -17,9 +17,13 @@ export class AssetDto implements AssetDtoShape {
   name: string;
   symbol: string;
   metadata: AssetMetadata;
-  cachedMarketPrice: NumberString;
 
   currencyCode: CurrencyCode;
+  cachedMarketPrice: NumberString;
+  volume: NumberString;
+  changePercent1h: NumberString;
+  changePercent24h: NumberString;
+  changePercent7d: NumberString;
 
   lastPriceUpdateAt: DateString;
   createdAt: DateString;
@@ -33,6 +37,10 @@ export class AssetDto implements AssetDtoShape {
     this.symbol = asset.symbol;
     this.metadata = asset.metadata;
     this.cachedMarketPrice = asset.cachedMarketPrice;
+    this.volume = asset.volume;
+    this.changePercent1h = asset.changePercent1h;
+    this.changePercent24h = asset.changePercent24h;
+    this.changePercent7d = asset.changePercent7d;
 
     this.currencyCode = asset.currencyCode;
 

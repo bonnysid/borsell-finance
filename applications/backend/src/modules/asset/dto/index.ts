@@ -3,3 +3,5 @@ export * from './asset-candles-query.dto';
 export * from './asset-history-query.dto';
 export * from './asset-price.dto';
 export * from './asset-price-history.dto';
+export * from './asset-query.dto';
+export * from './asset-with-history.dto';

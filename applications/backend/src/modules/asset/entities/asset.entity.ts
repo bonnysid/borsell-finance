@@ -31,6 +31,18 @@ export class AssetEntity {
   @PriceColumn()
   cachedMarketPrice: NumberString;
 
+  @PriceColumn()
+  volume: NumberString;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  changePercent1h: NumberString;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  changePercent24h: NumberString;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  changePercent7d: NumberString;
+
   @DateColumn()
   lastPriceUpdateAt: Date;
 

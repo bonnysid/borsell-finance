@@ -3,4 +3,6 @@ import { resources } from '../i18n';
 
 export type ResourcesType = typeof resources.en;
 
+export type ResourceKeysType = keyof ResourcesType['common'];
+
 export default ResourcesType;

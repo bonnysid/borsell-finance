@@ -13,12 +13,17 @@ import { useDeleteUserAsset } from '../../api';
 import styles from './DeleteUserAssetModal.module.scss';
 
 type DeleteUserAssetModalProps = ModalSharedProps & {
+  symbol: string;
   userAsserId: ID;
 };
 
 const cx = bindStyles(styles);
 
-export const DeleteUserAssetModal: FC<DeleteUserAssetModalProps> = ({ onClose, userAsserId }) => {
+export const DeleteUserAssetModal: FC<DeleteUserAssetModalProps> = ({
+  onClose,
+  userAsserId,
+  symbol,
+}) => {
   const { t } = useTranslation();
   const deleteUserAssetMutation = useDeleteUserAsset();
 
@@ -50,7 +55,7 @@ export const DeleteUserAssetModal: FC<DeleteUserAssetModalProps> = ({ onClose, u
         </div>
       }
     >
-      <div className={cx('title')}>{t('deleteUserAsset.title')}</div>
+      <div className={cx('title')}>{t('deleteUserAsset.title', { symbol })}</div>
     </Modal>
   );
 };

@@ -1,6 +1,7 @@
 import { Accordion, bindStyles, Icon } from '@devbonnysid/ui-kit-default';
 import { SidebarLink } from '@widgets/sidebar';
 import { AnchorHTMLAttributes, ButtonHTMLAttributes, FC, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, To, useMatch } from 'react-router';
 
 import styles from './SidebarMenuItem.module.scss';
@@ -33,6 +34,7 @@ export const SidebarMenuItem: FC<SidebarMenuItemProps> = ({
   const classnames = cn(className, 'sidebar-menu-item', {
     isActive: props.as === 'a' ? Boolean(isRouteMatch) : props.isActive,
   });
+  const { t } = useTranslation();
 
   const renderedIcon = useMemo(() => {
     if (typeof icon === 'string') {
@@ -49,21 +51,22 @@ export const SidebarMenuItem: FC<SidebarMenuItemProps> = ({
     </>
   );
 
+  if (props.subItems?.length) {
+    return (
+      <Accordion header={<div className={classnames}>{content}</div>}>
+        {props.subItems.map((item) => {
+          // @ts-expect-error
+          return <SidebarMenuItem key={item.id} {...item} caption={t(item.caption)} as="a" />;
+        })}
+      </Accordion>
+    );
+  }
+
   if (props.as === 'a') {
     return (
       <NavLink className={classnames} {...props}>
         {content}
       </NavLink>
-    );
-  }
-
-  if (props.subItems?.length) {
-    return (
-      <Accordion header={<div className={classnames}>{content}</div>}>
-        {props.subItems.map((item) => {
-          return <SidebarMenuItem key={item.id} {...item} />;
-        })}
-      </Accordion>
     );
   }
 

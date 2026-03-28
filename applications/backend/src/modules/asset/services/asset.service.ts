@@ -7,10 +7,9 @@ import YahooFinance from 'yahoo-finance2';
 import { formatDateToSqlDate, getDaysDifference, isSameDay } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
-import { SettingKey } from '@/modules/settings/entities';
 import { SettingsService } from '@/modules/settings/services';
 
-import { AssetCandlesQueryDto, AssetHistoryQueryDto } from '../dto';
+import { AssetCandlesQueryDto, AssetHistoryQueryDto, AssetQueryDto } from '../dto';
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 
 @Injectable()
@@ -63,6 +62,68 @@ export class AssetService {
 
   async getAllAssets(): Promise<AssetEntity[]> {
     return this.assetRepo.find({});
+  }
+
+  async getAssetsPaginated(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
+    const { page = 1, limit = 10, search } = query;
+
+    const [assets, count] = await this.assetRepo.findAndCount({
+      where: search ? [{ symbol: ILike(`%${search}%`) }, { name: ILike(`%${search}%`) }] : {},
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { symbol: 'ASC' },
+    });
+
+    return [assets, count];
+  }
+
+  async getAssetsWithHistoryPaginated(
+    query: AssetQueryDto,
+  ): Promise<[Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }>, number]> {
+    const [assets, count] = await this.getAssetsPaginated(query);
+
+    const result: Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }> = [];
+
+    for (const asset of assets) {
+      const history = await this.getAssetHistory7Days(asset);
+
+      // Calculate changePercent7d if history is available
+      if (history.length >= 2) {
+        const currentPrice = Number(asset.cachedMarketPrice);
+        // history is ordered by date ASC, so the last item is the newest (today/yesterday)
+        // and the first item is the oldest
+        const oldestHistoryItem = history[0];
+        const oldestPrice = Number(oldestHistoryItem.closePrice);
+
+        if (oldestPrice > 0) {
+          const change7d = ((currentPrice - oldestPrice) / oldestPrice) * 100;
+          asset.changePercent7d = change7d.toFixed(2);
+        }
+      }
+
+      result.push({ asset, history });
+    }
+
+    return [result, count];
+  }
+
+  async getAssetHistory7Days(asset: AssetEntity | string): Promise<AssetPriceHistoryEntity[]> {
+    const assetEntity =
+      typeof asset === 'string' ? await this.assetRepo.findOne({ where: { id: asset } }) : asset;
+
+    if (!assetEntity) {
+      throw new NotFoundException(`Asset not found`);
+    }
+
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 7);
+
+    return this.getAssetPriceHistory(assetEntity.symbol, {
+      from: startDate,
+      to: today,
+      timeframe: AssetPriceTimeframe.DAY,
+    });
   }
 
   async findOne(symbol: string): Promise<AssetEntity | null> {
@@ -119,17 +180,17 @@ export class AssetService {
     { from, to, timeframe = AssetPriceTimeframe.DAY }: AssetHistoryQueryDto,
   ): Promise<AssetPriceHistoryEntity[]> {
     this.logger.log(`Fetching history for asset ${symbol} from ${from} to ${to}`);
-    const asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
-    if (!asset) {
-      throw new NotFoundException(`Asset with symbol ${symbol} not found`);
-    }
 
     const endDate = new Date(formatDateToSqlDate(to || new Date()));
     const startDate = new Date(
       formatDateToSqlDate(from || new Date(new Date().setDate(endDate.getDate() - 30))),
     );
 
-    const localHistory = await this.assetPriceHistoryRepo.find({
+    const diffDays = getDaysDifference(startDate, endDate);
+    // Запрашиваем свечи (минимум diffDays + запас) через унифицированный метод
+    await this.getAssetPriceCandles(symbol, { candles: Math.max(diffDays + 5, 10) });
+
+    return this.assetPriceHistoryRepo.find({
       where: {
         asset: { symbol: symbol },
         timeframe,
@@ -137,62 +198,6 @@ export class AssetService {
       },
       order: { date: 'ASC' },
     });
-
-    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (localHistory.length < diffDays - 2) {
-      this.logger.log(
-        `Fetching history for ${asset.symbol} from MOEX for period ${startDate.toISOString()} - ${endDate.toISOString()}`,
-      );
-
-      try {
-        const fromStr = formatDateToSqlDate(startDate);
-        const toStr = formatDateToSqlDate(endDate);
-
-        const moexHistory = await this.moexService.getAssetHistory(asset.symbol, fromStr, toStr);
-
-        const newEntities: AssetPriceHistoryEntity[] = [];
-
-        for (const record of moexHistory) {
-          // Проверяем, нет ли уже такой записи в БД по дате и таймфрейму
-          const exists = localHistory.find((h) => isSameDay(h.date, record.date));
-
-          if (!exists) {
-            const historyEntry = this.assetPriceHistoryRepo.create({
-              asset,
-              timeframe,
-              date: record.date,
-              openPrice: record.open.toFixed(8),
-              highPrice: record.high.toFixed(8),
-              lowPrice: record.low.toFixed(8),
-              closePrice: record.close.toFixed(8),
-              volume: record.volume.toFixed(8),
-              currencyCode: record.currencyCode,
-              source: 'MOEX',
-            });
-            newEntities.push(historyEntry);
-          }
-        }
-
-        if (newEntities.length > 0) {
-          await this.assetPriceHistoryRepo.save(newEntities);
-
-          // Возвращаем обновленный список
-          return this.assetPriceHistoryRepo.find({
-            where: {
-              asset: { symbol: symbol },
-              timeframe,
-              date: Between(startDate, endDate),
-            },
-            order: { date: 'ASC' },
-          });
-        }
-      } catch (e) {
-        this.logger.error(`Failed to fetch history from MOEX for ${asset.symbol}`, e);
-      }
-    }
-
-    return localHistory;
   }
 
   async getAssetPriceCandles(symbol: string, { candles = 500 }: AssetCandlesQueryDto) {
@@ -203,6 +208,7 @@ export class AssetService {
     }
 
     const timeframe = AssetPriceTimeframe.DAY;
+    const lastUpdateKey = this.settingsService.getAssetCandlesLastUpdateKey(symbol);
 
     const localHistory = await this.assetPriceHistoryRepo.find({
       where: {
@@ -215,24 +221,28 @@ export class AssetService {
 
     const today = new Date();
 
-    const lastUpdateSetting = await this.settingsService.getRaw(
-      SettingKey.ASSET_CANDLES_LAST_UPDATE_AT,
-    );
+    const lastUpdateSetting = await this.settingsService.getRaw(lastUpdateKey);
     const lastUpdateAt = lastUpdateSetting ? new Date(lastUpdateSetting.value) : null;
 
-    const needsUpdate = !lastUpdateAt || !isSameDay(lastUpdateAt, today);
+    // We need update if:
+    // 1. Never updated before
+    // 2. Last update was not today
+    // 3. We have fewer candles in DB than requested (even if updated today)
+    const needsUpdate =
+      !lastUpdateAt || !isSameDay(lastUpdateAt, today) || localHistory.length < candles;
 
     if (needsUpdate) {
       this.logger.log(
         `Checking for new candles for ${symbol}. Last date in DB: ${
           lastUpdateAt ? formatDateToSqlDate(lastUpdateAt) : 'none'
-        }. Requested: ${candles}`,
+        }. In DB: ${localHistory.length}. Requested: ${candles}`,
       );
 
       try {
         let moexCandles: MoexAssetHistoryPrice[] = [];
 
-        if (!lastUpdateAt) {
+        if (!lastUpdateAt || localHistory.length < candles) {
+          // If we never updated OR we need more historical data than we have in DB
           moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
         } else {
           const diff = getDaysDifference(lastUpdateAt);
@@ -285,9 +295,9 @@ export class AssetService {
           }
 
           await this.settingsService.setRaw(
-            SettingKey.ASSET_CANDLES_LAST_UPDATE_AT,
+            lastUpdateKey,
             new Date().toISOString(),
-            'Last time candles were updated from MOEX',
+            `Last time candles were updated from MOEX for ${symbol}`,
           );
 
           // Если были изменения, перечитываем данные

@@ -26,6 +26,7 @@ export class TransactionEntity {
   @ManyToOne(
     () => UserAssetEntity,
     (portfolio) => portfolio.transactions,
+    { onDelete: 'CASCADE' },
   )
   @JoinColumn({ name: 'userAssetId' })
   userAsset: UserAssetEntity;

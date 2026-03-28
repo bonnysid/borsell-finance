@@ -95,6 +95,8 @@ export class AssetUpdaterService {
 
           asset.name = String(it.name || it.shortName);
           asset.cachedMarketPrice = it.lastPrice.toFixed(8);
+          asset.volume = it.volume?.toFixed(8) || '0';
+          asset.changePercent24h = it.changePercent?.toFixed(2) || '0';
           asset.lastPriceUpdateAt = it.date;
           asset.metadata = {
             ...asset.metadata,
@@ -205,6 +207,8 @@ export class AssetUpdaterService {
           });
 
           asset.cachedMarketPrice = cachedPrice;
+          asset.volume = String(price.regularMarketVolume?.toFixed(8) || '0');
+          asset.changePercent24h = String(price.regularMarketChangePercent?.toFixed(2) || '0');
           asset.lastPriceUpdateAt = price.regularMarketTime ?? new Date();
           historyItems.push(assetHistoryItem);
         }
@@ -255,6 +259,8 @@ export class AssetUpdaterService {
       });
 
       asset.cachedMarketPrice = cachedPrice;
+      asset.volume = String(price.regularMarketVolume?.toFixed(8) || '0');
+      asset.changePercent24h = String(price.regularMarketChangePercent?.toFixed(2) || '0');
       asset.lastPriceUpdateAt = price.regularMarketTime ?? new Date();
 
       await this.assetRepo.save(asset);

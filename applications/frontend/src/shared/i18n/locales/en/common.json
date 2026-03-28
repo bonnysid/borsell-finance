@@ -30,6 +30,10 @@
   "Cancel": "Cancel",
   "MyPosition": "My position",
   "Logout": "Logout",
+  "Buy": "Buy",
+  "Sell": "Sell",
+  "Transfer": "Transfer",
+  "MyAssets": "My assets",
   "operationType": {
     "title": "Operation type",
 
@@ -40,6 +44,22 @@
   "deleteUserAsset": {
     "title": "Are you sure that you want to delete asset {{symbol}}?"
   },
+  "buyAsset": {
+    "confirm": "Are you sure you want to buy {{quantity}} {{symbol}} at price {{price}}?"
+  },
+  "sellAsset": {
+    "confirm": "Are you sure you want to sell {{quantity}} {{symbol}} at price {{price}}?"
+  },
+  "transferAsset": {
+    "confirm": "Are you sure you want to transfer {{quantity}} {{symbol}} at price {{price}}?"
+  },
+  "Confirm": "Confirm",
+  "volume_short": "Vol",
+  "change_1h": "1h %",
+  "change_24h": "24h %",
+  "change_7d": "7d %",
+  "Volume": "Volume",
+  "Last 7 days": "Last 7 days",
   "chart": {
     "open": "Open",
     "high": "High",

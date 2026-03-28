@@ -1,0 +1,31 @@
+import { useCreateTransaction } from '@entities/transaction';
+import { TransactionType, ID, CurrencyCode } from '@packages/types';
+import { ASSETS_QUERY_KEYS, queryClient } from '@shared/api';
+import { useMutation } from '@tanstack/react-query';
+
+type TransferAssetDto = {
+  assetId: ID;
+  symbol: string;
+  quantity: number;
+  price: number;
+  currencyCode?: CurrencyCode;
+};
+
+export const useTransferAsset = () => {
+  const createTransactionMutation = useCreateTransaction();
+
+  return useMutation({
+    mutationKey: ['transfer-asset'],
+    mutationFn: (dto: TransferAssetDto) =>
+      createTransactionMutation.mutateAsync({
+        ...dto,
+        type: TransactionType.TRANSFER_OUT,
+      }),
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEYS.userAssetsList() }),
+        queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEYS.userAsset(variables.symbol) }),
+      ]);
+    },
+  });
+};

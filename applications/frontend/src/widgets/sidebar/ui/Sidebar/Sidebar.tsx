@@ -21,6 +21,7 @@ export const Sidebar: FC<SidebarProps> = ({}) => {
           id={it.id}
           to={it.to}
           as="a"
+          // @ts-expect-error
           caption={t(it.caption)}
           icon={it.icon}
           subItems={it.subItems}

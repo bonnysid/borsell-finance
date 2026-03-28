@@ -5,4 +5,6 @@ export * from './LineChart';
 export * from './Logo';
 export * from './PageTitle';
 export * from './PageWrapper';
+export * from './PercentText';
 export * from './RowInfo';
+export * from './Sparkline';

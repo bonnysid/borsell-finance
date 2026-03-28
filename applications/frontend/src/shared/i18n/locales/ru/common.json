@@ -30,6 +30,10 @@
   "Cancel": "Отменить",
   "MyPosition": "Моя позиция",
   "Logout": "Выйти",
+  "Buy": "Купить",
+  "Sell": "Продать",
+  "Transfer": "Перевести",
+  "MyAssets": "Мои активы",
   "operationType": {
     "title": "Тип операции",
 
@@ -40,7 +44,23 @@
   "deleteUserAsset": {
     "title": "Вы уверены что хотите удалить актив {{symbol}}?"
   },
+  "buyAsset": {
+    "confirm": "Вы уверены, что хотите купить {{quantity}} {{symbol}} по цене {{price}}?"
+  },
+  "sellAsset": {
+    "confirm": "Вы уверены, что хотите продать {{quantity}} {{symbol}} по цене {{price}}?"
+  },
+  "transferAsset": {
+    "confirm": "Вы уверены, что хотите перевести {{quantity}} {{symbol}} по цене {{price}}?"
+  },
+  "Confirm": "Подтвердить",
   "last_update": "Последнее обновление",
+  "volume_short": "Объем",
+  "change_1h": "1ч %",
+  "change_24h": "24ч %",
+  "change_7d": "7д %",
+  "Volume": "Объем",
+  "Last 7 days": "Последние 7 дней",
   "chart": {
     "open": "Открытие",
     "high": "Макс",

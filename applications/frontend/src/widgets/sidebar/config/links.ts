@@ -28,8 +28,20 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
   },
   {
     id: 'Assets',
-    to: AppRoutePaths.ASSETS_ME(),
+    to: AppRoutePaths.ASSETS(),
     caption: 'Assets',
     icon: 'coins',
+    subItems: [
+      {
+        id: 'MyAssets',
+        caption: 'MyAssets',
+        to: AppRoutePaths.ASSETS_ME(),
+      },
+      {
+        id: 'Assets',
+        caption: 'Assets',
+        to: AppRoutePaths.ASSETS(),
+      },
+    ],
   },
-];
+] as const;

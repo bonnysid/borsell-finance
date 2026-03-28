@@ -1,0 +1,15 @@
+.percent-text {
+  --percent-text-color: var(--color-text-primary);
+
+  display: flex;
+  font-weight: 500;
+  color: var(--percent-text-color);
+
+  &.positive {
+    --percent-text-color: var(--color-text-success);
+  }
+
+  &.negative {
+    --percent-text-color: var(--color-text-error);
+  }
+}

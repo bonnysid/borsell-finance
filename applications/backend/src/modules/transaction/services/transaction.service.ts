@@ -4,6 +4,7 @@ import { CurrencyCode, ID, NumberString, TransactionType } from '@packages/types
 import Big from 'big.js';
 import { DataSource, Repository } from 'typeorm';
 
+import { CurrencyConverterService } from '@/modules/currency/services';
 import { UserAssetEntity } from '@/modules/user-asset/entities';
 
 import { GetTransactionsDto } from '../dto';
@@ -26,6 +27,7 @@ export class TransactionService {
     private readonly dataSource: DataSource,
     @InjectRepository(TransactionEntity)
     private readonly transactionRepo: Repository<TransactionEntity>,
+    private readonly currencyConverter: CurrencyConverterService,
   ) {}
 
   async getTransactions(
@@ -65,7 +67,6 @@ export class TransactionService {
         where: {
           user: { id: dto.userId },
           asset: { id: dto.assetId },
-          currencyCode: dto.currencyCode,
         },
         lock: { mode: 'pessimistic_write' },
       });
@@ -101,6 +102,17 @@ export class TransactionService {
       });
       await manager.save(op);
 
+      // Конвертация в валюту UserAsset (ua) при необходимости
+      let addAmount = dAmount;
+      if (dto.currencyCode !== ua.currencyCode) {
+        const converted = await this.currencyConverter.convertAmount({
+          amount: dAmount,
+          fromCurrency: dto.currencyCode,
+          toCurrency: ua.currencyCode,
+        });
+        addAmount = converted.amount;
+      }
+
       // 3) пересчёт агрегата
       const qty = new Big(ua.quantity);
       const avg = new Big(ua.avgBuyPrice);
@@ -110,15 +122,14 @@ export class TransactionService {
       const realized = new Big(ua.realizedPnl);
 
       if (dto.type === TransactionType.BUY) {
-        const addCost = dAmount;
         const newQty = qty.plus(dQty);
-        const newCostBasis = costBasis.plus(addCost);
+        const newCostBasis = costBasis.plus(addAmount);
         const newAvg = newQty.eq(0) ? new Big(0) : newCostBasis.div(newQty);
 
         ua.quantity = newQty.toFixed(8);
         ua.costBasis = newCostBasis.toFixed(8);
         ua.avgBuyPrice = newAvg.toFixed(8);
-        ua.totalInvested = invested.plus(addCost).toFixed(8);
+        ua.totalInvested = invested.plus(addAmount).toFixed(8);
       } else if (dto.type === TransactionType.TRANSFER_OUT) {
         if (dQty.gt(qty)) throw new Error('Not enough quantity to transfer');
 
@@ -140,7 +151,7 @@ export class TransactionService {
       } else {
         if (dQty.gt(qty)) throw new Error('Not enough quantity to sell');
 
-        const proceeds = dAmount;
+        const proceeds = addAmount;
         const soldCost = avg.mul(dQty);
 
         const newQty = qty.minus(dQty);

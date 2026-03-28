@@ -38,7 +38,12 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
         <ChartAssetPriceHistory symbol={params.symbol} />
 
         <div className={cx('widgets')}>
-          <UserAssetPosition symbol={params.symbol} />
+          <UserAssetPosition
+            assetId={assetInfo?.id}
+            currencyCode={assetInfo?.currencyCode}
+            symbol={params.symbol}
+            price={Number(assetPrice?.currentPrice)}
+          />
         </div>
       </div>
     </PageWrapper>

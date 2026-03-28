@@ -9,7 +9,7 @@ import {
 } from '@devbonnysid/ui-kit-default';
 import { AssetCell, useGetUserAssets } from '@entities/assets';
 import { DeleteUserAssetModal } from '@features/delete-user-asset';
-import { ID, UserAssetDtoShape } from '@packages/types';
+import { UserAssetDtoShape } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { AmountText, AmountTextTypes } from '@shared/ui/AmountText';
@@ -28,7 +28,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
   const { data, isLoading, isFetching } = useGetUserAssets();
   const isEmpty = data?.totalItems === 0;
   const { t } = useTranslation();
-  const [userAssetIdToDelete, setUserAssetIdToDelete] = useState<ID | null>(null);
+  const [userAssetToDelete, setUserAssetToDelete] = useState<UserAssetDtoShape | null>(null);
   const navigate = useNavigate();
 
   const columns = useMemo<TableColumnType<UserAssetDtoShape>[]>(() => {
@@ -106,7 +106,10 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
             <Button
               variant={ButtonVariants.QUATERNARY}
               prefix={<Icon type="delete-alt" />}
-              onClick={() => setUserAssetIdToDelete(record.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setUserAssetToDelete(record);
+              }}
             />
           );
         },
@@ -119,7 +122,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
   }, []);
 
   const onCloseDeleteModal = () => {
-    setUserAssetIdToDelete(null);
+    setUserAssetToDelete(null);
   };
 
   const handleRowClick = (record: UserAssetDtoShape) => {
@@ -128,7 +131,7 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
 
   return (
     <PageWrapper className={cx('user-assets-page')}>
-      <PageTitle>{t('Assets')}</PageTitle>
+      <PageTitle>{t('MyAssets')}</PageTitle>
 
       <Table
         columns={columns}
@@ -141,8 +144,12 @@ export const UserAssetsPage: FC<UserAssetsPageProps> = ({}) => {
         emptyPlug={<EmptyUserAssets />}
       />
 
-      {userAssetIdToDelete && (
-        <DeleteUserAssetModal userAsserId={userAssetIdToDelete} onClose={onCloseDeleteModal} />
+      {userAssetToDelete && (
+        <DeleteUserAssetModal
+          symbol={userAssetToDelete.asset.symbol}
+          userAsserId={userAssetToDelete.id}
+          onClose={onCloseDeleteModal}
+        />
       )}
     </PageWrapper>
   );

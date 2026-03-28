@@ -22,6 +22,8 @@ import {
   AssetHistoryQueryDto,
   AssetPriceDto,
   AssetPriceHistoryDto,
+  AssetQueryDto,
+  AssetWithHistoryDto,
 } from './dto';
 import { AssetService, AssetUpdaterService } from './services';
 
@@ -36,12 +38,17 @@ export class AssetController {
 
   @UseGuards(AuthGuard)
   @Get()
-  async getAssets(@Res() res: Response, @CurrentUser() user?: UserJWT) {
-    const assets = await this.appService.getAllAssets();
+  async getAssets(
+    @Query() query: AssetQueryDto,
+    @Res() res: Response,
+    @CurrentUser() user?: UserJWT,
+  ) {
+    const [assetsWithHistory, totalItems] =
+      await this.appService.getAssetsWithHistoryPaginated(query);
     const userFromDB = user ? await this.userService.findOne(user?.username) : null;
-    const mappedAssets: AssetDto[] = [];
+    const mappedAssets: AssetWithHistoryDto[] = [];
 
-    for (const asset of assets) {
+    for (const { asset, history } of assetsWithHistory) {
       if (userFromDB) {
         const convertedPrice = await this.currencyConverterService.convertAmount({
           amount: asset.cachedMarketPrice,
@@ -50,21 +57,24 @@ export class AssetController {
         });
 
         mappedAssets.push(
-          new AssetDto({
-            ...asset,
-            cachedMarketPrice: convertedPrice.amount.toString(),
-            currencyCode: convertedPrice.toCurrency,
-          }),
+          new AssetWithHistoryDto(
+            {
+              ...asset,
+              cachedMarketPrice: convertedPrice.amount.toString(),
+              currencyCode: convertedPrice.toCurrency,
+            },
+            history,
+          ),
         );
       } else {
-        mappedAssets.push(new AssetDto(asset));
+        mappedAssets.push(new AssetWithHistoryDto(asset, history));
       }
     }
 
-    const result: TableResponse<AssetDto> = {
+    const result: TableResponse<AssetWithHistoryDto> = {
       data: mappedAssets,
-      totalItems: mappedAssets.length,
-      page: 1,
+      totalItems,
+      page: query.page || 1,
     };
 
     res.status(200).json(result);

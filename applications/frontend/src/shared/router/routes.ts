@@ -1,4 +1,5 @@
 import { generatePath } from 'react-router';
+import { createSearchParams, URLSearchParamsInit } from 'react-router-dom';
 
 export enum AppRoutes {
   AUTH = '/auth',
@@ -42,8 +43,8 @@ type ExtractParams<
 
 type LinkFn<S extends string> = ExtractParams<S> extends { required: infer R; optional: infer O }
   ? [R] extends [never]
-    ? (params?: ParamsObject<never, O & string>) => string
-    : (params: ParamsObject<R & string, O & string>) => string
+    ? (params?: ParamsObject<never, O & string>, searchParams?: URLSearchParamsInit) => string
+    : (params: ParamsObject<R & string, O & string>, searchParams?: URLSearchParamsInit) => string
   : () => string;
 
 const createRoutePaths = <T extends Record<string, string>>(
@@ -55,8 +56,12 @@ const createRoutePaths = <T extends Record<string, string>>(
   (Object.keys(paths) as (keyof T)[]).forEach((key) => {
     const pattern = paths[key];
     // приведение типов только внутри реализации
-    result[key] = ((params?: unknown) =>
-      generatePath(pattern, params as any)) as Result[typeof key];
+    result[key] = ((params?: unknown, searchParams?: URLSearchParamsInit) => {
+      const path = generatePath(pattern, params as any);
+      const queryParams = createSearchParams(searchParams).toString();
+
+      return `${path}?${queryParams}`;
+    }) as Result[typeof key];
   });
 
   return result;

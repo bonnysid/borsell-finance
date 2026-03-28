@@ -4,7 +4,10 @@ import {
   AssetPriceDtoShape,
   AssetPriceHistoryDtoShape,
   AssetPriceHistoryQueryDtoShape,
+  AssetWithHistoryDtoShape,
   ID,
+  PaginationDtoShape,
+  SearchDtoShape,
   TableResponse,
   UserAssetDtoShape,
 } from '@packages/types';
@@ -12,11 +15,13 @@ import { restService } from '@shared/api';
 
 export class AssetsApi {
   deleteUserAsset = async (id: ID) => {
-    return restService.DELETE(`/assets/${id}`);
+    return restService.DELETE(`/user-assets/${id}`);
   };
 
-  getAssets = async () => {
-    const res = await restService.GET<TableResponse<AssetDtoShape>>('/assets');
+  getAssets = async (params?: PaginationDtoShape & SearchDtoShape) => {
+    const res = await restService.GET<TableResponse<AssetWithHistoryDtoShape>>('/assets', {
+      params,
+    });
 
     return res.data;
   };

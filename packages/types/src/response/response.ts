@@ -27,3 +27,7 @@ export type PaginationDtoShape = {
   page?: number;
   limit?: number;
 };
+
+export type SearchDtoShape = {
+  search?: string;
+};

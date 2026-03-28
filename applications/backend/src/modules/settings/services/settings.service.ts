@@ -12,18 +12,22 @@ export class SettingsService {
   ) {}
   private readonly logger = new Logger(SettingsService.name);
 
-  async getRaw(key: SettingKey): Promise<SettingsEntity | null> {
-    const setting = await this.settingsRepo.findOne({ where: { key } });
+  async getRaw(key: SettingKey | string): Promise<SettingsEntity | null> {
+    const setting = await this.settingsRepo.findOne({ where: { key: key as SettingKey } });
 
     return setting;
   }
 
-  async setRaw(key: SettingKey, value: string, description?: string): Promise<SettingsEntity> {
-    let setting = await this.settingsRepo.findOne({ where: { key } });
+  async setRaw(
+    key: SettingKey | string,
+    value: string,
+    description?: string,
+  ): Promise<SettingsEntity> {
+    let setting = await this.settingsRepo.findOne({ where: { key: key as SettingKey } });
 
     if (!setting) {
       setting = this.settingsRepo.create({
-        key,
+        key: key as SettingKey,
         value,
         description,
       });
@@ -37,12 +41,12 @@ export class SettingsService {
     return this.settingsRepo.save(setting);
   }
 
-  async getString(key: SettingKey): Promise<string | null> {
+  async getString(key: SettingKey | string): Promise<string | null> {
     const raw = await this.getRaw(key);
     return raw?.value ?? null;
   }
 
-  async getNumber(key: SettingKey): Promise<number> {
+  async getNumber(key: SettingKey | string): Promise<number> {
     const value = await this.getString(key);
     const num = Number(value);
 
@@ -53,7 +57,7 @@ export class SettingsService {
     return num;
   }
 
-  async getBoolean(key: SettingKey): Promise<boolean | null> {
+  async getBoolean(key: SettingKey | string): Promise<boolean | null> {
     const value = (await this.getString(key))?.trim().toLowerCase();
 
     if (!value) return null;
@@ -64,7 +68,7 @@ export class SettingsService {
     throw new BadRequestException(`Setting "${key}" value "${value}" is not a valid boolean`);
   }
 
-  async getJson<T = unknown>(key: SettingKey): Promise<T | null> {
+  async getJson<T = unknown>(key: SettingKey | string): Promise<T | null> {
     const value = await this.getString(key);
 
     if (!value) {
@@ -92,5 +96,9 @@ export class SettingsService {
       code,
       'Base currency code for portfolio valuation',
     );
+  }
+
+  getAssetCandlesLastUpdateKey(symbol: string): string {
+    return `${SettingKey.ASSET_CANDLES_LAST_UPDATE_AT}:${symbol}`;
   }
 }
