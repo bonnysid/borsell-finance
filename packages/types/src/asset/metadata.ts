@@ -13,6 +13,8 @@ export type StockMetadata = {
   lotSize?: string | number;
   shortName?: string;
   source?: string;
+  issueCapitalization?: string;
+  valToday?: string;
 };
 
 // 3. Специфика для Крипты (Crypto)

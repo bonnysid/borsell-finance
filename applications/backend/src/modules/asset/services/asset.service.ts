@@ -1,10 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AssetPriceTimeframe } from '@packages/types';
+import { AssetPriceTimeframe, StockMetadata } from '@packages/types';
 import { Between, ILike, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
-import { formatDateToSqlDate, getDaysDifference, isSameDay } from '@/common/utils/date.utils';
+import {
+  formatDateToSqlDate,
+  getDaysDifference,
+  isDataStale,
+  isSameDay,
+} from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
 import { SettingsService } from '@/modules/settings/services';
@@ -16,6 +21,7 @@ import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 export class AssetService {
   private readonly logger = new Logger(AssetService.name);
   private readonly yahooFinance = new YahooFinance();
+  private readonly PRICE_CACHE_TTL_MINUTES = 15;
 
   constructor(
     @InjectRepository(AssetEntity)
@@ -130,6 +136,63 @@ export class AssetService {
     return this.assetRepo.findOne({ where: { symbol } });
   }
 
+  async getAsset(ticker: string): Promise<AssetEntity | null> {
+    // 1. Ищем актив в нашей БД
+    let asset = await this.assetRepo.findOne({ where: { symbol: ticker } });
+
+    // 2. Проверяем, протухли ли данные
+    const now = new Date();
+    const isStale =
+      !asset ||
+      !asset.lastPriceUpdateAt ||
+      now.getTime() - asset.lastPriceUpdateAt.getTime() > this.PRICE_CACHE_TTL_MINUTES * 60 * 1000;
+
+    // 3. Если данных нет или они старые — идем в MOEX
+    if (isStale) {
+      this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${ticker} from MOEX`);
+
+      const moexData = await this.moexService.getAssetInfo(ticker);
+
+      if (!moexData) {
+        // Если это новый актив и его нет на MOEX, кидаем ошибку
+        if (!asset) throw new Error(`Asset ${ticker} not found on MOEX`);
+        // Если MOEX лежит, но у нас есть старые данные в БД — отдаем их (Graceful degradation)
+        this.logger.warn(`MOEX is unavailable for ${ticker}. Serving stale data.`);
+        return asset;
+      }
+
+      // 4. Обновляем или создаем сущность
+      if (!asset) {
+        asset = this.assetRepo.create({ symbol: ticker });
+      }
+
+      asset.type = moexData.type;
+      asset.name = moexData.name || asset.name;
+      // Сохраняем цену как строку (NumberString), так как у тебя Big.js
+      asset.cachedMarketPrice = moexData.lastPrice.toString();
+      asset.volume = moexData.volume.toString();
+      asset.changePercent24h = moexData.changePercent.toString();
+      asset.lastPriceUpdateAt = moexData.date;
+      asset.currencyCode = moexData.currencyCode;
+
+      // Складываем фундаментальные данные в JSONB
+      asset.metadata = {
+        ...asset.metadata,
+        isin: moexData.isin,
+        lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
+        issueCapitalization: moexData.issueCapitalization?.toString(),
+        valToday: moexData.valToday?.toString(),
+      } as StockMetadata;
+
+      // Сохраняем в БД
+      asset = await this.assetRepo.save(asset);
+    } else {
+      this.logger.log(`[Cache Hit] Serving ${ticker} from DB`);
+    }
+
+    return asset;
+  }
+
   async getAssetPriceWithChange(symbol: string) {
     const asset = await this.assetRepo.findOne({ where: { symbol } });
 
@@ -198,6 +261,43 @@ export class AssetService {
       },
       order: { date: 'ASC' },
     });
+  }
+
+  async getAssetProfileAndStats(ticker: string) {
+    // 1. Ищем актив в нашей базе данных
+    let asset = await this.assetRepo.findOne({ where: { symbol: ticker } });
+
+    // 2. Определяем, нужно ли идти в MOEX (нет в БД или данные устарели)
+    // Акции торгуются днем, обновлять капитализацию раз в 1-4 часа вполне ок.
+    const isStale = asset ? isDataStale(asset.updatedAt, 4) : true;
+
+    if (!asset || isStale) {
+      this.logger.log(`Cache miss or stale data for ${ticker}. Fetching from MOEX...`);
+
+      // 3. Идем в MOEX через твой Http-клиент
+      const moexData = await this.moexService.getAssetInfo(ticker);
+
+      if (!moexData) {
+        throw new Error(`Asset ${ticker} not found on MOEX`);
+      }
+
+      // 4. Сохраняем или обновляем запись в нашей БД
+      asset = await this.assetRepo.save({
+        ...(asset || {}), // Если актив был, обновляем, если нет - создаем
+        symbol: moexData.symbol,
+        name: moexData.name,
+        shortName: moexData.shortName,
+        lotSize: moexData.lotSize?.toNumber(),
+        capitalization: moexData.issueCapitalization?.toString(),
+        // ... маппинг остальных полей
+        metadata: {},
+        updatedAt: new Date(),
+      });
+    } else {
+      this.logger.log(`Serving ${ticker} from local DB`);
+    }
+
+    return asset;
   }
 
   async getAssetPriceCandles(symbol: string, { candles = 500 }: AssetCandlesQueryDto) {

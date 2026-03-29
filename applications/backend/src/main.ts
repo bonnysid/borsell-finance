@@ -28,7 +28,14 @@ async function bootstrap() {
     origin: (origin, callback) => {
       // allow non-browser requests (e.g., curl, Postman) where origin may be undefined
       if (!origin) return callback(null, true);
-      const isAllowed = origins.includes(origin);
+
+      const isAllowed =
+        origins.includes(origin) ||
+        // Allow any local network IP for development
+        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(
+          origin,
+        );
+
       return callback(
         isAllowed ? null : new Error(`CORS: Origin ${origin} not allowed`),
         isAllowed,
@@ -36,7 +43,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Authorization',
+    allowedHeaders: 'Content-Type,Authorization,X-Requested-With,Accept',
     exposedHeaders: 'Set-Cookie',
   });
 

@@ -135,25 +135,34 @@ export class MoexService {
     try {
       this.logger.log(`Fetching info for ${ticker}`);
 
-      const boardsUrl = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}.jsonp?iss.meta=off&iss.json=extended&iss.only=marketdata`;
+      const boardsUrl = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}.json?iss.meta=off&iss.json=extended&iss.only=securities,marketdata`;
       const response = await lastValueFrom(
         this.httpService.get<MoexAssetInfoWithPriceResponse>(boardsUrl),
       );
 
-      const marketdata = response.data[1].marketdata[0];
+      const securitiesData = response.data[1]?.securities?.[0];
+      const marketData = response.data[1].marketdata[0];
 
-      if (!marketdata) return null;
+      if (!securitiesData && !marketData) return null;
 
       return {
-        symbol: this._mapString(marketdata.SECID!),
-        lastPrice: this._mapPrice(marketdata.LAST!),
-        date: this._mapDate(marketdata.SYSTIME!) ?? new Date(),
-        open: this._mapPrice(marketdata.OPEN!),
-        high: this._mapPrice(marketdata.HIGH!),
-        low: this._mapPrice(marketdata.LOW!),
-        close: this._mapPrice(marketdata.CLOSE!),
-        volume: this._mapPrice(marketdata.VOLUME!),
-        changePercent: this._mapPrice(marketdata.LASTCHANGEPRCNT!),
+        symbol: this._mapString(securitiesData?.SECID || marketData?.SECID),
+        name: this._mapString(securitiesData?.SEQNAME),
+        shortName: this._mapString(securitiesData?.SHORTNAME),
+        isin: this._mapString(securitiesData?.ISIN),
+        lotSize: this._mapPrice(securitiesData?.LOTSIZE),
+        issueCapitalization: this._mapPrice(securitiesData?.ISSUECAPITALIZATION),
+
+        lastPrice: this._mapPrice(marketData?.LAST),
+        open: this._mapPrice(marketData?.OPEN),
+        high: this._mapPrice(marketData?.HIGH),
+        low: this._mapPrice(marketData?.LOW),
+        close: this._mapPrice(marketData?.CLOSE),
+        volume: this._mapPrice(marketData?.VOLUME), // В штуках
+        valToday: this._mapPrice(marketData?.VALTODAY), // В рублях (оборот)
+        changePercent: this._mapPrice(marketData?.LASTCHANGEPRCNT),
+
+        date: this._mapDate(marketData?.SYSTIME) ?? new Date(),
         currencyCode: CURRENCY,
         type: AssetType.STOCK,
       };
@@ -275,17 +284,17 @@ export class MoexService {
     });
   }
 
-  private _mapPrice(value: MoexColumnValue) {
+  private _mapPrice(value?: MoexColumnValue) {
     return new Big(value ?? 0);
   }
 
-  private _mapDate(value: MoexColumnValue) {
-    if (value === null) return null;
+  private _mapDate(value?: MoexColumnValue) {
+    if (value === null || !value) return null;
 
     return new Date(value);
   }
 
-  private _mapString(value: MoexColumnValue) {
+  private _mapString(value?: MoexColumnValue) {
     return value ? String(value) : '';
   }
 }

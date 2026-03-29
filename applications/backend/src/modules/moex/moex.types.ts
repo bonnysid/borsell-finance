@@ -154,6 +154,9 @@ export type MoexAssetInfo = {
   volume: Big.Big;
   changePercent: Big.Big;
 
+  issueCapitalization?: Big.Big | null; // Капитализация
+  valToday?: Big.Big | null; // Объем торгов за сегодня в рублях
+
   currencyCode: CurrencyCode;
   type: AssetType;
 };

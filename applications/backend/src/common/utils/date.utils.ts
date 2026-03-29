@@ -39,3 +39,9 @@ export function getDaysDifference(date1: Date | string, date2: Date | string = n
 
   return Math.round(diffInDays);
 }
+
+export function isDataStale(updatedAt: Date, hoursToLive: number): boolean {
+  const diffInMs = new Date().getTime() - updatedAt.getTime();
+  const hoursPassed = diffInMs / (1000 * 60 * 60);
+  return hoursPassed > hoursToLive;
+}

@@ -1,7 +1,9 @@
 import { RestService } from '@devbonnysid/ui-kit-default';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3003/';
+
 export const restService = new RestService({
-  baseURL: 'http://localhost:3003/',
+  baseURL,
   timeout: 30_000,
   withCredentials: true,
 });

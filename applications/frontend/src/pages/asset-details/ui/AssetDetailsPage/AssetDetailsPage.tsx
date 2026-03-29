@@ -3,6 +3,7 @@ import { AssetPrice, useGetAssetInfo, useGetAssetPrice } from '@entities/assets'
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { ChartAssetPriceHistory } from '@widgets/chart-asset-price-history';
+import { TransactionsHistory } from '@widgets/transactions-history';
 import { UserAssetPosition } from '@widgets/user-asset-position/ui/UserAssetPosition/UserAssetPosition';
 import { FC } from 'react';
 import { Navigate } from 'react-router';
@@ -38,13 +39,10 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
         <ChartAssetPriceHistory symbol={params.symbol} />
 
         <div className={cx('widgets')}>
-          <UserAssetPosition
-            assetId={assetInfo?.id}
-            currencyCode={assetInfo?.currencyCode}
-            symbol={params.symbol}
-            price={Number(assetPrice?.currentPrice)}
-          />
+          <UserAssetPosition symbol={params.symbol} price={Number(assetPrice?.currentPrice)} />
         </div>
+
+        <TransactionsHistory assetId={assetInfo?.id} />
       </div>
     </PageWrapper>
   );

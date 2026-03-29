@@ -87,20 +87,22 @@ export class AuthController {
   }
 
   private addRefreshTokenCookie(res: Response, refreshToken: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: CONFIG.refreshTokenExpiresIn, // 30 дней
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: CONFIG.refreshTokenExpiresIn,
     });
   }
 
   private addAccessTokenCookie(res: Response, accessToken: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: CONFIG.accessTokenExpiresIn, // 15 минут
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: CONFIG.accessTokenExpiresIn,
     });
   }
 }
