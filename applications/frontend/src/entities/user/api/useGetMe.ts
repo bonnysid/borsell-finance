@@ -1,5 +1,5 @@
 import { UserDtoShape } from '@packages/types';
-import { restService } from '@shared/api';
+import { USER_QUERY_KEYS, restService } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
 const getMe = async () => {
@@ -8,11 +8,9 @@ const getMe = async () => {
   return res.data;
 };
 
-export const createKeyUseGetMe = () => ['me'];
-
 export const useGetMe = (enabled: boolean = true) => {
   return useQuery({
-    queryKey: createKeyUseGetMe(),
+    queryKey: USER_QUERY_KEYS.me(),
     queryFn: getMe,
     enabled,
   });

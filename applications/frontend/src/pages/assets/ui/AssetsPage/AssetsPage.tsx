@@ -3,13 +3,14 @@ import {
   ColumnAlignVariants,
   Table,
   TableColumnType,
+  usePagination,
 } from '@devbonnysid/ui-kit-default';
 import { AssetCell, useGetAssets } from '@entities/assets';
 import { AssetWithHistoryDtoShape } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper, PercentText, Sparkline } from '@shared/ui';
 import { AmountText } from '@shared/ui/AmountText';
-import { FC, useCallback, useMemo } from 'react';
+import { FC, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,8 +21,25 @@ type AssetsPageProps = {};
 const cx = bindStyles(styles);
 
 export const AssetsPage: FC<AssetsPageProps> = ({}) => {
-  const { data, isLoading, isFetching } = useGetAssets();
-  const isEmpty = data?.totalItems === 0;
+  const pagination = usePagination({
+    initialPageSize: 100,
+  });
+
+  const {
+    data: paginatedData,
+    isLoading: isPaginatedLoading,
+    isFetching: isPaginatedFetching,
+  } = useGetAssets({
+    page: pagination.page,
+    limit: pagination.pageSize,
+  });
+
+  const currentData = paginatedData;
+  const currentLoading = isPaginatedLoading;
+  const currentFetching = isPaginatedFetching;
+
+  const isEmpty = currentData?.totalItems === 0;
+
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -62,7 +80,9 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
         key: 'volume',
         title: t('Volume'),
         align: ColumnAlignVariants.RIGHT,
-        render: (volume) => <AmountText amount={volume} />,
+        render: (volume, { currencyCode }) => (
+          <AmountText amount={volume} currency={currencyCode} />
+        ),
       },
       {
         key: 'custom-column-sparkline',
@@ -95,6 +115,10 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
     navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }));
   };
 
+  useEffect(() => {
+    pagination.setTotalItems(currentData?.totalItems || 0);
+  }, [currentData?.totalItems]);
+
   return (
     <PageWrapper className={cx('assets-page')}>
       <PageTitle>{t('Assets')}</PageTitle>
@@ -102,11 +126,12 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
       <Table
         columns={columns}
         rowKey={rowKey}
-        data={data?.data}
-        isLoading={isLoading}
-        isFetching={isFetching}
+        data={currentData?.data}
+        isLoading={currentLoading}
+        isFetching={currentFetching}
         isEmpty={isEmpty}
         onRowClick={handleRowClick}
+        pagination={pagination}
       />
     </PageWrapper>
   );

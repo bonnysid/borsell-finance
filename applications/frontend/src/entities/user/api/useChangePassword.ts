@@ -1,5 +1,5 @@
 import { ChangePasswordDtoShape, SuccessResponse } from '@packages/types';
-import { restService } from '@shared/api';
+import { USER_QUERY_KEYS, restService } from '@shared/api';
 import { useMutation } from '@tanstack/react-query';
 
 const changePassword = async (dto: ChangePasswordDtoShape) => {
@@ -13,7 +13,7 @@ const changePassword = async (dto: ChangePasswordDtoShape) => {
 
 export const useChangePassword = () => {
   return useMutation({
-    mutationKey: ['change-password'],
+    mutationKey: USER_QUERY_KEYS.changePassword(),
     mutationFn: changePassword,
   });
 };

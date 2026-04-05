@@ -14,10 +14,12 @@
     padding-bottom: var(--PaddingS);
     height: 100%;
     width: 100%;
+    min-height: 0;
   }
 
   display: flex;
 
   height: 100%;
   flex-grow: 1;
+  min-height: 0;
 }

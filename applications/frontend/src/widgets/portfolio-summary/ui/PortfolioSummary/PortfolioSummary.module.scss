@@ -1,0 +1,95 @@
+.portfolio-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 16px;
+  background-color: transparent; // Или цвет фона из темы
+
+  .label {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .total-balance-container {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    margin-bottom: 12px;
+    line-height: 1;
+
+    .integer {
+      font-size: 64px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .decimal {
+      font-size: 40px;
+      font-weight: 500;
+      color: var(--text-primary);
+      opacity: 0.9;
+    }
+
+    .currency-symbol {
+      font-size: 32px;
+      margin-left: 8px;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+  }
+
+  .pnl-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .pnl-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+
+    .pnl-percent-container {
+      display: flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background-color: rgba(var(--color-default-rgb), 0.1);
+
+      .arrow {
+        margin-right: 2px;
+        font-size: 12px;
+      }
+    }
+
+    &.positive {
+      color: var(--color-positive);
+      .pnl-percent-container {
+        background-color: rgba(var(--color-positive-rgb), 0.15);
+      }
+    }
+
+    &.negative {
+      color: var(--color-negative);
+      .pnl-percent-container {
+        background-color: rgba(var(--color-negative-rgb), 0.15);
+      }
+    }
+
+    .pnl-period {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+  }
+
+  .loading, .no-data {
+    color: var(--text-secondary);
+    padding: 20px;
+  }
+}

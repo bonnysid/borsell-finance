@@ -11,6 +11,15 @@ export function formatDateToSqlDate(date: Date | string): string {
 }
 
 /**
+ * Сбрасывает время даты до 00:00:00.000 в локальном часовом поясе.
+ */
+export function normalizeDate(date: Date | string): Date {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return new Date(0);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
  * Сравнивает две даты по календарному дню (год, месяц, день).
  */
 export function isSameDay(date1: Date | string, date2: Date | string): boolean {

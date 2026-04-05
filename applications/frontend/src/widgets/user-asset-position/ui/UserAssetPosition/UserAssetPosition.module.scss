@@ -1,8 +1,11 @@
 .user-asset-position {
+  height: 100%;
+
   .form {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: auto;
   }
 
   .actions {

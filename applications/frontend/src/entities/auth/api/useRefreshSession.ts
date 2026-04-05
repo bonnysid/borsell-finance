@@ -1,6 +1,6 @@
 import { useIsAuth } from '@entities/auth';
 import { SuccessResponse } from '@packages/types';
-import { restService } from '@shared/api';
+import { AUTH_QUERY_KEYS, restService } from '@shared/api';
 import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
@@ -16,7 +16,7 @@ export const useRefreshSession = () => {
   const { setIsAuth } = useIsAuth();
 
   return useMutation({
-    mutationKey: ['refresh-session'],
+    mutationKey: AUTH_QUERY_KEYS.refreshSession(),
     mutationFn: refreshSession,
     onError: () => {
       setIsAuth(false);

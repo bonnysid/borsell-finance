@@ -7,7 +7,6 @@ import { PortfolioAssetEntity } from '../entities';
 export class PortfolioAssetDto implements PortfolioAssetDtoShape {
   id: ID;
 
-  portfolioId: ID;
   userAsset: UserAssetDtoShape;
 
   createdAt: DateString;
@@ -16,7 +15,6 @@ export class PortfolioAssetDto implements PortfolioAssetDtoShape {
   constructor(portfolioAsset: PortfolioAssetEntity) {
     this.id = portfolioAsset.id;
 
-    this.portfolioId = portfolioAsset.portfolio.id;
     this.userAsset = new UserAssetDto(portfolioAsset.userAsset);
 
     this.createdAt = portfolioAsset.createdAt.toISOString();

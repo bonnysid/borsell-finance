@@ -1,6 +1,7 @@
 import {
   AssetCandlesQueryDtoShape,
   AssetPriceHistoryQueryDtoShape,
+  GetTransactionsDtoShape,
   PaginationDtoShape,
   SearchDtoShape,
 } from '@packages/types';
@@ -22,6 +23,9 @@ export const ASSETS_QUERY_KEYS = {
     [...ASSETS_QUERY_KEYS.all, 'candles', symbol, query] as const,
 
   deleteUserAsset: () => [...ASSETS_QUERY_KEYS.all, 'delete'] as const,
+  buyAsset: () => [...ASSETS_QUERY_KEYS.all, 'buy'] as const,
+  sellAsset: () => [...ASSETS_QUERY_KEYS.all, 'sell'] as const,
+  transferAsset: () => [...ASSETS_QUERY_KEYS.all, 'transfer'] as const,
 } as const;
 
 export const AUTH_QUERY_KEYS = {
@@ -31,4 +35,36 @@ export const AUTH_QUERY_KEYS = {
   signUp: () => [...AUTH_QUERY_KEYS.all, 'sign-up'] as const,
   logout: () => [...AUTH_QUERY_KEYS.all, 'logout'] as const,
   refreshToken: () => [...AUTH_QUERY_KEYS.all, 'refresh-token'] as const,
+  refreshSession: () => [...AUTH_QUERY_KEYS.all, 'refresh-session'] as const,
 };
+
+export const TRANSACTIONS_QUERY_KEYS = {
+  all: ['transactions'] as const,
+  create: () => [...TRANSACTIONS_QUERY_KEYS.all, 'create'] as const,
+  lists: () => [...TRANSACTIONS_QUERY_KEYS.all, 'list'] as const,
+  list: (dto?: GetTransactionsDtoShape) =>
+    [
+      ...TRANSACTIONS_QUERY_KEYS.lists(),
+      dto?.assetId,
+      dto?.type,
+      dto?.amount,
+      dto?.quantity,
+      dto?.currencyCode,
+    ] as const,
+} as const;
+
+export const PORTFOLIO_QUERY_KEYS = {
+  all: ['portfolio'] as const,
+  summary: () => [...PORTFOLIO_QUERY_KEYS.all, 'summary'] as const,
+} as const;
+
+export const USER_QUERY_KEYS = {
+  all: ['user'] as const,
+  me: () => [...USER_QUERY_KEYS.all, 'me'] as const,
+  changePassword: () => [...USER_QUERY_KEYS.all, 'change-password'] as const,
+  changeCurrency: () => [...USER_QUERY_KEYS.all, 'change-currency'] as const,
+} as const;
+
+export const CURRENCIES_QUERY_KEYS = {
+  all: ['currencies'] as const,
+} as const;

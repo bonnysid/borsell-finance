@@ -1,5 +1,5 @@
 import { GetTransactionsDtoShape, TableResponse, TransactionDtoShape } from '@packages/types';
-import { restService } from '@shared/api';
+import { restService, TRANSACTIONS_QUERY_KEYS } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
 const getTransactions = async (dto?: GetTransactionsDtoShape) => {
@@ -10,13 +10,9 @@ const getTransactions = async (dto?: GetTransactionsDtoShape) => {
   return res.data;
 };
 
-export const createKeyGetTransactions = (dto?: GetTransactionsDtoShape) => {
-  return ['transactions', dto?.assetId, dto?.type, dto?.amount, dto?.quantity, dto?.currencyCode];
-};
-
 export const useGetTransactions = (dto?: GetTransactionsDtoShape) => {
   return useQuery({
-    queryKey: createKeyGetTransactions(dto),
+    queryKey: TRANSACTIONS_QUERY_KEYS.list(dto),
     queryFn: () => getTransactions(dto),
   });
 };

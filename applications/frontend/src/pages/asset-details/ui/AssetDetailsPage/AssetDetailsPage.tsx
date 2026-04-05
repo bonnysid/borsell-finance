@@ -41,7 +41,9 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
         <div className={cx('widgets')}>
           <UserAssetPosition symbol={params.symbol} price={Number(assetPrice?.currentPrice)} />
         </div>
+      </div>
 
+      <div className={cx('bottom')}>
         <TransactionsHistory assetId={assetInfo?.id} />
       </div>
     </PageWrapper>

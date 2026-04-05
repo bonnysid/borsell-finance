@@ -1,5 +1,5 @@
 import { PortfolioDtoShape } from '@packages/types';
-import { restService } from '@shared/api';
+import { PORTFOLIO_QUERY_KEYS, restService } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
 const getPortfolio = async () => {
@@ -8,11 +8,9 @@ const getPortfolio = async () => {
   return res.data;
 };
 
-export const createKeyUseGetPortfolio = () => ['portfolio'];
-
 export const useGetPortfolio = () => {
   return useQuery({
-    queryKey: createKeyUseGetPortfolio(),
+    queryKey: PORTFOLIO_QUERY_KEYS.all,
     queryFn: getPortfolio,
   });
 };

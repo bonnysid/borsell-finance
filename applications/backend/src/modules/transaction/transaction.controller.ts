@@ -54,6 +54,7 @@ export class TransactionController {
 
     if (portfolio) {
       await this.portfolioAssetService.createPortfolioAssetAndSave(portfolio.id, userAsset.id);
+      await this.portfolioService.updatePortfolioMetrics(portfolio.id);
     }
 
     return res.status(200).json(userAsset);

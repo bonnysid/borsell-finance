@@ -1,5 +1,5 @@
 import { CurrencyDtoShape } from '@packages/types';
-import { restService } from '@shared/api';
+import { CURRENCIES_QUERY_KEYS, restService } from '@shared/api';
 import { useQuery } from '@tanstack/react-query';
 
 const getAllCurrencies = async () => {
@@ -10,7 +10,7 @@ const getAllCurrencies = async () => {
 
 export const useGetAllCurrencies = () => {
   return useQuery({
-    queryKey: ['currencies'],
+    queryKey: CURRENCIES_QUERY_KEYS.all,
     queryFn: getAllCurrencies,
   });
 };

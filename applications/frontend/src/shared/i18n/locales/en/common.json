@@ -60,6 +60,9 @@
   "change_7d": "7d %",
   "Volume": "Volume",
   "Last 7 days": "Last 7 days",
+  "Balance": "Balance",
+  "AllTime": "All time",
+  "Today": "Today",
   "chart": {
     "open": "Open",
     "high": "High",

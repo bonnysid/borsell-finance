@@ -46,6 +46,7 @@ export const ChangeUserCurrencySelect: FC<ChangeUserCurrencySelectProps> = ({
       onChange={handleChangeCurrency}
       options={currenciesOptions}
       className={cx('change-user-currency-select')}
+      dropdownWidth={200}
     />
   );
 };

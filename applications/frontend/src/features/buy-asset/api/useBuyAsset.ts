@@ -1,5 +1,5 @@
 import { useCreateTransaction } from '@entities/transaction';
-import { TransactionType, ID, CurrencyCode } from '@packages/types';
+import { CurrencyCode, ID, TransactionType } from '@packages/types';
 import { ASSETS_QUERY_KEYS, queryClient } from '@shared/api';
 import { useMutation } from '@tanstack/react-query';
 
@@ -15,7 +15,7 @@ export const useBuyAsset = () => {
   const createTransactionMutation = useCreateTransaction();
 
   return useMutation({
-    mutationKey: ['buy-asset'],
+    mutationKey: ASSETS_QUERY_KEYS.buyAsset(),
     mutationFn: (dto: BuyAssetDto) =>
       createTransactionMutation.mutateAsync({
         ...dto,

@@ -1,8 +1,6 @@
 import { CreateTransactionDtoShape } from '@packages/types';
-import { queryClient, restService } from '@shared/api';
+import { queryClient, restService, TRANSACTIONS_QUERY_KEYS } from '@shared/api';
 import { useMutation } from '@tanstack/react-query';
-
-import { createKeyGetTransactions } from './useGetTransactions';
 
 const createTransaction = async (dto: CreateTransactionDtoShape) => {
   const response = await restService.POST('/transactions/', {
@@ -14,10 +12,10 @@ const createTransaction = async (dto: CreateTransactionDtoShape) => {
 
 export const useCreateTransaction = () => {
   return useMutation({
-    mutationKey: ['create-transaction'],
+    mutationKey: TRANSACTIONS_QUERY_KEYS.create(),
     mutationFn: createTransaction,
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: createKeyGetTransactions() });
+      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEYS.all });
     },
   });
 };

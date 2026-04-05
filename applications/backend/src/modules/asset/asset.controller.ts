@@ -268,6 +268,12 @@ export class AssetController {
     return result;
   }
 
+  @Post('/update-moex')
+  async updateAllMoexAssets(@Res() res: Response) {
+    await this.assetUpdaterService.updateAllAssetsFromMoex();
+    return res.status(200).send();
+  }
+
   @UseGuards(AuthGuard)
   @Post('/update/:symbol')
   async updateAssetBySymbol(@Param('symbol') symbol: string, @Res() res: Response) {

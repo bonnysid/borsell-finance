@@ -102,7 +102,9 @@ export class MoexService {
       const high = this._mapPrice(getValue(MoexColumnsVariants.HIGH));
       const low = this._mapPrice(getValue(MoexColumnsVariants.LOW));
       const close = this._mapPrice(getValue(MoexColumnsVariants.CLOSEPRICE));
-      const volume = this._mapPrice(getValue(MoexColumnsVariants.VOLUME));
+      const volume = this._mapPrice(
+        getValue(MoexColumnsVariants.VOLUME) || getValue(MoexColumnsVariants.VOLTODAY),
+      );
       const changePercent = this._mapPrice(getValue(MoexColumnsVariants.LASTCHANGEPRCNT));
 
       return {
@@ -158,7 +160,7 @@ export class MoexService {
         high: this._mapPrice(marketData?.HIGH),
         low: this._mapPrice(marketData?.LOW),
         close: this._mapPrice(marketData?.CLOSE),
-        volume: this._mapPrice(marketData?.VOLUME), // В штуках
+        volume: this._mapPrice(marketData?.VOLTODAY || marketData?.VOLUME), // В штуках
         valToday: this._mapPrice(marketData?.VALTODAY), // В рублях (оборот)
         changePercent: this._mapPrice(marketData?.LASTCHANGEPRCNT),
 

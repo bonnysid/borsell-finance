@@ -5,7 +5,7 @@ import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
-import { formatDateToSqlDate } from '@/common/utils/date.utils';
+import { normalizeDate } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
@@ -34,9 +34,12 @@ export class AssetUpdaterService {
   async updateAllAssetsFromMoex() {
     this.logger.log('🚀 Start updating assets from MOEX...');
 
-    const assets = await this.assetRepo.find({
-      where: { metadata: { source: 'MOEX' } },
-    });
+    const assets = await this.assetRepo
+      .createQueryBuilder('asset')
+      .where("asset.metadata->>'source' = :source", { source: 'MOEX' })
+      .getMany();
+
+    this.logger.log(`Found ${assets.length} assets with MOEX source.`);
 
     if (assets.length === 0) {
       this.logger.log('No MOEX assets to update.');
@@ -69,14 +72,15 @@ export class AssetUpdaterService {
 
         const currentChunkAssets = existingAssets.filter((a) => chunk.includes(a.symbol));
         const assetIds = currentChunkAssets.map((a) => a.id);
+        const currentDates = data.map((it) => normalizeDate(it.date)).filter((d): d is Date => !!d);
         const prevDates = data.map((it) => it.prevDate).filter((d): d is Date => !!d);
 
         const existingHistory =
-          assetIds.length > 0 && prevDates.length > 0
+          assetIds.length > 0 && (prevDates.length > 0 || currentDates.length > 0)
             ? await this.assetPriceHistoryRepo.find({
                 where: {
                   asset: { id: In(assetIds) },
-                  date: In(prevDates),
+                  date: In([...prevDates, ...currentDates]),
                 },
                 relations: ['asset'],
               })
@@ -110,9 +114,9 @@ export class AssetUpdaterService {
           assetsToSave.push(asset);
 
           if (it.prevDate && it.prevWaPrice && it.prevWaPrice.gt(0)) {
-            const itPrevDateStr = formatDateToSqlDate(it.prevDate);
+            const normalizedPrevDate = normalizeDate(it.prevDate);
             const prevHistoryItem = existingHistory.find((h) => {
-              return h.asset?.id === asset?.id && formatDateToSqlDate(h.date) === itPrevDateStr;
+              return h.asset?.id === asset?.id && normalizeDate(h.date) === normalizedPrevDate;
             });
 
             if (prevHistoryItem) {
@@ -125,7 +129,7 @@ export class AssetUpdaterService {
                 this.assetPriceHistoryRepo.create({
                   asset,
                   currencyCode: asset.currencyCode,
-                  date: it.prevDate,
+                  date: normalizedPrevDate,
                   closePrice: it.prevWaPrice.toFixed(8),
                   source: 'MOEX',
                 }),
@@ -133,18 +137,34 @@ export class AssetUpdaterService {
             }
           }
 
-          const historyItem = this.assetPriceHistoryRepo.create({
-            asset,
-            currencyCode: asset.currencyCode,
-            date: it.date,
-            closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
-            openPrice: it.open?.toFixed(8),
-            highPrice: it.high?.toFixed(8),
-            lowPrice: it.low?.toFixed(8),
-            volume: it.volume?.toFixed(8),
-            source: 'MOEX',
+          const normalizedDate = normalizeDate(it.date);
+          const currentHistoryItem = existingHistory.find((h) => {
+            return h.asset?.id === asset?.id && normalizeDate(h.date) === normalizedDate;
           });
-          historyItems.push(historyItem);
+
+          if (currentHistoryItem) {
+            currentHistoryItem.closePrice = it.close.gt(0)
+              ? it.close.toFixed(8)
+              : it.lastPrice.toFixed(8);
+            currentHistoryItem.openPrice = it.open?.toFixed(8);
+            currentHistoryItem.highPrice = it.high?.toFixed(8);
+            currentHistoryItem.lowPrice = it.low?.toFixed(8);
+            currentHistoryItem.volume = it.volume?.toFixed(8);
+            historyItems.push(currentHistoryItem);
+          } else {
+            const historyItem = this.assetPriceHistoryRepo.create({
+              asset,
+              currencyCode: asset.currencyCode,
+              date: normalizedDate,
+              closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
+              openPrice: it.open?.toFixed(8),
+              highPrice: it.high?.toFixed(8),
+              lowPrice: it.low?.toFixed(8),
+              volume: it.volume?.toFixed(8),
+              source: 'MOEX',
+            });
+            historyItems.push(historyItem);
+          }
         }
       } catch (error) {
         this.logger.error(`Error updating chunk ${chunk.join(', ')}`, error);

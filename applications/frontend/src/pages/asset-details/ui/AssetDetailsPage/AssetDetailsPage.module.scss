@@ -14,3 +14,9 @@
   gap: 16px;
   grid-template-columns: 1fr 300px;
 }
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}

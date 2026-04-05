@@ -1,5 +1,5 @@
 import { CurrencyCode } from '../currency';
-import { DateString, ID } from '../shared';
+import { DateString, ID, NumberString } from '../shared';
 import { PortfolioAssetDtoShape } from './portfolio-asset';
 
 export enum PortfolioType {
@@ -10,23 +10,38 @@ export enum PortfolioType {
 
 export type PortfolioDtoShape = {
   id: ID;
-  userId: ID;
 
   name: string;
   description?: string;
 
   type: PortfolioType;
-
-  // cachedTotalValue: NumberString;
-  // cachedDailyChangePercent: NumberString;
-  // lastValuationAt: DateString;
-
   currencyCode: CurrencyCode;
+
+  marketPrice: NumberString;
+  costBasis: NumberString;
+  totalInvested: NumberString;
+  totalWithdrawn: NumberString;
+  realizedPnl: NumberString;
+
+  lastValuationAt?: DateString;
 
   createdAt: DateString;
   updatedAt: DateString;
 
   assets: PortfolioAssetDtoShape[];
+};
+
+export type PortfolioSummaryDtoShape = {
+  marketPrice: NumberString;
+  costBasis: NumberString;
+  totalInvested: NumberString;
+  totalWithdrawn: NumberString;
+  realizedPnl: NumberString;
+
+  pnlToday: NumberString;
+  pnlTodayPercent: number;
+
+  currencyCode: CurrencyCode;
 };
 
 export type CreatePortfolioDtoShape = {
