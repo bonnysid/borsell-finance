@@ -50,3 +50,18 @@ export type CreatePortfolioDtoShape = {
   userAssetsIds: ID[];
   type?: PortfolioType;
 };
+
+export type PortfolioAllocationItemDtoShape = {
+  id: string;
+  name: string;
+  symbol: string;
+  value: number;
+  percentage: number;
+  color?: string;
+};
+
+export type PortfolioAllocationDtoShape = {
+  items: PortfolioAllocationItemDtoShape[];
+  totalValue: number;
+  currencyCode: CurrencyCode;
+};

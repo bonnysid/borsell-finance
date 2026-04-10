@@ -5,10 +5,10 @@ import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
-import { normalizeDate } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
+import { AssetService } from './asset.service';
 
 @Injectable()
 export class AssetUpdaterService {
@@ -23,6 +23,7 @@ export class AssetUpdaterService {
     @InjectRepository(AssetPriceHistoryEntity)
     private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
     private readonly moexService: MoexService,
+    private readonly assetService: AssetService,
   ) {}
 
   @Cron('0 55 23 * * *')
@@ -60,7 +61,6 @@ export class AssetUpdaterService {
     }
 
     const chunkSize = 20;
-    const historyItems: AssetPriceHistoryEntity[] = [];
     const assetsToSave: AssetEntity[] = [];
 
     for (let i = 0; i < tickers.length; i += chunkSize) {
@@ -69,22 +69,6 @@ export class AssetUpdaterService {
 
       try {
         const data = await this.moexService.getMarketData(chunk);
-
-        const currentChunkAssets = existingAssets.filter((a) => chunk.includes(a.symbol));
-        const assetIds = currentChunkAssets.map((a) => a.id);
-        const currentDates = data.map((it) => normalizeDate(it.date)).filter((d): d is Date => !!d);
-        const prevDates = data.map((it) => it.prevDate).filter((d): d is Date => !!d);
-
-        const existingHistory =
-          assetIds.length > 0 && (prevDates.length > 0 || currentDates.length > 0)
-            ? await this.assetPriceHistoryRepo.find({
-                where: {
-                  asset: { id: In(assetIds) },
-                  date: In([...prevDates, ...currentDates]),
-                },
-                relations: ['asset'],
-              })
-            : [];
 
         for (const it of data) {
           let asset = existingAssets.find((a) => a.symbol === it.symbol);
@@ -111,60 +95,33 @@ export class AssetUpdaterService {
             source: 'MOEX',
           };
 
-          assetsToSave.push(asset);
+          if (!assetsToSave.find((a) => a.symbol === asset.symbol)) {
+            assetsToSave.push(asset);
+          }
+
+          const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = [];
 
           if (it.prevDate && it.prevWaPrice && it.prevWaPrice.gt(0)) {
-            const normalizedPrevDate = normalizeDate(it.prevDate);
-            const prevHistoryItem = existingHistory.find((h) => {
-              return h.asset?.id === asset?.id && normalizeDate(h.date) === normalizedPrevDate;
+            historyToUpdate.push({
+              date: it.prevDate,
+              closePrice: it.prevWaPrice.toFixed(8),
+              source: 'MOEX',
+              currencyCode: asset.currencyCode,
             });
-
-            if (prevHistoryItem) {
-              if (!prevHistoryItem.closePrice || Number(prevHistoryItem.closePrice) === 0) {
-                prevHistoryItem.closePrice = it.prevWaPrice.toFixed(8);
-                historyItems.push(prevHistoryItem);
-              }
-            } else {
-              historyItems.push(
-                this.assetPriceHistoryRepo.create({
-                  asset,
-                  currencyCode: asset.currencyCode,
-                  date: normalizedPrevDate,
-                  closePrice: it.prevWaPrice.toFixed(8),
-                  source: 'MOEX',
-                }),
-              );
-            }
           }
 
-          const normalizedDate = normalizeDate(it.date);
-          const currentHistoryItem = existingHistory.find((h) => {
-            return h.asset?.id === asset?.id && normalizeDate(h.date) === normalizedDate;
+          historyToUpdate.push({
+            date: it.date,
+            closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
+            openPrice: it.open?.toFixed(8),
+            highPrice: it.high?.toFixed(8),
+            lowPrice: it.low?.toFixed(8),
+            volume: it.volume?.toFixed(8),
+            source: 'MOEX',
+            currencyCode: asset.currencyCode,
           });
 
-          if (currentHistoryItem) {
-            currentHistoryItem.closePrice = it.close.gt(0)
-              ? it.close.toFixed(8)
-              : it.lastPrice.toFixed(8);
-            currentHistoryItem.openPrice = it.open?.toFixed(8);
-            currentHistoryItem.highPrice = it.high?.toFixed(8);
-            currentHistoryItem.lowPrice = it.low?.toFixed(8);
-            currentHistoryItem.volume = it.volume?.toFixed(8);
-            historyItems.push(currentHistoryItem);
-          } else {
-            const historyItem = this.assetPriceHistoryRepo.create({
-              asset,
-              currencyCode: asset.currencyCode,
-              date: normalizedDate,
-              closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
-              openPrice: it.open?.toFixed(8),
-              highPrice: it.high?.toFixed(8),
-              lowPrice: it.low?.toFixed(8),
-              volume: it.volume?.toFixed(8),
-              source: 'MOEX',
-            });
-            historyItems.push(historyItem);
-          }
+          await this.assetService.updateAssetHistory(asset, historyToUpdate);
         }
       } catch (error) {
         this.logger.error(`Error updating chunk ${chunk.join(', ')}`, error);
@@ -173,9 +130,6 @@ export class AssetUpdaterService {
 
     if (assetsToSave.length > 0) {
       await this.assetRepo.save(assetsToSave);
-    }
-    if (historyItems.length > 0) {
-      await this.assetPriceHistoryRepo.save(historyItems);
     }
 
     this.logger.log(`Update complete. Processed ${assetsToSave.length} assets.`);
@@ -198,8 +152,6 @@ export class AssetUpdaterService {
       return;
     }
 
-    const historyItems: AssetPriceHistoryEntity[] = [];
-
     for (const asset of assets) {
       try {
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -214,32 +166,33 @@ export class AssetUpdaterService {
         } else {
           const cachedPrice = String(price.regularMarketPrice?.toFixed(8));
 
-          const assetHistoryItem = this.assetPriceHistoryRepo.create({
-            asset,
-            currencyCode: asset.currencyCode,
-            date: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
-            closePrice: cachedPrice,
-            openPrice: String(price.regularMarketOpen?.toFixed(8)),
-            highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
-            lowPrice: String(price.regularMarketDayLow?.toFixed(8)),
-            volume: String(price.regularMarketVolume?.toFixed(8)),
-            source: 'yahoo-finance',
-          });
+          const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = [
+            {
+              currencyCode: asset.currencyCode,
+              date: price.regularMarketTime ?? new Date(),
+              closePrice: cachedPrice,
+              openPrice: String(price.regularMarketOpen?.toFixed(8)),
+              highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
+              lowPrice: String(price.regularMarketDayLow?.toFixed(8)),
+              volume: String(price.regularMarketVolume?.toFixed(8)),
+              source: 'yahoo-finance',
+            },
+          ];
+
+          await this.assetService.updateAssetHistory(asset, historyToUpdate);
 
           asset.cachedMarketPrice = cachedPrice;
           asset.volume = String(price.regularMarketVolume?.toFixed(8) || '0');
           asset.changePercent24h = String(price.regularMarketChangePercent?.toFixed(2) || '0');
           asset.lastPriceUpdateAt = price.regularMarketTime ?? new Date();
-          historyItems.push(assetHistoryItem);
+
+          await this.assetRepo.save(asset);
         }
       } catch (e) {
         this.logger.error(`Failed to update asset: ${asset.symbol}`);
         this.logger.error(e);
       }
     }
-
-    await this.assetRepo.save(assets);
-    await this.assetPriceHistoryRepo.save(historyItems);
 
     this.logger.log(`Updated complete. Updated ${assets.length} assets.`);
   }
@@ -266,17 +219,20 @@ export class AssetUpdaterService {
 
       const cachedPrice = String(price.regularMarketPrice?.toFixed(8));
 
-      const assetHistoryItem = this.assetPriceHistoryRepo.create({
-        asset,
-        currencyCode: asset.currencyCode,
-        date: price.regularMarketTime?.toISOString() ?? new Date().toISOString(),
-        closePrice: cachedPrice,
-        openPrice: String(price.regularMarketOpen?.toFixed(8)),
-        highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
-        lowPrice: String(price.regularMarketDayLow?.toFixed(8)),
-        volume: String(price.regularMarketVolume?.toFixed(8)),
-        source: 'yahoo-finance',
-      });
+      const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = [
+        {
+          currencyCode: asset.currencyCode,
+          date: price.regularMarketTime ?? new Date(),
+          closePrice: cachedPrice,
+          openPrice: String(price.regularMarketOpen?.toFixed(8)),
+          highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
+          lowPrice: String(price.regularMarketDayLow?.toFixed(8)),
+          volume: String(price.regularMarketVolume?.toFixed(8)),
+          source: 'yahoo-finance',
+        },
+      ];
+
+      await this.assetService.updateAssetHistory(asset, historyToUpdate);
 
       asset.cachedMarketPrice = cachedPrice;
       asset.volume = String(price.regularMarketVolume?.toFixed(8) || '0');
@@ -284,7 +240,6 @@ export class AssetUpdaterService {
       asset.lastPriceUpdateAt = price.regularMarketTime ?? new Date();
 
       await this.assetRepo.save(asset);
-      await this.assetPriceHistoryRepo.save(assetHistoryItem);
 
       this.logger.log(`Updated asset: ${asset.symbol}`);
     } catch (e) {

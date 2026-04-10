@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AssetModule } from '@/modules/asset/asset.module';
 import { CurrencyModule } from '@/modules/currency/currency.module';
 import { SettingsModule } from '@/modules/settings/settings.module';
-import { UserAssetModule } from '@/modules/user-asset/user-asset.module';
 import { UserModule } from '@/modules/user/user.module';
+import { UserAssetModule } from '@/modules/user-asset/user-asset.module';
 
 import { PortfolioAssetEntity, PortfolioEntity, PortfolioSnapshotEntity } from './entities';
 import { PortfolioController } from './portfolio.controller';
@@ -17,6 +18,7 @@ import { PortfolioAssetService, PortfolioService } from './services';
     SettingsModule,
     UserAssetModule,
     UserModule,
+    AssetModule,
   ],
   controllers: [PortfolioController],
   providers: [PortfolioService, PortfolioAssetService],

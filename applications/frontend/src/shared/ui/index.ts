@@ -1,6 +1,7 @@
 export * from './AmountText';
 export * from './Block';
 export * from './CandlesChart';
+export * from './DonutChart';
 export * from './LineChart';
 export * from './Logo';
 export * from './PageTitle';

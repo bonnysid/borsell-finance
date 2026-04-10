@@ -56,6 +56,7 @@ export const TRANSACTIONS_QUERY_KEYS = {
 export const PORTFOLIO_QUERY_KEYS = {
   all: ['portfolio'] as const,
   summary: () => [...PORTFOLIO_QUERY_KEYS.all, 'summary'] as const,
+  allocation: () => [...PORTFOLIO_QUERY_KEYS.all, 'allocation'] as const,
 } as const;
 
 export const USER_QUERY_KEYS = {

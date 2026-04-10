@@ -1,17 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CurrencyCode, ID, PortfolioSummaryDtoShape } from '@packages/types';
+import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
 import Big from 'big.js';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 
+import { AssetService } from '@/modules/asset/services';
 import { CurrencyConverterService } from '@/modules/currency/services';
-import { CreatePortfolioDto } from '@/modules/portfolio/dto';
+import {
+  CreatePortfolioDto,
+  PortfolioAllocationDto,
+  PortfolioAllocationItemDto,
+  PortfolioHistoryDto,
+  PortfolioHistoryItemDto,
+} from '@/modules/portfolio/dto';
 import { SettingsService } from '@/modules/settings/services';
 import { UserAssetEntity } from '@/modules/user-asset/entities';
 import { UserAssetService } from '@/modules/user-asset/services';
 
 import { PortfolioEntity, PortfolioSnapshotEntity } from '../entities';
 import { PortfolioAssetService } from './protfolio-asset.service';
+import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
 
 @Injectable()
 export class PortfolioService {
@@ -24,6 +32,7 @@ export class PortfolioService {
     private readonly settingsService: SettingsService,
     private readonly portfolioAssetService: PortfolioAssetService,
     private readonly currencyConverterService: CurrencyConverterService,
+    private readonly assetService: AssetService,
   ) {}
 
   async findByUserId(userId: string) {
@@ -126,6 +135,215 @@ export class PortfolioService {
       pnlTodayPercent,
       currencyCode: targetCurrency,
     };
+  }
+
+  async getPortfolioAllocation(
+    userId: ID,
+    targetCurrency: CurrencyCode,
+  ): Promise<PortfolioAllocationDto | null> {
+    const portfolio = await this.findByUserId(userId);
+
+    if (!portfolio) {
+      return null;
+    }
+
+    const updatedPortfolio = await this.updatePortfolioMetrics(portfolio.id);
+    const userAssets = updatedPortfolio.assets.map((pa) => pa.userAsset);
+
+    const allocationItems: PortfolioAllocationItemDto[] = [];
+    let totalValue = new Big(0);
+
+    for (const ua of userAssets) {
+      const marketPrice = new Big(ua.asset.cachedMarketPrice).mul(ua.quantity);
+      const converted = await this.currencyConverterService.convertAmount({
+        amount: marketPrice,
+        fromCurrency: ua.asset.currencyCode,
+        toCurrency: targetCurrency,
+      });
+
+      totalValue = totalValue.add(converted.amount);
+
+      allocationItems.push(
+        new PortfolioAllocationItemDto({
+          id: ua.asset.id,
+          name: ua.asset.name,
+          symbol: ua.asset.symbol,
+          value: converted.amount.toNumber(),
+          percentage: 0, // Calculate later
+        }),
+      );
+    }
+
+    if (totalValue.gt(0)) {
+      allocationItems.forEach((item) => {
+        item.percentage = new Big(item.value).div(totalValue).mul(100).toNumber();
+      });
+    }
+
+    return new PortfolioAllocationDto({
+      items: allocationItems.sort((a, b) => b.value - a.value),
+      totalValue: totalValue.toNumber(),
+      currencyCode: targetCurrency,
+    });
+  }
+
+  async getPortfolioHistory(
+    userId: ID,
+    targetCurrency: CurrencyCode,
+  ): Promise<PortfolioHistoryDto | null> {
+    const portfolio = await this.portfolioRepository.findOne({
+      where: { user: { id: userId } },
+      relations: [
+        'assets',
+        'assets.userAsset',
+        'assets.userAsset.asset',
+        'assets.userAsset.transactions',
+      ],
+    });
+
+    if (!portfolio) {
+      return null;
+    }
+
+    const userAssets = portfolio.assets.map((pa) => pa.userAsset);
+
+    // Find the earliest transaction date
+    let earliestDate: Date | null = null;
+    for (const ua of userAssets) {
+      for (const tx of ua.transactions) {
+        if (!earliestDate || tx.executedAt < earliestDate) {
+          earliestDate = tx.executedAt;
+        }
+      }
+    }
+
+    if (!earliestDate) {
+      return new PortfolioHistoryDto({ items: [], currencyCode: targetCurrency });
+    }
+
+    const startDate = normalizeDate(earliestDate);
+    const today = normalizeDate(new Date());
+
+    // Generate dates from startDate to yesterday
+    const dates: Date[] = [];
+    const current = new Date(startDate);
+    while (current < today) {
+      dates.push(new Date(current));
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+
+    if (dates.length === 0) {
+      return new PortfolioHistoryDto({ items: [], currencyCode: targetCurrency });
+    }
+
+    // Fetch historical prices for all assets in the range
+    const assetSymbols = [...new Set(userAssets.map((ua) => ua.asset.symbol))];
+    const historicalPricesMap = new Map<string, Map<string, Big>>(); // symbol -> date -> price
+
+    await Promise.all(
+      assetSymbols.map(async (symbol) => {
+        const history = await this.assetService.getAssetPriceHistory(symbol, {
+          from: dates[0],
+          to: dates[dates.length - 1],
+        });
+        const dateMap = new Map<string, Big>();
+        for (const h of history) {
+          dateMap.set(formatDateToSqlDate(h.date), new Big(h.closePrice));
+        }
+        historicalPricesMap.set(symbol, dateMap);
+      }),
+    );
+
+    const items: PortfolioHistoryItemDto[] = [];
+
+    for (const date of dates) {
+      const dateStr = formatDateToSqlDate(date);
+      let dayMarketPrice = new Big(0);
+      let dayCostBasis = new Big(0);
+      let dayTotalInvested = new Big(0);
+      let dayTotalWithdrawn = new Big(0);
+      let dayRealizedPnl = new Big(0);
+
+      const metricsToConvert: { amount: Big; fromCurrency: CurrencyCode }[] = [];
+
+      for (const ua of userAssets) {
+        const txsBeforeOrOnDay = ua.transactions
+          .filter((tx) => normalizeDate(tx.executedAt) <= date)
+          .sort((a, b) => a.executedAt.getTime() - b.executedAt.getTime());
+
+        if (txsBeforeOrOnDay.length === 0) continue;
+
+        let quantity = new Big(0);
+        let costBasis = new Big(0);
+        let invested = new Big(0);
+        let withdrawn = new Big(0);
+        let realizedPnl = new Big(0);
+
+        for (const tx of txsBeforeOrOnDay) {
+          const txQty = new Big(tx.quantity);
+          const txPrice = new Big(tx.price);
+          const txAmount = new Big(tx.amount);
+
+          if (tx.type === TransactionType.BUY) {
+            costBasis = costBasis.add(txAmount);
+            quantity = quantity.add(txQty);
+            invested = invested.add(txAmount);
+          } else if (tx.type === TransactionType.SELL) {
+            if (quantity.gt(0)) {
+              const avgPrice = costBasis.div(quantity);
+              const soldCostBasis = txQty.mul(avgPrice);
+              costBasis = costBasis.minus(soldCostBasis);
+              realizedPnl = realizedPnl.add(txAmount.minus(soldCostBasis));
+            }
+            quantity = quantity.minus(txQty);
+            withdrawn = withdrawn.add(txAmount);
+          }
+        }
+
+        // Market Price for this asset on this day
+        const priceOnDay = historicalPricesMap.get(ua.asset.symbol)?.get(dateStr);
+        if (priceOnDay && quantity.gt(0)) {
+          const assetMarketPrice = quantity.mul(priceOnDay);
+          const convertedMarketPrice = await this.currencyConverterService.convertAmount({
+            amount: assetMarketPrice,
+            fromCurrency: ua.asset.currencyCode,
+            toCurrency: targetCurrency,
+          });
+          dayMarketPrice = dayMarketPrice.add(convertedMarketPrice.amount);
+        }
+
+        // Convert other metrics
+        const convert = async (amt: Big) => {
+          const res = await this.currencyConverterService.convertAmount({
+            amount: amt,
+            fromCurrency: ua.currencyCode,
+            toCurrency: targetCurrency,
+          });
+          return res.amount;
+        };
+
+        dayCostBasis = dayCostBasis.add(await convert(costBasis));
+        dayTotalInvested = dayTotalInvested.add(await convert(invested));
+        dayTotalWithdrawn = dayTotalWithdrawn.add(await convert(withdrawn));
+        dayRealizedPnl = dayRealizedPnl.add(await convert(realizedPnl));
+      }
+
+      items.push(
+        new PortfolioHistoryItemDto({
+          marketPrice: dayMarketPrice.toFixed(8),
+          costBasis: dayCostBasis.toFixed(8),
+          totalInvested: dayTotalInvested.toFixed(8),
+          totalWithdrawn: dayTotalWithdrawn.toFixed(8),
+          realizedPnl: dayRealizedPnl.toFixed(8),
+          createdAt: date,
+        }),
+      );
+    }
+
+    return new PortfolioHistoryDto({
+      items,
+      currencyCode: targetCurrency,
+    });
   }
 
   private async calculateMetrics(userAssets: UserAssetEntity[], targetCurrency: CurrencyCode) {

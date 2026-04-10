@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AssetPriceTimeframe, StockMetadata } from '@packages/types';
-import { Between, ILike, Repository } from 'typeorm';
+import { Between, ILike, In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
 import {
@@ -9,6 +9,7 @@ import {
   getDaysDifference,
   isDataStale,
   isSameDay,
+  normalizeDate,
 } from '@/common/utils/date.utils';
 import { MoexService } from '@/modules/moex/moex.service';
 import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
@@ -253,7 +254,7 @@ export class AssetService {
     // Запрашиваем свечи (минимум diffDays + запас) через унифицированный метод
     await this.getAssetPriceCandles(symbol, { candles: Math.max(diffDays + 5, 10) });
 
-    return this.assetPriceHistoryRepo.find({
+    const history = await this.assetPriceHistoryRepo.find({
       where: {
         asset: { symbol: symbol },
         timeframe,
@@ -261,6 +262,26 @@ export class AssetService {
       },
       order: { date: 'ASC' },
     });
+
+    // Remove duplicates by date (keep only the last one for each day)
+    const uniqueHistory: AssetPriceHistoryEntity[] = [];
+    const seenDates = new Set<string>();
+
+    for (const item of history) {
+      const dateKey = formatDateToSqlDate(item.date);
+      if (!seenDates.has(dateKey)) {
+        uniqueHistory.push(item);
+        seenDates.add(dateKey);
+      } else {
+        // If we found a duplicate, we replace the previous one to keep the "latest" in case they are not identical
+        const index = uniqueHistory.findIndex((h) => formatDateToSqlDate(h.date) === dateKey);
+        if (index !== -1) {
+          uniqueHistory[index] = item;
+        }
+      }
+    }
+
+    return uniqueHistory;
   }
 
   async getAssetProfileAndStats(ticker: string) {
@@ -298,6 +319,56 @@ export class AssetService {
     }
 
     return asset;
+  }
+
+  async updateAssetHistory(
+    asset: AssetEntity,
+    records: Partial<AssetPriceHistoryEntity>[],
+  ): Promise<void> {
+    if (records.length === 0) return;
+
+    // Normalize dates to ensure 00:00:00 time
+    for (const record of records) {
+      if (record.date) {
+        record.date = normalizeDate(record.date);
+      }
+    }
+
+    const timeframe = records[0].timeframe ?? AssetPriceTimeframe.DAY;
+    const dates = records.map((r) => r.date);
+
+    // Find existing records for these dates and timeframe
+    const existingRecords = await this.assetPriceHistoryRepo.find({
+      where: {
+        asset: { id: asset.id },
+        timeframe,
+        date: In(dates),
+      },
+    });
+
+    const entitiesToSave: AssetPriceHistoryEntity[] = [];
+
+    for (const record of records) {
+      const existing = existingRecords.find((e) => isSameDay(e.date, record.date));
+
+      if (existing) {
+        // Update existing record
+        Object.assign(existing, record);
+        entitiesToSave.push(existing);
+      } else {
+        // Create new record
+        const newRecord = this.assetPriceHistoryRepo.create({
+          ...record,
+          asset,
+          timeframe,
+        });
+        entitiesToSave.push(newRecord);
+      }
+    }
+
+    if (entitiesToSave.length > 0) {
+      await this.assetPriceHistoryRepo.save(entitiesToSave);
+    }
   }
 
   async getAssetPriceCandles(symbol: string, { candles = 500 }: AssetCandlesQueryDto) {
@@ -353,46 +424,18 @@ export class AssetService {
         }
 
         if (moexCandles.length > 0) {
-          const newEntities: AssetPriceHistoryEntity[] = [];
-          const updatedEntities: AssetPriceHistoryEntity[] = [];
+          const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexCandles.map((record) => ({
+            date: record.date,
+            openPrice: record.open.toFixed(8),
+            highPrice: record.high.toFixed(8),
+            lowPrice: record.low.toFixed(8),
+            closePrice: record.close.toFixed(8),
+            volume: record.volume.toFixed(8),
+            currencyCode: record.currencyCode,
+            source: 'MOEX',
+          }));
 
-          for (const record of moexCandles) {
-            // Проверяем, нет ли уже такой записи в БД по дате
-            const exists = localHistory.find((h) => isSameDay(h.date, record.date));
-
-            if (!exists) {
-              const historyEntry = this.assetPriceHistoryRepo.create({
-                asset,
-                timeframe,
-                date: record.date,
-                openPrice: record.open.toFixed(8),
-                highPrice: record.high.toFixed(8),
-                lowPrice: record.low.toFixed(8),
-                closePrice: record.close.toFixed(8),
-                volume: record.volume.toFixed(8),
-                currencyCode: record.currencyCode,
-                source: 'MOEX',
-              });
-              newEntities.push(historyEntry);
-            } else {
-              // Обновляем существующую (особенно актуально для сегодняшней свечи, которая может меняться)
-              exists.openPrice = record.open.toFixed(8);
-              exists.highPrice = record.high.toFixed(8);
-              exists.lowPrice = record.low.toFixed(8);
-              exists.closePrice = record.close.toFixed(8);
-              exists.volume = record.volume.toFixed(8);
-
-              updatedEntities.push(exists);
-            }
-          }
-
-          if (updatedEntities.length > 0) {
-            await this.assetPriceHistoryRepo.save(updatedEntities);
-          }
-
-          if (newEntities.length > 0) {
-            await this.assetPriceHistoryRepo.save(newEntities);
-          }
+          await this.updateAssetHistory(asset, historyToUpdate);
 
           await this.settingsService.setRaw(
             lastUpdateKey,
