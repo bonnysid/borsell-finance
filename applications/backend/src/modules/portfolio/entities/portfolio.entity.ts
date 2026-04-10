@@ -61,6 +61,9 @@ export class PortfolioEntity {
   @DateColumn({ nullable: true })
   lastValuationAt: Date;
 
+  @DateColumn({ nullable: true })
+  historyLastUpdatedAt: Date;
+
   @OneToMany(
     () => PortfolioAssetEntity,
     (asset) => asset.portfolio,

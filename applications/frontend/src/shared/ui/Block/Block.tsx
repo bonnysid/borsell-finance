@@ -5,6 +5,7 @@ import styles from './Block.module.scss';
 
 type BlockProps = HTMLAttributes<HTMLDivElement> & {
   title?: string;
+  isLoading?: boolean;
 };
 
 const cx = bindStyles(styles);

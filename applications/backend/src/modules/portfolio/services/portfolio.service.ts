@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
 import Big from 'big.js';
-import { In, LessThanOrEqual, Repository } from 'typeorm';
+import { Between, LessThanOrEqual, Repository } from 'typeorm';
 
+import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
 import { AssetService } from '@/modules/asset/services';
 import { CurrencyConverterService } from '@/modules/currency/services';
 import {
@@ -19,7 +20,6 @@ import { UserAssetService } from '@/modules/user-asset/services';
 
 import { PortfolioEntity, PortfolioSnapshotEntity } from '../entities';
 import { PortfolioAssetService } from './protfolio-asset.service';
-import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
 
 @Injectable()
 export class PortfolioService {
@@ -236,6 +236,20 @@ export class PortfolioService {
       return new PortfolioHistoryDto({ items: [], currencyCode: targetCurrency });
     }
 
+    // Check existing snapshots in this range
+    const existingSnapshots = await this.portfolioSnapshotRepository.find({
+      where: {
+        portfolio: { id: portfolio.id },
+        createdAt: Between(dates[0], dates[dates.length - 1]),
+      },
+      order: { createdAt: 'ASC' },
+    });
+
+    const snapshotsByDate = new Map<string, PortfolioSnapshotEntity>();
+    for (const s of existingSnapshots) {
+      snapshotsByDate.set(formatDateToSqlDate(s.createdAt), s);
+    }
+
     // Fetch historical prices for all assets in the range
     const assetSymbols = [...new Set(userAssets.map((ua) => ua.asset.symbol))];
     const historicalPricesMap = new Map<string, Map<string, Big>>(); // symbol -> date -> price
@@ -247,24 +261,65 @@ export class PortfolioService {
           to: dates[dates.length - 1],
         });
         const dateMap = new Map<string, Big>();
+        let lastPrice: Big | null = null;
+
+        // Fill gaps: for each date in 'dates', if we don't have a price, use the last known price
+        const historyMap = new Map<string, Big>();
         for (const h of history) {
-          dateMap.set(formatDateToSqlDate(h.date), new Big(h.closePrice));
+          historyMap.set(formatDateToSqlDate(h.date), new Big(h.closePrice));
         }
+
+        for (const date of dates) {
+          const dStr = formatDateToSqlDate(date);
+          const price = historyMap.get(dStr);
+          if (price) {
+            lastPrice = price;
+          }
+          if (lastPrice) {
+            dateMap.set(dStr, lastPrice);
+          }
+        }
+
         historicalPricesMap.set(symbol, dateMap);
       }),
     );
 
     const items: PortfolioHistoryItemDto[] = [];
+    const snapshotsToSave: PortfolioSnapshotEntity[] = [];
 
     for (const date of dates) {
       const dateStr = formatDateToSqlDate(date);
+      const existingSnapshot = snapshotsByDate.get(dateStr);
+
+      if (existingSnapshot) {
+        // Convert metrics to target currency
+        const convert = async (amount: string | number) => {
+          const result = await this.currencyConverterService.convertAmount({
+            amount: new Big(amount),
+            fromCurrency: portfolio.currencyCode,
+            toCurrency: targetCurrency,
+          });
+          return result.amount.toFixed(8);
+        };
+
+        items.push(
+          new PortfolioHistoryItemDto({
+            marketPrice: await convert(existingSnapshot.marketPrice),
+            costBasis: await convert(existingSnapshot.costBasis),
+            totalInvested: await convert(existingSnapshot.totalInvested),
+            totalWithdrawn: await convert(existingSnapshot.totalWithdrawn),
+            realizedPnl: await convert(existingSnapshot.realizedPnl),
+            createdAt: formatDateToSqlDate(normalizeDate(existingSnapshot.createdAt)),
+          }),
+        );
+        continue;
+      }
+
       let dayMarketPrice = new Big(0);
       let dayCostBasis = new Big(0);
       let dayTotalInvested = new Big(0);
       let dayTotalWithdrawn = new Big(0);
       let dayRealizedPnl = new Big(0);
-
-      const metricsToConvert: { amount: Big; fromCurrency: CurrencyCode }[] = [];
 
       for (const ua of userAssets) {
         const txsBeforeOrOnDay = ua.transactions
@@ -300,44 +355,73 @@ export class PortfolioService {
           }
         }
 
-        // Market Price for this asset on this day
+        // Market Price for this asset on this day (base currency of asset)
         const priceOnDay = historicalPricesMap.get(ua.asset.symbol)?.get(dateStr);
         if (priceOnDay && quantity.gt(0)) {
           const assetMarketPrice = quantity.mul(priceOnDay);
-          const convertedMarketPrice = await this.currencyConverterService.convertAmount({
+          // Convert to portfolio base currency for snapshot
+          const convertedToPortfolioBase = await this.currencyConverterService.convertAmount({
             amount: assetMarketPrice,
             fromCurrency: ua.asset.currencyCode,
-            toCurrency: targetCurrency,
+            toCurrency: portfolio.currencyCode,
           });
-          dayMarketPrice = dayMarketPrice.add(convertedMarketPrice.amount);
+          dayMarketPrice = dayMarketPrice.add(convertedToPortfolioBase.amount);
         }
 
-        // Convert other metrics
-        const convert = async (amt: Big) => {
+        // Convert other metrics to portfolio base currency
+        const convertToBase = async (amt: Big) => {
           const res = await this.currencyConverterService.convertAmount({
             amount: amt,
             fromCurrency: ua.currencyCode,
-            toCurrency: targetCurrency,
+            toCurrency: portfolio.currencyCode,
           });
           return res.amount;
         };
 
-        dayCostBasis = dayCostBasis.add(await convert(costBasis));
-        dayTotalInvested = dayTotalInvested.add(await convert(invested));
-        dayTotalWithdrawn = dayTotalWithdrawn.add(await convert(withdrawn));
-        dayRealizedPnl = dayRealizedPnl.add(await convert(realizedPnl));
+        dayCostBasis = dayCostBasis.add(await convertToBase(costBasis));
+        dayTotalInvested = dayTotalInvested.add(await convertToBase(invested));
+        dayTotalWithdrawn = dayTotalWithdrawn.add(await convertToBase(withdrawn));
+        dayRealizedPnl = dayRealizedPnl.add(await convertToBase(realizedPnl));
       }
+
+      // Save snapshot in portfolio base currency
+      const snapshot = this.portfolioSnapshotRepository.create({
+        portfolio: { id: portfolio.id },
+        marketPrice: dayMarketPrice.toFixed(8),
+        costBasis: dayCostBasis.toFixed(8),
+        totalInvested: dayTotalInvested.toFixed(8),
+        totalWithdrawn: dayTotalWithdrawn.toFixed(8),
+        realizedPnl: dayRealizedPnl.toFixed(8),
+        createdAt: date,
+      });
+      snapshotsToSave.push(snapshot);
+
+      // Convert metrics for response DTO
+      const convertToTarget = async (amt: Big) => {
+        const res = await this.currencyConverterService.convertAmount({
+          amount: amt,
+          fromCurrency: portfolio.currencyCode,
+          toCurrency: targetCurrency,
+        });
+        return res.amount.toFixed(8);
+      };
 
       items.push(
         new PortfolioHistoryItemDto({
-          marketPrice: dayMarketPrice.toFixed(8),
-          costBasis: dayCostBasis.toFixed(8),
-          totalInvested: dayTotalInvested.toFixed(8),
-          totalWithdrawn: dayTotalWithdrawn.toFixed(8),
-          realizedPnl: dayRealizedPnl.toFixed(8),
-          createdAt: date,
+          marketPrice: await convertToTarget(dayMarketPrice),
+          costBasis: await convertToTarget(dayCostBasis),
+          totalInvested: await convertToTarget(dayTotalInvested),
+          totalWithdrawn: await convertToTarget(dayTotalWithdrawn),
+          realizedPnl: await convertToTarget(dayRealizedPnl),
+          createdAt: formatDateToSqlDate(normalizeDate(date)),
         }),
       );
+    }
+
+    if (snapshotsToSave.length > 0) {
+      await this.portfolioSnapshotRepository.save(snapshotsToSave);
+      portfolio.historyLastUpdatedAt = new Date();
+      await this.portfolioRepository.save(portfolio);
     }
 
     return new PortfolioHistoryDto({

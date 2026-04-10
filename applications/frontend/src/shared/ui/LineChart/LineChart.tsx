@@ -25,15 +25,16 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
   const lineSeriesRef = useRef<ISeriesApi<'Area'>>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    const container = chartContainerRef.current;
+    if (!container) return;
 
-    const chart = createChart(chartContainerRef.current, {
+    const chart = createChart(container, {
       layout: {
         background: { type: ColorType.Solid, color: getCssVariable('--color-bg-secondary') },
         textColor: getCssVariable('--color-text-primary'),
       },
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
+      width: container.clientWidth,
+      height: 400,
       grid: {
         vertLines: { color: getCssVariable('--color-border-primary') },
         horzLines: { color: getCssVariable('--color-border-primary') },
@@ -53,13 +54,15 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
     chartApiRef.current = chart;
     lineSeriesRef.current = lineSeries;
 
-    const handleResize = () => {
-      chart.applyOptions({ width: chartContainerRef.current?.clientWidth });
-    };
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width } = entries[0].contentRect;
+      chart.applyOptions({ width });
+    });
+
+    resizeObserver.observe(container);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       chart.remove();
     };
   }, [i18n.language]);

@@ -65,3 +65,17 @@ export type PortfolioAllocationDtoShape = {
   totalValue: number;
   currencyCode: CurrencyCode;
 };
+
+export type PortfolioHistoryItemDtoShape = {
+  marketPrice: NumberString;
+  costBasis: NumberString;
+  totalInvested: NumberString;
+  totalWithdrawn: NumberString;
+  realizedPnl: NumberString;
+  createdAt: DateString;
+};
+
+export type PortfolioHistoryDtoShape = {
+  items: PortfolioHistoryItemDtoShape[];
+  currencyCode: CurrencyCode;
+};

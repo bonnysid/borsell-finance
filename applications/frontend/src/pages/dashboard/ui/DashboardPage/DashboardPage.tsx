@@ -1,5 +1,6 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { PortfolioAllocation } from '@widgets/portfolio-allocation';
+import { PortfolioHistoryChart } from '@widgets/portfolio-history-chart';
 import { PortfolioSummary } from '@widgets/portfolio-summary';
 import { FC } from 'react';
 
@@ -12,8 +13,13 @@ const cn = bindStyles(styles);
 export const DashboardPage: FC<DashboardPageProps> = () => {
   return (
     <div className={cn('dashboard-page')}>
-      <PortfolioSummary />
-      <PortfolioAllocation />
+      <div className={cn('main-content')}>
+        <PortfolioHistoryChart />
+      </div>
+      <div className={cn('side-content')}>
+        <PortfolioSummary />
+        <PortfolioAllocation />
+      </div>
     </div>
   );
 };

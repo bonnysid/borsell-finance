@@ -251,8 +251,53 @@ export class AssetService {
     );
 
     const diffDays = getDaysDifference(startDate, endDate);
-    // Запрашиваем свечи (минимум diffDays + запас) через унифицированный метод
-    await this.getAssetPriceCandles(symbol, { candles: Math.max(diffDays + 5, 10) });
+
+    // Check if we already have data for this range in DB
+    const count = await this.assetPriceHistoryRepo.count({
+      where: {
+        asset: { symbol: symbol },
+        timeframe,
+        date: Between(startDate, endDate),
+      },
+    });
+
+    // If we have less than 70% of days, we fetch from external source
+    // We use 70% because of weekends/holidays
+    if (count < diffDays * 0.7) {
+      this.logger.log(`Data missing for ${symbol} in range ${startDate} - ${endDate}. Fetching...`);
+
+      const asset = await this.assetRepo.findOne({ where: { symbol } });
+      if (asset) {
+        try {
+          const moexHistory = await this.moexService.getAssetHistory(
+            symbol,
+            formatDateToSqlDate(startDate),
+            formatDateToSqlDate(endDate),
+          );
+
+          if (moexHistory.length > 0) {
+            const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
+              (record) => ({
+                date: record.date,
+                openPrice: record.open.toFixed(8),
+                highPrice: record.high.toFixed(8),
+                lowPrice: record.low.toFixed(8),
+                closePrice: record.close.toFixed(8),
+                volume: record.volume.toFixed(8),
+                currencyCode: record.currencyCode,
+                source: 'MOEX',
+              }),
+            );
+
+            await this.updateAssetHistory(asset, historyToUpdate);
+          }
+        } catch (e) {
+          this.logger.error(`Failed to fetch history from MOEX for ${symbol}`, e);
+          // Fallback to getAssetPriceCandles if getAssetHistory fails
+          await this.getAssetPriceCandles(symbol, { candles: Math.max(diffDays + 5, 10) });
+        }
+      }
+    }
 
     const history = await this.assetPriceHistoryRepo.find({
       where: {
