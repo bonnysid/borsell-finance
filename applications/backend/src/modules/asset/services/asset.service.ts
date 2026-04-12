@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AssetPriceTimeframe, StockMetadata } from '@packages/types';
+import { subDays } from 'date-fns';
 import { Between, ILike, In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
@@ -33,45 +34,7 @@ export class AssetService {
     private readonly settingsService: SettingsService,
   ) {}
 
-  async searchAssets(query: string): Promise<AssetEntity[]> {
-    // 1. Ищем в локальной БД
-    const localResults = await this.assetRepo.find({
-      where: [
-        { symbol: ILike(`%${query}%`) }, // ILike - регистронезависимый поиск
-        { name: ILike(`%${query}%`) },
-      ],
-      take: 10,
-    });
-
-    if (localResults.length > 0) {
-      return localResults;
-    }
-
-    this.logger.log(`Fetching new assets from external API for query: ${query}`);
-
-    // 2. Если пусто — ищем во внешнем мире (Псевдокод)
-    // Это называется "On-demand population"
-    /*
-    const externalData = await this.externalApi.search(query);
-    if (externalData) {
-       const newAsset = this.catalogRepo.create({
-          symbol: externalData.symbol,
-          name: externalData.name,
-          type: AssetType.CRYPTO,
-          metadata: { ... }
-       });
-       return [await this.catalogRepo.save(newAsset)];
-    }
-    */
-
-    return [];
-  }
-
-  async getAllAssets(): Promise<AssetEntity[]> {
-    return this.assetRepo.find({});
-  }
-
-  async getAssetsPaginated(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
+  async getAssets(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
     const { page = 1, limit = 10, search } = query;
 
     const [assets, count] = await this.assetRepo.findAndCount({
@@ -84,10 +47,10 @@ export class AssetService {
     return [assets, count];
   }
 
-  async getAssetsWithHistoryPaginated(
+  async getAssetsWithHistory(
     query: AssetQueryDto,
   ): Promise<[Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }>, number]> {
-    const [assets, count] = await this.getAssetsPaginated(query);
+    const [assets, count] = await this.getAssets(query);
 
     const result: Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }> = [];
 
@@ -122,9 +85,8 @@ export class AssetService {
       throw new NotFoundException(`Asset not found`);
     }
 
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - 7);
+    const today = normalizeDate(new Date());
+    const startDate = subDays(today, 7);
 
     return this.getAssetPriceHistory(assetEntity.symbol, {
       from: startDate,
@@ -133,38 +95,32 @@ export class AssetService {
     });
   }
 
-  async findOne(symbol: string): Promise<AssetEntity | null> {
-    return this.assetRepo.findOne({ where: { symbol } });
-  }
-
-  async getAsset(ticker: string): Promise<AssetEntity | null> {
+  async getAsset(symbol: string): Promise<AssetEntity | null> {
     // 1. Ищем актив в нашей БД
-    let asset = await this.assetRepo.findOne({ where: { symbol: ticker } });
+    let asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
 
     // 2. Проверяем, протухли ли данные
-    const now = new Date();
-    const isStale =
-      !asset ||
-      !asset.lastPriceUpdateAt ||
-      now.getTime() - asset.lastPriceUpdateAt.getTime() > this.PRICE_CACHE_TTL_MINUTES * 60 * 1000;
+    const isStale = asset
+      ? isDataStale(asset.lastPriceUpdateAt, this.PRICE_CACHE_TTL_MINUTES / 60)
+      : true;
 
     // 3. Если данных нет или они старые — идем в MOEX
     if (isStale) {
-      this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${ticker} from MOEX`);
+      this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${symbol} from MOEX`);
 
-      const moexData = await this.moexService.getAssetInfo(ticker);
+      const moexData = await this.moexService.getAssetInfo(symbol);
 
       if (!moexData) {
         // Если это новый актив и его нет на MOEX, кидаем ошибку
-        if (!asset) throw new Error(`Asset ${ticker} not found on MOEX`);
+        if (!asset) throw new Error(`Asset ${symbol} not found on MOEX`);
         // Если MOEX лежит, но у нас есть старые данные в БД — отдаем их (Graceful degradation)
-        this.logger.warn(`MOEX is unavailable for ${ticker}. Serving stale data.`);
+        this.logger.warn(`MOEX is unavailable for ${symbol}. Serving stale data.`);
         return asset;
       }
 
       // 4. Обновляем или создаем сущность
       if (!asset) {
-        asset = this.assetRepo.create({ symbol: ticker });
+        asset = this.assetRepo.create({ symbol: symbol });
       }
 
       asset.type = moexData.type;
@@ -183,19 +139,20 @@ export class AssetService {
         lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
         issueCapitalization: moexData.issueCapitalization?.toString(),
         valToday: moexData.valToday?.toString(),
+        moexData: moexData.moexData,
       } as StockMetadata;
 
       // Сохраняем в БД
       asset = await this.assetRepo.save(asset);
     } else {
-      this.logger.log(`[Cache Hit] Serving ${ticker} from DB`);
+      this.logger.log(`[Cache Hit] Serving ${symbol} from DB`);
     }
 
     return asset;
   }
 
   async getAssetPriceWithChange(symbol: string) {
-    const asset = await this.assetRepo.findOne({ where: { symbol } });
+    const asset = await this.getAsset(symbol);
 
     if (!asset) {
       throw new NotFoundException(`Asset with symbol ${symbol} not found`);
@@ -245,10 +202,8 @@ export class AssetService {
   ): Promise<AssetPriceHistoryEntity[]> {
     this.logger.log(`Fetching history for asset ${symbol} from ${from} to ${to}`);
 
-    const endDate = new Date(formatDateToSqlDate(to || new Date()));
-    const startDate = new Date(
-      formatDateToSqlDate(from || new Date(new Date().setDate(endDate.getDate() - 30))),
-    );
+    const endDate = normalizeDate(to || new Date());
+    const startDate = normalizeDate(from || subDays(endDate, 30));
 
     const diffDays = getDaysDifference(startDate, endDate);
 
@@ -257,7 +212,7 @@ export class AssetService {
       where: {
         asset: { symbol: symbol },
         timeframe,
-        date: Between(startDate, endDate),
+        date: Between(formatDateToSqlDate(startDate), formatDateToSqlDate(endDate)),
       },
     });
 
@@ -278,7 +233,7 @@ export class AssetService {
           if (moexHistory.length > 0) {
             const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
               (record) => ({
-                date: record.date,
+                date: formatDateToSqlDate(record.date),
                 openPrice: record.open.toFixed(8),
                 highPrice: record.high.toFixed(8),
                 lowPrice: record.low.toFixed(8),
@@ -303,7 +258,7 @@ export class AssetService {
       where: {
         asset: { symbol: symbol },
         timeframe,
-        date: Between(startDate, endDate),
+        date: Between(formatDateToSqlDate(startDate), formatDateToSqlDate(endDate)),
       },
       order: { date: 'ASC' },
     });
@@ -333,8 +288,6 @@ export class AssetService {
     // 1. Ищем актив в нашей базе данных
     let asset = await this.assetRepo.findOne({ where: { symbol: ticker } });
 
-    // 2. Определяем, нужно ли идти в MOEX (нет в БД или данные устарели)
-    // Акции торгуются днем, обновлять капитализацию раз в 1-4 часа вполне ок.
     const isStale = asset ? isDataStale(asset.updatedAt, 4) : true;
 
     if (!asset || isStale) {
@@ -373,12 +326,6 @@ export class AssetService {
     if (records.length === 0) return;
 
     // Normalize dates to ensure 00:00:00 time
-    for (const record of records) {
-      if (record.date) {
-        record.date = normalizeDate(record.date);
-      }
-    }
-
     const timeframe = records[0].timeframe ?? AssetPriceTimeframe.DAY;
     const dates = records.map((r) => r.date);
 
@@ -470,7 +417,7 @@ export class AssetService {
 
         if (moexCandles.length > 0) {
           const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexCandles.map((record) => ({
-            date: record.date,
+            date: formatDateToSqlDate(record.date),
             openPrice: record.open.toFixed(8),
             highPrice: record.high.toFixed(8),
             lowPrice: record.low.toFixed(8),
@@ -498,7 +445,9 @@ export class AssetService {
             take: candles,
           });
 
-          return updatedHistory.sort((a, b) => a.date.getTime() - b.date.getTime());
+          return updatedHistory.sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          );
         }
       } catch (e) {
         this.logger.error(`Failed to fetch candles from MOEX for ${asset.symbol}`, e);
@@ -506,6 +455,6 @@ export class AssetService {
     }
 
     // Возвращаем локальную историю, сортируя по возрастанию для графиков
-    return localHistory.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return localHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 }

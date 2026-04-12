@@ -32,7 +32,9 @@ export type BaseMetadata = {
 };
 
 // 2. Специфика для Акций (Stock)
-export type StockMetadata = {};
+export type StockMetadata = {
+  moexData?: Record<string, any>;
+};
 
 // 3. Специфика для Крипты (Crypto)
 export type CryptoMetadata = {};

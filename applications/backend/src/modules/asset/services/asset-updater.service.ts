@@ -5,6 +5,7 @@ import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
+import { formatDateToSqlDate } from '@/common';
 import { MoexService } from '@/modules/moex/moex.service';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
@@ -103,7 +104,7 @@ export class AssetUpdaterService {
 
           if (it.prevDate && it.prevWaPrice && it.prevWaPrice.gt(0)) {
             historyToUpdate.push({
-              date: it.prevDate,
+              date: formatDateToSqlDate(it.prevDate),
               closePrice: it.prevWaPrice.toFixed(8),
               source: 'MOEX',
               currencyCode: asset.currencyCode,
@@ -111,7 +112,7 @@ export class AssetUpdaterService {
           }
 
           historyToUpdate.push({
-            date: it.date,
+            date: formatDateToSqlDate(it.date),
             closePrice: it.close.gt(0) ? it.close.toFixed(8) : it.lastPrice.toFixed(8),
             openPrice: it.open?.toFixed(8),
             highPrice: it.high?.toFixed(8),
@@ -169,7 +170,7 @@ export class AssetUpdaterService {
           const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = [
             {
               currencyCode: asset.currencyCode,
-              date: price.regularMarketTime ?? new Date(),
+              date: formatDateToSqlDate(price.regularMarketTime ?? new Date()),
               closePrice: cachedPrice,
               openPrice: String(price.regularMarketOpen?.toFixed(8)),
               highPrice: String(price.regularMarketDayHigh?.toFixed(8)),
@@ -222,7 +223,7 @@ export class AssetUpdaterService {
       const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = [
         {
           currencyCode: asset.currencyCode,
-          date: price.regularMarketTime ?? new Date(),
+          date: formatDateToSqlDate(price.regularMarketTime ?? new Date()),
           closePrice: cachedPrice,
           openPrice: String(price.regularMarketOpen?.toFixed(8)),
           highPrice: String(price.regularMarketDayHigh?.toFixed(8)),

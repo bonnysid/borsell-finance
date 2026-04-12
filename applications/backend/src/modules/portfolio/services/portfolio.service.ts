@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
 import Big from 'big.js';
+import { addDays, startOfDay } from 'date-fns';
 import { Between, LessThanOrEqual, Repository } from 'typeorm';
 
 import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
@@ -98,13 +99,12 @@ export class PortfolioService {
     );
 
     // Calculate PnL Today
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const todayStart = startOfDay(new Date());
 
     const lastSnapshotBeforeToday = await this.portfolioSnapshotRepository.findOne({
       where: {
         portfolio: { id: portfolio.id },
-        createdAt: LessThanOrEqual(startOfDay),
+        createdAt: LessThanOrEqual(formatDateToSqlDate(todayStart)),
       },
       order: { createdAt: 'DESC' },
     });
@@ -226,10 +226,10 @@ export class PortfolioService {
 
     // Generate dates from startDate to yesterday
     const dates: Date[] = [];
-    const current = new Date(startDate);
+    let current = new Date(startDate);
     while (current < today) {
       dates.push(new Date(current));
-      current.setUTCDate(current.getUTCDate() + 1);
+      current = addDays(current, 1);
     }
 
     if (dates.length === 0) {
@@ -240,14 +240,18 @@ export class PortfolioService {
     const existingSnapshots = await this.portfolioSnapshotRepository.find({
       where: {
         portfolio: { id: portfolio.id },
-        createdAt: Between(dates[0], dates[dates.length - 1]),
+        createdAt: Between(
+          formatDateToSqlDate(dates[0]),
+          formatDateToSqlDate(dates[dates.length - 1]),
+        ),
       },
       order: { createdAt: 'ASC' },
     });
 
     const snapshotsByDate = new Map<string, PortfolioSnapshotEntity>();
+
     for (const s of existingSnapshots) {
-      snapshotsByDate.set(formatDateToSqlDate(s.createdAt), s);
+      snapshotsByDate.set(s.createdAt, s);
     }
 
     // Fetch historical prices for all assets in the range
@@ -392,7 +396,7 @@ export class PortfolioService {
         totalInvested: dayTotalInvested.toFixed(8),
         totalWithdrawn: dayTotalWithdrawn.toFixed(8),
         realizedPnl: dayRealizedPnl.toFixed(8),
-        createdAt: date,
+        createdAt: formatDateToSqlDate(date),
       });
       snapshotsToSave.push(snapshot);
 

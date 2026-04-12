@@ -41,7 +41,7 @@ export class AssetPriceHistoryDto implements AssetPriceHistoryDtoShape {
     this.currencyCode = history.currencyCode;
     this.source = history.source;
 
-    this.date = history.date.toISOString();
+    this.date = history.date;
     this.createdAt = history.createdAt.toISOString();
     this.updatedAt = history.updatedAt.toISOString();
   }

@@ -43,8 +43,7 @@ export class AssetController {
     @Res() res: Response,
     @CurrentUser() user?: UserJWT,
   ) {
-    const [assetsWithHistory, totalItems] =
-      await this.appService.getAssetsWithHistoryPaginated(query);
+    const [assetsWithHistory, totalItems] = await this.appService.getAssetsWithHistory(query);
     const userFromDB = user ? await this.userService.findOne(user?.username) : null;
     const mappedAssets: AssetWithHistoryDto[] = [];
 
@@ -87,7 +86,7 @@ export class AssetController {
     @Res() res: Response,
     @CurrentUser() user?: UserJWT,
   ) {
-    const asset = await this.appService.findOne(symbol);
+    const asset = await this.appService.getAsset(symbol);
 
     if (!asset) {
       throw new NotFoundException('Asset not found');

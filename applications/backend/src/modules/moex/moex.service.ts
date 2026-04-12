@@ -2,8 +2,10 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { AssetType, DateString } from '@packages/types';
 import Big from 'big.js';
+import { addDays, differenceInDays } from 'date-fns';
 import { lastValueFrom } from 'rxjs';
 
+import { formatDateToSqlDate } from '@/common/utils/date.utils';
 import {
   MoexAssetHistoryPrice,
   MoexAssetInfo,
@@ -46,6 +48,53 @@ export class MoexService {
     }
   }
 
+  async getSecurityData(tickers: string[]): Promise<MoexAssetInfo[]> {
+    this.logger.log(`Fetching security data for ${tickers.length} tickers`);
+
+    if (tickers.length === 0) return [];
+
+    try {
+      const url = `${this.marketUrl}?securities=${tickers.join(',')}&iss.meta=off&iss.json=extended&iss.only=securities,marketdata`;
+
+      const response = await lastValueFrom(
+        this.httpService.get<MoexAssetInfoWithPriceResponse>(url),
+      );
+
+      const securities = response.data[1].securities;
+      const marketdata = response.data[1].marketdata;
+
+      return marketdata.map((marketItem) => {
+        const securityItem = securities.find((s) => s.SECID === marketItem.SECID);
+
+        return {
+          symbol: this._mapString(marketItem.SECID),
+          name: this._mapString(securityItem?.SECNAME || securityItem?.SEQNAME),
+          shortName: this._mapString(securityItem?.SHORTNAME),
+          isin: this._mapString(securityItem?.ISIN),
+          lotSize: this._mapPrice(securityItem?.LOTSIZE),
+          issueCapitalization: this._mapPrice(securityItem?.ISSUECAPITALIZATION),
+
+          lastPrice: this._mapPrice(marketItem.LAST),
+          open: this._mapPrice(marketItem.OPEN),
+          high: this._mapPrice(marketItem.HIGH),
+          low: this._mapPrice(marketItem.LOW),
+          close: this._mapPrice(marketItem.CLOSEPRICE),
+          volume: this._mapPrice(marketItem.VOLTODAY || marketItem.VOLUME),
+          valToday: this._mapPrice(marketItem.VALTODAY),
+          changePercent: this._mapPrice(marketItem.LASTCHANGEPRCNT),
+
+          date: this._mapDate(marketItem.SYSTIME) ?? new Date(),
+          currencyCode: CURRENCY,
+          type: AssetType.STOCK,
+          moexData: { ...securityItem, ...marketItem },
+        };
+      });
+    } catch (error) {
+      this.logger.error('Error fetching security data', error);
+      throw error;
+    }
+  }
+
   async getTopTickers(limit = 100): Promise<string[]> {
     try {
       this.logger.log(`Fetching top ${limit} tickers from MOEX`);
@@ -74,7 +123,7 @@ export class MoexService {
     const marketData = data.marketdata;
     const securities = data.securities;
 
-    const infoMap = this._mapData(securities, (getValue) => {
+    const infoMap = this._mapData(securities, (getValue, row) => {
       const symbol = this._mapString(getValue(MoexColumnsVariants.SECID));
       const name = this._mapString(getValue(MoexColumnsVariants.SEQNAME));
       const shortName = this._mapString(getValue(MoexColumnsVariants.SHORTNAME));
@@ -82,6 +131,14 @@ export class MoexService {
       const isin = this._mapString(getValue(MoexColumnsVariants.ISIN));
       const prevWaPrice = this._mapPrice(getValue(MoexColumnsVariants.PREVWAPRICE));
       const prevDate = this._mapDate(getValue(MoexColumnsVariants.PREVDATE));
+
+      const rawData = securities.columns.reduce(
+        (acc, col, idx) => {
+          acc[col] = row[idx];
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
 
       return {
         symbol,
@@ -91,10 +148,11 @@ export class MoexService {
         isin,
         prevWaPrice,
         prevDate,
+        rawData,
       };
     });
 
-    const priceMap = this._mapData(marketData, (getValue) => {
+    const priceMap = this._mapData(marketData, (getValue, row) => {
       const symbol = this._mapString(getValue(MoexColumnsVariants.SECID));
       const lastPrice = this._mapPrice(getValue(MoexColumnsVariants.LAST));
       const date = this._mapDate(getValue(MoexColumnsVariants.SYSTIME)) ?? new Date();
@@ -107,6 +165,14 @@ export class MoexService {
       );
       const changePercent = this._mapPrice(getValue(MoexColumnsVariants.LASTCHANGEPRCNT));
 
+      const rawData = marketData.columns.reduce(
+        (acc, col, idx) => {
+          acc[col] = row[idx];
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
       return {
         symbol,
         lastPrice,
@@ -117,6 +183,7 @@ export class MoexService {
         close,
         volume,
         changePercent,
+        rawData,
       };
     });
 
@@ -129,6 +196,7 @@ export class MoexService {
         lastPrice: priceInfo?.lastPrice,
         currencyCode: CURRENCY,
         type: AssetType.STOCK,
+        moexData: { ...info?.rawData, ...priceInfo.rawData },
       };
     });
   }
@@ -167,6 +235,7 @@ export class MoexService {
         date: this._mapDate(marketData?.SYSTIME) ?? new Date(),
         currencyCode: CURRENCY,
         type: AssetType.STOCK,
+        moexData: { ...securitiesData, ...marketData },
       };
     } catch (error) {
       this.logger.error(`Error fetching info for ${ticker}`, error);
@@ -194,7 +263,7 @@ export class MoexService {
       }
 
       // Собираем итоговый массив
-      return candlesData.map(([timestamp, open, high, low, close]) => {
+      const history = candlesData.map(([timestamp, open, high, low, close]) => {
         const volume = volumeMap.get(timestamp) || 0;
 
         return {
@@ -208,6 +277,8 @@ export class MoexService {
           currencyCode: CURRENCY,
         };
       });
+
+      return this._fillHistoryGaps(history);
     } catch (error) {
       this.logger.error(`Error fetching 500 candles for ${ticker}`, error);
       throw error;
@@ -239,7 +310,7 @@ export class MoexService {
       }
 
       // Мапим массивы в наш стандартный формат
-      return candlesData.map(([timestamp, open, high, low, close]) => {
+      const history = candlesData.map(([timestamp, open, high, low, close]) => {
         const volume = volumeMap.get(timestamp) || 0;
 
         return {
@@ -254,6 +325,8 @@ export class MoexService {
           currencyCode: CURRENCY,
         };
       });
+
+      return this._fillHistoryGaps(history);
     } catch (error) {
       this.logger.error(`Error fetching chart history for ${ticker}`, error);
       throw error;
@@ -298,5 +371,56 @@ export class MoexService {
 
   private _mapString(value?: MoexColumnValue) {
     return value ? String(value) : '';
+  }
+
+  private _fillHistoryGaps(history: MoexAssetHistoryPrice[]): MoexAssetHistoryPrice[] {
+    if (history.length === 0) return [];
+
+    const result: MoexAssetHistoryPrice[] = [];
+    const seenDates = new Set<string>();
+
+    for (let i = 0; i < history.length; i++) {
+      const current = history[i];
+      const currentDate = formatDateToSqlDate(current.date);
+
+      // Пропускаем дубликаты, оставляя последний (так как история обычно ASC)
+      if (seenDates.has(currentDate)) {
+        // Если дата уже была, заменяем последнее значение (для надежности, если MOEX отдал несколько цен за день)
+        const lastIndex = result.findLastIndex((r) => formatDateToSqlDate(r.date) === currentDate);
+        if (lastIndex !== -1) {
+          result[lastIndex] = { ...current, date: new Date(currentDate) };
+        }
+        continue;
+      }
+
+      if (result.length > 0) {
+        const prev = result[result.length - 1];
+        const prevDate = formatDateToSqlDate(prev.date);
+
+        const diffDays = differenceInDays(currentDate, prevDate);
+
+        if (diffDays > 1) {
+          for (let j = 1; j < diffDays; j++) {
+            const missingDate = addDays(prevDate, j);
+            result.push({
+              symbol: prev.symbol,
+              close: prev.close,
+              open: prev.close,
+              low: prev.close,
+              high: prev.close,
+              currencyCode: prev.currencyCode,
+              date: missingDate,
+              volume: new Big(0),
+              isSynthesized: true,
+            });
+          }
+        }
+      }
+
+      result.push({ ...current, date: new Date(currentDate) });
+      seenDates.add(currentDate);
+    }
+
+    return result;
   }
 }

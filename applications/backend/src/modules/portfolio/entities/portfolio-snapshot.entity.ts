@@ -1,11 +1,12 @@
-import { NumberString } from '@packages/types';
-import { CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { DateString, NumberString } from '@packages/types';
+import { Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
-import { PriceColumn } from '@/common/columns';
+import { DayDateColumn, PriceColumn } from '@/common/columns';
 
 import { PortfolioEntity } from './portfolio.entity';
 
 @Entity('portfolio_snapshots')
+@Unique(['portfolio', 'createdAt'])
 export class PortfolioSnapshotEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -36,6 +37,6 @@ export class PortfolioSnapshotEntity {
   @PriceColumn()
   realizedPnl: NumberString;
 
-  @CreateDateColumn({ unique: true })
-  createdAt: Date;
+  @DayDateColumn()
+  createdAt: DateString;
 }

@@ -4,6 +4,7 @@ import Big from 'big.js';
 export enum MoexColumnsVariants {
   SECID = 'SECID',
   BOARDID = 'BOARDID',
+  SECNAME = 'SECNAME',
   BID = 'BID',
   BIDDEPTH = 'BIDDEPTH',
   OFFER = 'OFFER',
@@ -134,6 +135,7 @@ export type MoexAssetHistoryPrice = {
   close: Big.Big;
   volume: Big.Big;
   currencyCode: CurrencyCode;
+  isSynthesized?: boolean;
 };
 
 export type MoexAssetInfo = {
@@ -156,6 +158,9 @@ export type MoexAssetInfo = {
 
   issueCapitalization?: Big.Big | null; // Капитализация
   valToday?: Big.Big | null; // Объем торгов за сегодня в рублях
+
+  moexData?: Record<string, any>;
+  isSynthesized?: boolean;
 
   currencyCode: CurrencyCode;
   type: AssetType;

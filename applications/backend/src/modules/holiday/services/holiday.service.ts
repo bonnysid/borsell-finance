@@ -4,7 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { lastValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 
-import { formatDateToSqlDate } from '@/common/utils/date.utils';
+import { addDays, getDay, getYear, startOfYear } from 'date-fns';
+
+import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
 
 import { HolidayEntity } from '../entities';
 
@@ -23,12 +25,12 @@ export class HolidayService {
    * Если данных за этот год нет в БД, запрашивает их у isdayoff.ru и сохраняет.
    */
   async isDayOff(date: Date): Promise<boolean> {
-    const year = date.getFullYear();
-    const dateStr = formatDateToSqlDate(date);
+    const year = getYear(date);
+    const normalizedDate = normalizeDate(date);
 
     // 1. Ищем в БД
     const cached = await this.holidayRepo.findOne({
-      where: { date: new Date(dateStr) },
+      where: { date: normalizedDate },
     });
 
     if (cached) {
@@ -40,7 +42,7 @@ export class HolidayService {
 
     // 3. Ищем снова после сохранения
     const reFetched = await this.holidayRepo.findOne({
-      where: { date: new Date(dateStr) },
+      where: { date: normalizedDate },
     });
 
     if (reFetched) {
@@ -48,7 +50,7 @@ export class HolidayService {
     }
 
     // 4. Fallback (если API недоступно или вернуло ошибку)
-    const day = date.getDay();
+    const day = getDay(date);
     return day === 0 || day === 6;
   }
 
@@ -72,10 +74,9 @@ export class HolidayService {
         const entities: HolidayEntity[] = [];
 
         // Создаем даты для всего года
-        const startDate = new Date(year, 0, 1);
+        const yearStart = startOfYear(new Date(year, 0, 1));
         for (let i = 0; i < days.length; i++) {
-          const currentDate = new Date(startDate);
-          currentDate.setDate(startDate.getDate() + i);
+          const currentDate = addDays(yearStart, i);
 
           entities.push(
             this.holidayRepo.create({

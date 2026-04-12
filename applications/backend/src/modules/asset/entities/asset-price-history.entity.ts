@@ -1,20 +1,22 @@
-import { AssetPriceTimeframe, CurrencyCode, NumberString } from '@packages/types';
+import { AssetPriceTimeframe, CurrencyCode, DateString, NumberString } from '@packages/types';
 import {
   Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { DateColumn, NumericColumn, PriceColumn } from '@/common/columns';
+import { DayDateColumn, NumericColumn, PriceColumn } from '@/common/columns';
 import { CurrencyCodeColumn, CurrencyRelationColumn } from '@/modules/currency/columns';
 import { CurrencyEntity } from '@/modules/currency/entities';
 
 import { AssetEntity } from './asset.entity';
 
 @Entity('asset_price_history')
+@Unique(['asset', 'date', 'timeframe'])
 export class AssetPriceHistoryEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -29,8 +31,8 @@ export class AssetPriceHistoryEntity {
   })
   timeframe: AssetPriceTimeframe;
 
-  @DateColumn()
-  date: Date;
+  @DayDateColumn()
+  date: DateString;
 
   @PriceColumn()
   openPrice: NumberString;
