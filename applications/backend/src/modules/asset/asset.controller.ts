@@ -273,6 +273,12 @@ export class AssetController {
     return res.status(200).send();
   }
 
+  @Post('/fill-history-3y')
+  async fillHistory3y(@Res() res: Response) {
+    this.assetUpdaterService.fillHistoryForThreeYears();
+    return res.status(202).json({ message: 'History fill process started in background' });
+  }
+
   @UseGuards(AuthGuard)
   @Post('/update/:symbol')
   async updateAssetBySymbol(@Param('symbol') symbol: string, @Res() res: Response) {

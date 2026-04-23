@@ -1,8 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 
-import { MoexService } from '@/modules/moex/moex.service';
+import { normalizeDate } from '@/common';
+import { MoexEtfService, MoexStockService } from '@/modules/moex/services';
 import { SettingKey } from '@/modules/settings/entities';
 import { SettingsService } from '@/modules/settings/services';
 
@@ -18,7 +20,8 @@ export class AssetSeederService implements OnModuleInit {
   constructor(
     @InjectRepository(AssetEntity)
     private readonly assetRepo: Repository<AssetEntity>,
-    private readonly moexService: MoexService,
+    private readonly moexStockService: MoexStockService,
+    private readonly moexEtfService: MoexEtfService,
     private readonly assetUpdaterService: AssetUpdaterService,
     private readonly settingsService: SettingsService,
   ) {}
@@ -49,14 +52,23 @@ export class AssetSeederService implements OnModuleInit {
       }
     }
 
-    const topTickers = await this.moexService.getTopTickers(100);
+    await Promise.all([this.seedStocks(), this.seedEtfs()]);
+
+    await this.settingsService.setRaw(SettingKey.LAST_TOP_TICKERS_SYNC_AT, now.toISOString());
+  }
+
+  private async seedStocks() {
+    this.logger.log('Start seeding Stocks...');
+
+    const topStocks = await this.moexStockService.getTopStocks();
+    const topTickers = topStocks.map((it) => it.symbol);
     const tickers = [...new Set([...this.initialTickers, ...topTickers])];
 
     const existingAssets = await this.assetRepo.find({
-      where: { symbol: In(tickers) },
+      where: { symbol: In(tickers), type: AssetType.STOCK },
     });
 
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = normalizeDate(new Date());
 
     const symbolsToUpdate = tickers.filter((symbol) => {
       const asset = existingAssets.find((a) => a.symbol === symbol);
@@ -65,15 +77,53 @@ export class AssetSeederService implements OnModuleInit {
     });
 
     if (symbolsToUpdate.length <= 0) {
-      this.logger.log('✅ Asset Catalog already seeded and up to date.');
+      this.logger.log('✅ All stock up to date.');
     } else {
       this.logger.log(
-        `Updating or seeding ${symbolsToUpdate.length} assets: ${symbolsToUpdate.join(', ')}`,
+        `Updating or seeding ${symbolsToUpdate.length} stocks: ${symbolsToUpdate.join(', ')}`,
       );
 
-      await this.assetUpdaterService.updateAssetsByTickers(symbolsToUpdate, existingAssets);
+      await this.assetUpdaterService.updateAssetsByTickers(
+        symbolsToUpdate,
+        existingAssets,
+        topStocks,
+        AssetType.STOCK,
+      );
     }
+  }
 
-    await this.settingsService.setRaw(SettingKey.LAST_TOP_TICKERS_SYNC_AT, now.toISOString());
+  private async seedEtfs() {
+    this.logger.log('Start seeding ETFs...');
+
+    const topEtfs = await this.moexEtfService.getTopEtfs();
+    const topTickers = topEtfs.map((it) => it.symbol);
+    const tickers = [...new Set([...topTickers])];
+
+    const existingAssets = await this.assetRepo.find({
+      where: { symbol: In(tickers), type: AssetType.ETF },
+    });
+
+    const today = normalizeDate(new Date());
+
+    const symbolsToUpdate = tickers.filter((symbol) => {
+      const asset = existingAssets.find((a) => a.symbol === symbol);
+      if (!asset) return true;
+      return asset.lastPriceUpdateAt < today;
+    });
+
+    if (symbolsToUpdate.length <= 0) {
+      this.logger.log('✅ All etfs up to date.');
+    } else {
+      this.logger.log(
+        `Updating or seeding ${symbolsToUpdate.length} etfs: ${symbolsToUpdate.join(', ')}`,
+      );
+
+      await this.assetUpdaterService.updateAssetsByTickers(
+        symbolsToUpdate,
+        existingAssets,
+        topEtfs,
+        AssetType.ETF,
+      );
+    }
   }
 }

@@ -1,11 +1,11 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 
-import { MoexService } from './moex.service';
+import { MoexEtfService, MoexMapperService, MoexStockService } from './services';
 
 @Module({
   imports: [HttpModule],
-  providers: [MoexService],
-  exports: [MoexService],
+  providers: [MoexStockService, MoexEtfService, MoexMapperService],
+  exports: [MoexStockService, MoexEtfService, MoexMapperService],
 })
 export class MoexModule {}

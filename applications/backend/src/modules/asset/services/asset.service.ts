@@ -12,8 +12,8 @@ import {
   isSameDay,
   normalizeDate,
 } from '@/common/utils/date.utils';
-import { MoexService } from '@/modules/moex/moex.service';
 import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
+import { MoexStockService } from '@/modules/moex/services';
 import { SettingsService } from '@/modules/settings/services';
 
 import { AssetCandlesQueryDto, AssetHistoryQueryDto, AssetQueryDto } from '../dto';
@@ -30,7 +30,7 @@ export class AssetService {
     private readonly assetRepo: Repository<AssetEntity>,
     @InjectRepository(AssetPriceHistoryEntity)
     private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
-    private readonly moexService: MoexService,
+    private readonly moexStockService: MoexStockService,
     private readonly settingsService: SettingsService,
   ) {}
 
@@ -54,8 +54,18 @@ export class AssetService {
 
     const result: Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }> = [];
 
+    const symbols = assets.map((a) => a.symbol);
+    const today = normalizeDate(new Date());
+    const startDate = subDays(today, 7);
+
+    const historyMap = await this.getAssetsPriceHistoryBatch(symbols, {
+      from: startDate,
+      to: today,
+      timeframe: AssetPriceTimeframe.DAY,
+    });
+
     for (const asset of assets) {
-      const history = await this.getAssetHistory7Days(asset);
+      const history = historyMap.get(asset.symbol) || [];
 
       // Calculate changePercent7d if history is available
       if (history.length >= 2) {
@@ -108,7 +118,7 @@ export class AssetService {
     if (isStale) {
       this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${symbol} from MOEX`);
 
-      const moexData = await this.moexService.getAssetInfo(symbol);
+      const moexData = await this.moexStockService.getStockInfo(symbol);
 
       if (!moexData) {
         // Если это новый актив и его нет на MOEX, кидаем ошибку
@@ -159,7 +169,7 @@ export class AssetService {
     }
 
     try {
-      const assetInfo = await this.moexService.getAssetInfo(symbol);
+      const assetInfo = await this.moexStockService.getStockInfo(symbol);
 
       if (assetInfo) {
         asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
@@ -224,11 +234,11 @@ export class AssetService {
       const asset = await this.assetRepo.findOne({ where: { symbol } });
       if (asset) {
         try {
-          const moexHistory = await this.moexService.getAssetHistory(
-            symbol,
-            formatDateToSqlDate(startDate),
-            formatDateToSqlDate(endDate),
-          );
+          const moexHistory = await this.moexStockService.getStockCandles(symbol, {
+            isFromTo: true,
+            from: startDate,
+            to: endDate,
+          });
 
           if (moexHistory.length > 0) {
             const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
@@ -284,6 +294,101 @@ export class AssetService {
     return uniqueHistory;
   }
 
+  async getAssetsPriceHistoryBatch(
+    symbols: string[],
+    { from, to, timeframe = AssetPriceTimeframe.DAY }: AssetHistoryQueryDto,
+  ): Promise<Map<string, AssetPriceHistoryEntity[]>> {
+    this.logger.log(`Fetching history batch for ${symbols.length} assets from ${from} to ${to}`);
+
+    const endDate = normalizeDate(to || new Date());
+    const startDate = normalizeDate(from || subDays(endDate, 30));
+
+    const result = new Map<string, AssetPriceHistoryEntity[]>();
+
+    if (symbols.length === 0) return result;
+
+    // To optimize, we check for each asset if we need to fetch data from external source
+    // This can be done in parallel but with a limit or sequentially to avoid rate limits
+    for (const symbol of symbols) {
+      const count = await this.assetPriceHistoryRepo.count({
+        where: {
+          asset: { symbol: symbol },
+          timeframe,
+          date: Between(formatDateToSqlDate(startDate), formatDateToSqlDate(endDate)),
+        },
+      });
+
+      const diffDays = getDaysDifference(startDate, endDate);
+      if (count < diffDays * 0.7) {
+        this.logger.log(
+          `Data missing for ${symbol} in range ${startDate} - ${endDate}. Fetching in batch process...`,
+        );
+        const asset = await this.assetRepo.findOne({ where: { symbol } });
+        if (asset) {
+          try {
+            const moexHistory = await this.moexStockService.getStockCandles(symbol, {
+              isFromTo: true,
+              from: startDate,
+              to: endDate,
+            });
+
+            if (moexHistory.length > 0) {
+              const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
+                (record) => ({
+                  date: formatDateToSqlDate(record.date),
+                  openPrice: record.open.toFixed(8),
+                  highPrice: record.high.toFixed(8),
+                  lowPrice: record.low.toFixed(8),
+                  closePrice: record.close.toFixed(8),
+                  volume: record.volume.toFixed(8),
+                  currencyCode: record.currencyCode,
+                  source: 'MOEX',
+                }),
+              );
+
+              await this.updateAssetHistory(asset, historyToUpdate);
+            }
+            // Small delay to avoid MOEX rate limits
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          } catch (e) {
+            this.logger.error(`Failed to fetch history from MOEX for ${symbol} in batch`, e);
+          }
+        }
+      }
+    }
+
+    // Now fetch all at once from DB
+    const allHistory = await this.assetPriceHistoryRepo.find({
+      where: {
+        asset: { symbol: In(symbols) },
+        timeframe,
+        date: Between(formatDateToSqlDate(startDate), formatDateToSqlDate(endDate)),
+      },
+      order: { date: 'ASC' },
+      relations: ['asset'],
+    });
+
+    // Group by symbol and remove duplicates
+    for (const item of allHistory) {
+      const symbol = item.asset.symbol;
+      if (!result.has(symbol)) {
+        result.set(symbol, []);
+      }
+
+      const history = result.get(symbol)!;
+      const dateKey = formatDateToSqlDate(item.date);
+      const existingIndex = history.findIndex((h) => formatDateToSqlDate(h.date) === dateKey);
+
+      if (existingIndex === -1) {
+        history.push(item);
+      } else {
+        history[existingIndex] = item;
+      }
+    }
+
+    return result;
+  }
+
   async getAssetProfileAndStats(ticker: string) {
     // 1. Ищем актив в нашей базе данных
     let asset = await this.assetRepo.findOne({ where: { symbol: ticker } });
@@ -294,7 +399,7 @@ export class AssetService {
       this.logger.log(`Cache miss or stale data for ${ticker}. Fetching from MOEX...`);
 
       // 3. Идем в MOEX через твой Http-клиент
-      const moexData = await this.moexService.getAssetInfo(ticker);
+      const moexData = await this.moexStockService.getStockInfo(ticker);
 
       if (!moexData) {
         throw new Error(`Asset ${ticker} not found on MOEX`);
@@ -406,12 +511,14 @@ export class AssetService {
 
         if (!lastUpdateAt || localHistory.length < candles) {
           // If we never updated OR we need more historical data than we have in DB
-          moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, candles);
+          moexCandles = await this.moexStockService.getStockCandles(asset.symbol, { candles });
         } else {
           const diff = getDaysDifference(lastUpdateAt);
 
           if (diff >= 1) {
-            moexCandles = await this.moexService.getAssetPriceCandles(asset.symbol, diff + 1);
+            moexCandles = await this.moexStockService.getStockCandles(asset.symbol, {
+              candles: diff + 1,
+            });
           }
         }
 

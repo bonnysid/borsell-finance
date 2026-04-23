@@ -1,5 +1,5 @@
 import { DateString, NumberString } from '@packages/types';
-import { Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Entity, ManyToOne, PrimaryGeneratedColumn, Unique, CreateDateColumn } from 'typeorm';
 
 import { DayDateColumn, PriceColumn } from '@/common/columns';
 
@@ -39,4 +39,7 @@ export class PortfolioSnapshotEntity {
 
   @DayDateColumn()
   createdAt: DateString;
+
+  @CreateDateColumn()
+  systemCreatedAt: Date;
 }

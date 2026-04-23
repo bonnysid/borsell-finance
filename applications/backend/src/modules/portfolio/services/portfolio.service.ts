@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
 import Big from 'big.js';
@@ -24,6 +24,8 @@ import { PortfolioAssetService } from './protfolio-asset.service';
 
 @Injectable()
 export class PortfolioService {
+  private readonly logger = new Logger(PortfolioService.name);
+
   constructor(
     @InjectRepository(PortfolioEntity)
     private readonly portfolioRepository: Repository<PortfolioEntity>,
@@ -258,35 +260,34 @@ export class PortfolioService {
     const assetSymbols = [...new Set(userAssets.map((ua) => ua.asset.symbol))];
     const historicalPricesMap = new Map<string, Map<string, Big>>(); // symbol -> date -> price
 
-    await Promise.all(
-      assetSymbols.map(async (symbol) => {
-        const history = await this.assetService.getAssetPriceHistory(symbol, {
-          from: dates[0],
-          to: dates[dates.length - 1],
-        });
-        const dateMap = new Map<string, Big>();
-        let lastPrice: Big | null = null;
+    const batchHistory = await this.assetService.getAssetsPriceHistoryBatch(assetSymbols, {
+      from: dates[0],
+      to: dates[dates.length - 1],
+    });
 
-        // Fill gaps: for each date in 'dates', if we don't have a price, use the last known price
-        const historyMap = new Map<string, Big>();
-        for (const h of history) {
-          historyMap.set(formatDateToSqlDate(h.date), new Big(h.closePrice));
+    for (const symbol of assetSymbols) {
+      const history = batchHistory.get(symbol) || [];
+      const dateMap = new Map<string, Big>();
+      let lastPrice: Big | null = null;
+
+      const historyMap = new Map<string, Big>();
+      for (const h of history) {
+        historyMap.set(formatDateToSqlDate(h.date), new Big(h.closePrice));
+      }
+
+      for (const date of dates) {
+        const dStr = formatDateToSqlDate(date);
+        const price = historyMap.get(dStr);
+        if (price) {
+          lastPrice = price;
         }
-
-        for (const date of dates) {
-          const dStr = formatDateToSqlDate(date);
-          const price = historyMap.get(dStr);
-          if (price) {
-            lastPrice = price;
-          }
-          if (lastPrice) {
-            dateMap.set(dStr, lastPrice);
-          }
+        if (lastPrice) {
+          dateMap.set(dStr, lastPrice);
         }
+      }
 
-        historicalPricesMap.set(symbol, dateMap);
-      }),
-    );
+      historicalPricesMap.set(symbol, dateMap);
+    }
 
     const items: PortfolioHistoryItemDto[] = [];
     const snapshotsToSave: PortfolioSnapshotEntity[] = [];
@@ -389,6 +390,7 @@ export class PortfolioService {
       }
 
       // Save snapshot in portfolio base currency
+      this.logger.log(`Creating snapshot for ${dateStr} for portfolio ${portfolio.id}`);
       const snapshot = this.portfolioSnapshotRepository.create({
         portfolio: { id: portfolio.id },
         marketPrice: dayMarketPrice.toFixed(8),
