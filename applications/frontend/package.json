@@ -14,7 +14,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@devbonnysid/ui-kit-default": "1.9.1",
+    "@devbonnysid/ui-kit-default": "1.9.2",
     "@hookform/resolvers": "^5.2.2",
     "@packages/constants": "1.0.0",
     "@tanstack/react-query": "^5.90.10",

@@ -45,9 +45,14 @@ export class MoexStockService {
   ) {}
 
   async getRequest<T>(url: string) {
-    this.logger.log(`Request url: ${url}`);
+    try {
+      this.logger.log(`Request url: ${url}`);
 
-    return await lastValueFrom(this.httpService.get<T>(url));
+      return await lastValueFrom(this.httpService.get<T>(url));
+    } catch (e) {
+      this.logger.error(`Request error: ${e.message}`);
+      return null;
+    }
   }
 
   async getStocksInfo(tickers: string[]): Promise<MoexAssetInfo[]> {
@@ -58,8 +63,12 @@ export class MoexStockService {
 
       const response = await this.getRequest<MoexAssetInfoWithPriceResponse>(url);
 
-      const securities = response.data?.[1].securities;
-      const marketdata = response.data?.[1].marketdata;
+      const securities = response?.data?.[1].securities;
+      const marketdata = response?.data?.[1].marketdata;
+
+      if (!securities || !marketdata) {
+        return [];
+      }
 
       return marketdata.map((marketItem) => {
         const securityItem = securities.find((s) => s.SECID === marketItem.SECID);
@@ -72,11 +81,11 @@ export class MoexStockService {
           lotSize: this.mapper.mapPrice(securityItem?.LOTSIZE),
           issueCapitalization: this.mapper.mapPrice(securityItem?.ISSUECAPITALIZATION),
 
-          lastPrice: this.mapper.mapPrice(marketItem.LAST),
-          open: this.mapper.mapPrice(marketItem.OPEN),
-          high: this.mapper.mapPrice(marketItem.HIGH),
-          low: this.mapper.mapPrice(marketItem.LOW),
-          close: this.mapper.mapPrice(marketItem.CLOSEPRICE),
+          lastPrice: this.mapper.mapPrice(marketItem.LAST || marketItem.MARKETPRICE),
+          open: this.mapper.mapPrice(marketItem.OPEN || marketItem.MARKETPRICE),
+          high: this.mapper.mapPrice(marketItem.HIGH || marketItem.MARKETPRICE),
+          low: this.mapper.mapPrice(marketItem.LOW || marketItem.MARKETPRICE),
+          close: this.mapper.mapPrice(marketItem.CLOSEPRICE || marketItem.MARKETPRICE),
           volume: this.mapper.mapPrice(marketItem.VOLTODAY || marketItem.VOLUME),
           valToday: this.mapper.mapPrice(marketItem.VALTODAY),
           changePercent: this.mapper.mapPrice(marketItem.LASTCHANGEPRCNT),
@@ -102,8 +111,8 @@ export class MoexStockService {
 
       const response = await this.getRequest<MoexAssetInfoWithPriceResponse>(url);
 
-      const securitiesData = response.data[1]?.securities?.[0];
-      const marketData = response.data[1].marketdata?.[0];
+      const securitiesData = response?.data[1]?.securities?.[0];
+      const marketData = response?.data[1].marketdata?.[0];
 
       if (!securitiesData && !marketData) return null;
 
@@ -115,11 +124,11 @@ export class MoexStockService {
         lotSize: this.mapper.mapPrice(securitiesData?.LOTSIZE),
         issueCapitalization: this.mapper.mapPrice(securitiesData?.ISSUECAPITALIZATION),
 
-        lastPrice: this.mapper.mapPrice(marketData?.LAST),
-        open: this.mapper.mapPrice(marketData?.OPEN),
-        high: this.mapper.mapPrice(marketData?.HIGH),
-        low: this.mapper.mapPrice(marketData?.LOW),
-        close: this.mapper.mapPrice(marketData?.CLOSE),
+        lastPrice: this.mapper.mapPrice(marketData?.LAST || marketData?.MARKETPRICE),
+        open: this.mapper.mapPrice(marketData?.OPEN || marketData?.MARKETPRICE),
+        high: this.mapper.mapPrice(marketData?.HIGH || marketData?.MARKETPRICE),
+        low: this.mapper.mapPrice(marketData?.LOW || marketData?.MARKETPRICE),
+        close: this.mapper.mapPrice(marketData?.CLOSE || marketData?.MARKETPRICE),
         volume: this.mapper.mapPrice(marketData?.VOLTODAY || marketData?.VOLUME), // В штуках
         valToday: this.mapper.mapPrice(marketData?.VALTODAY), // В рублях (оборот)
         changePercent: this.mapper.mapPrice(marketData?.LASTCHANGEPRCNT),
@@ -162,8 +171,8 @@ export class MoexStockService {
 
       const response = await this.getRequest<MoexChartResponse>(url);
 
-      const candlesData = response.data.candles?.[0]?.data || [];
-      const volumesData = response.data.volumes?.[0]?.data || [];
+      const candlesData = response?.data.candles?.[0]?.data || [];
+      const volumesData = response?.data.volumes?.[0]?.data || [];
 
       const volumeMap = new Map<number, number>();
 
@@ -202,8 +211,12 @@ export class MoexStockService {
 
       const response = await this.getRequest<MoexAssetInfoWithPriceResponse>(url);
 
-      const securities = response.data?.[1].securities;
-      const marketdata = response.data?.[1].marketdata;
+      const securities = response?.data?.[1].securities;
+      const marketdata = response?.data?.[1].marketdata;
+
+      if (!securities || !marketdata) {
+        return [];
+      }
 
       return marketdata.map((marketItem) => {
         const securityItem = securities.find((s) => s.SECID === marketItem.SECID);

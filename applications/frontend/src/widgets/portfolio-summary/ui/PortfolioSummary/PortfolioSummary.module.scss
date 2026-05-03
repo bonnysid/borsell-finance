@@ -22,13 +22,13 @@
     .integer {
       font-size: 64px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
     }
 
     .decimal {
       font-size: 40px;
       font-weight: 500;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
       opacity: 0.9;
     }
 
@@ -36,7 +36,7 @@
       font-size: 32px;
       margin-left: 8px;
       font-weight: 400;
-      color: var(--text-secondary);
+      color: var(--color-text-primary);
     }
   }
 
@@ -59,7 +59,7 @@
       align-items: center;
       padding: 2px 8px;
       border-radius: 12px;
-      background-color: rgba(var(--color-default-rgb), 0.1);
+      background-color: var(--color-bg-opacity);
 
       .arrow {
         margin-right: 2px;
@@ -70,14 +70,14 @@
     &.positive {
       color: var(--color-positive);
       .pnl-percent-container {
-        background-color: rgba(var(--color-positive-rgb), 0.15);
+        background-color: var(--color-bg-success);
       }
     }
 
     &.negative {
       color: var(--color-negative);
       .pnl-percent-container {
-        background-color: rgba(var(--color-negative-rgb), 0.15);
+        background-color: var(--color-bg-error);
       }
     }
 

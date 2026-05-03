@@ -1,5 +1,9 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { useGetPortfolio } from '@entities/portfolio';
+import { PortfolioAllocation } from '@widgets/portfolio-allocation';
+import { PortfolioHistoryChart } from '@widgets/portfolio-history-chart';
+import { PortfolioSummary } from '@widgets/portfolio-summary';
+import { UserAssetsWidget } from '@widgets/user-assets';
 import { FC } from 'react';
 
 import { EmptyPortfolio } from '../EmptyPortfolio';
@@ -16,7 +20,18 @@ export const PortfolioPage: FC<PortfolioPageProps> = () => {
     return <EmptyPortfolio />;
   }
 
-  return <div className={cn('portfolio-page')}>Portfolio</div>;
+  return (
+    <div className={cn('portfolio-page')}>
+      <div className={cn('side-content')}>
+        <PortfolioSummary />
+        <PortfolioAllocation />
+      </div>
+      <div className={cn('main-content')}>
+        <PortfolioHistoryChart />
+        <UserAssetsWidget />
+      </div>
+    </div>
+  );
 };
 
 export default PortfolioPage;

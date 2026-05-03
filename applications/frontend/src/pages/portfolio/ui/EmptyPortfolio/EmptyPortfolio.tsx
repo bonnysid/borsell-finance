@@ -9,8 +9,8 @@ export const EmptyPortfolio: FC<EmptyPortfolioProps> = ({}) => {
   const { t } = useTranslation();
 
   return (
-    <Plug title={t('NoData')}>
-      <Button to={AppRoutePaths.PORTFOLIO_CREATE()}>{t('CreatePortfolio')}</Button>
+    <Plug title={t('NoData')} text={t('EmptyPortfolio')}>
+      <Button to={AppRoutePaths.ASSETS_OPERATIONS_CREATE()}>{t('AddAsset')}</Button>
     </Plug>
   );
 };

@@ -6,7 +6,6 @@ import {
   isValid,
   startOfDay,
 } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 
 // Мы используем UTC для большинства операций с датами в базе данных
 const DEFAULT_TIMEZONE = 'UTC';
@@ -33,9 +32,7 @@ export function normalizeDate(date?: Date | string): Date {
     return new Date(0);
   }
 
-  // startOfDay в date-fns работает в локальном часовом поясе,
-  // поэтому для UTC нам нужно либо использовать date-fns-tz, либо специфичный подход
-  return toZonedTime(startOfDay(toZonedTime(dateObj, 'UTC')), 'UTC');
+  return startOfDay(dateObj);
 }
 
 /**

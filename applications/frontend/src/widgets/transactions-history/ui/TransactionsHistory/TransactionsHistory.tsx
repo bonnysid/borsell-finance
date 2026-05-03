@@ -29,14 +29,12 @@ export const TransactionsHistory: FC<TransactionsHistoryProps> = ({
   });
 
   return (
-    <div className={cx('transactions-history')}>
-      <TransactionsTable
-        data={data?.data || []}
-        isLoading={isLoading}
-        isFetching={isFetching}
-        isEmpty={data?.totalItems === 0}
-        pagination={pagination}
-      />
-    </div>
+    <TransactionsTable
+      data={data?.data || []}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      isEmpty={data?.totalItems === 0}
+      pagination={pagination}
+    />
   );
 };

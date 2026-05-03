@@ -2,18 +2,18 @@ import { AppRoutePaths } from '@shared/router';
 import { SidebarLink } from '@widgets/sidebar';
 
 export const SIDEBAR_LINKS: SidebarLink[] = [
-  {
-    id: 'Dashboard',
-    to: AppRoutePaths.DASHBOARD(),
-    caption: 'Dashboard',
-    icon: 'grid',
-  },
   // {
-  //   id: 'Portfolio',
-  //   to: AppRoutePaths.PORTFOLIO(),
-  //   caption: 'Portfolio',
-  //   icon: 'folder',
+  //   id: 'Dashboard',
+  //   to: AppRoutePaths.DASHBOARD(),
+  //   caption: 'Dashboard',
+  //   icon: 'grid',
   // },
+  {
+    id: 'Portfolio',
+    to: AppRoutePaths.PORTFOLIO(),
+    caption: 'Portfolio',
+    icon: 'folder',
+  },
   {
     id: 'Assistant',
     to: AppRoutePaths.ASSISTANT(),

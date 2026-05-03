@@ -1,0 +1,11 @@
+.direction-arrow {
+  font-size: 12px;
+
+  &.up {
+    color: var(--color-success-secondary);
+  }
+
+  &.down {
+    color: var(--color-error-secondary);
+  }
+}

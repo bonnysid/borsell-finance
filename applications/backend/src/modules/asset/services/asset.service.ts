@@ -168,6 +168,16 @@ export class AssetService {
       throw new NotFoundException(`Asset with symbol ${symbol} not found`);
     }
 
+    const defaultResponse = {
+      symbol: asset.symbol,
+      currentPrice: asset.cachedMarketPrice,
+      previousPrice: asset.cachedMarketPrice,
+      currencyCode: asset.currencyCode,
+      change: '0',
+      changePercent: '0',
+      lastUpdateAt: asset.lastPriceUpdateAt,
+    };
+
     try {
       const assetInfo = await this.moexStockService.getStockInfo(symbol);
 
@@ -190,9 +200,13 @@ export class AssetService {
           changePercent: changePercent.toFixed(2),
           lastUpdateAt: asset.lastPriceUpdateAt,
         };
+      } else {
+        return defaultResponse;
       }
     } catch (e) {
       this.logger.error(`Failed to fetch and update asset info from MOEX for ${symbol}`, e);
+
+      return defaultResponse;
     }
   }
 

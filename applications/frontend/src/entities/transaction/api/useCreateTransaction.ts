@@ -1,5 +1,10 @@
 import { CreateTransactionDtoShape } from '@packages/types';
-import { queryClient, restService, TRANSACTIONS_QUERY_KEYS } from '@shared/api';
+import {
+  PORTFOLIO_QUERY_KEYS,
+  queryClient,
+  restService,
+  TRANSACTIONS_QUERY_KEYS,
+} from '@shared/api';
 import { useMutation } from '@tanstack/react-query';
 
 const createTransaction = async (dto: CreateTransactionDtoShape) => {
@@ -16,6 +21,7 @@ export const useCreateTransaction = () => {
     mutationFn: createTransaction,
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: PORTFOLIO_QUERY_KEYS.all });
     },
   });
 };

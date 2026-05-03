@@ -31,7 +31,7 @@ export class CbrApiService {
       // Предполагаем, что API возвращает объект { "rates": { "RUB": 0.011, "EUR": 1.08, ... } }
       return response.data;
     } catch (error) {
-      this.logger.error('Error fetching CBR (RUB) exchange rates:', error.message);
+      this.logger.error(`Error fetching CBR (RUB) exchange rates: ${error.message}`);
       // В случае ошибки возвращаем пустой объект, чтобы не остановить приложение
     }
   }

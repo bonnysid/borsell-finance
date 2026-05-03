@@ -55,29 +55,48 @@ export class PortfolioService {
       throw new Error('Portfolio not found');
     }
 
-    const userAssets = portfolio.assets.map((pa) => pa.userAsset);
+    try {
+      const userAssets = portfolio.assets.map((pa) => pa.userAsset);
 
-    const metrics = await this.calculateMetrics(userAssets, portfolio.currencyCode);
+      const metrics = await this.calculateMetrics(userAssets, portfolio.currencyCode);
 
-    const hasChanged =
-      portfolio.marketPrice !== metrics.marketPrice ||
-      portfolio.costBasis !== metrics.costBasis ||
-      portfolio.totalInvested !== metrics.totalInvested ||
-      portfolio.totalWithdrawn !== metrics.totalWithdrawn ||
-      portfolio.realizedPnl !== metrics.realizedPnl;
+      const hasChanged =
+        portfolio.marketPrice !== metrics.marketPrice ||
+        portfolio.costBasis !== metrics.costBasis ||
+        portfolio.totalInvested !== metrics.totalInvested ||
+        portfolio.totalWithdrawn !== metrics.totalWithdrawn ||
+        portfolio.realizedPnl !== metrics.realizedPnl;
 
-    if (hasChanged) {
-      Object.assign(portfolio, metrics);
-      portfolio.lastValuationAt = new Date();
+      if (hasChanged) {
+        Object.assign(portfolio, metrics);
+        portfolio.lastValuationAt = new Date();
 
-      await this.portfolioRepository.save(portfolio);
+        await this.portfolioRepository.save(portfolio);
 
-      const snapshot = this.portfolioSnapshotRepository.create({
-        portfolio: { id: portfolio.id },
-        ...metrics,
-      });
+        const createdAt = formatDateToSqlDate(normalizeDate(new Date()));
 
-      await this.portfolioSnapshotRepository.save(snapshot);
+        let snapshot = await this.portfolioSnapshotRepository.findOne({
+          where: { createdAt, portfolio: { id: portfolio.id } },
+        });
+
+        if (!snapshot) {
+          snapshot = this.portfolioSnapshotRepository.create({
+            portfolio: { id: portfolio.id },
+            ...metrics,
+            createdAt,
+          });
+        } else {
+          snapshot.costBasis = metrics.costBasis;
+          snapshot.totalInvested = metrics.totalInvested;
+          snapshot.realizedPnl = metrics.realizedPnl;
+          snapshot.totalWithdrawn = metrics.totalWithdrawn;
+          snapshot.marketPrice = metrics.marketPrice;
+        }
+
+        await this.portfolioSnapshotRepository.save(snapshot);
+      }
+    } catch (e) {
+      this.logger.error(`Failed to update portfolio metrics: ${e.message}`);
     }
 
     return portfolio;
