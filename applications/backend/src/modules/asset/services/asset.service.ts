@@ -50,11 +50,13 @@ export class AssetService {
   async getAssetsWithHistory(
     query: AssetQueryDto,
   ): Promise<[Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }>, number]> {
-    const [assets, count] = await this.getAssets(query);
+    const [assetsRaw, count] = await this.getAssets(query);
+
+    const symbols = assetsRaw.map((a) => a.symbol);
+    const assets = await this.getAssetsPriceBatch(symbols);
 
     const result: Array<{ asset: AssetEntity; history: AssetPriceHistoryEntity[] }> = [];
 
-    const symbols = assets.map((a) => a.symbol);
     const today = normalizeDate(new Date());
     const startDate = subDays(today, 7);
 
@@ -85,6 +87,74 @@ export class AssetService {
     }
 
     return [result, count];
+  }
+
+  async getAssetsPriceBatch(symbols: string[]): Promise<AssetEntity[]> {
+    if (symbols.length === 0) return [];
+
+    const assets = await this.assetRepo.find({ where: { symbol: In(symbols) } });
+    const staleAssets = assets.filter((asset) =>
+      isDataStale(asset.lastPriceUpdateAt, this.PRICE_CACHE_TTL_MINUTES / 60),
+    );
+
+    const staleSymbols = staleAssets.map((a) => a.symbol);
+    // Also include symbols that are not in DB yet (if any)
+    const missingSymbols = symbols.filter((s) => !assets.find((a) => a.symbol === s));
+    const symbolsToFetch = [...new Set([...staleSymbols, ...missingSymbols])];
+
+    if (symbolsToFetch.length > 0) {
+      this.logger.log(
+        `[Cache Miss/Stale Batch] Fetching fresh data for ${symbolsToFetch.length} assets from MOEX`,
+      );
+
+      const moexDataList = await this.moexStockService.getStocksInfo(symbolsToFetch);
+
+      if (moexDataList.length > 0) {
+        const updatedAssets: AssetEntity[] = [];
+
+        for (const moexData of moexDataList) {
+          let asset = assets.find((a) => a.symbol === moexData.symbol);
+
+          if (!asset) {
+            asset = this.assetRepo.create({ symbol: moexData.symbol });
+          }
+
+          asset.type = moexData.type;
+          asset.name = moexData.name || asset.name;
+          asset.cachedMarketPrice = moexData.lastPrice.toString();
+          asset.volume = moexData.volume.toString();
+          asset.changePercent24h = moexData.changePercent.toString();
+          asset.lastPriceUpdateAt = moexData.date;
+          asset.currencyCode = moexData.currencyCode;
+
+          asset.metadata = {
+            ...asset.metadata,
+            isin: moexData.isin,
+            lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
+            issueCapitalization: moexData.issueCapitalization?.toString(),
+            valToday: moexData.valToday?.toString(),
+            moexData: moexData.moexData,
+          } as StockMetadata;
+
+          updatedAssets.push(asset);
+        }
+
+        if (updatedAssets.length > 0) {
+          await this.assetRepo.save(updatedAssets);
+          // Update the original assets array with updated data
+          for (const updated of updatedAssets) {
+            const index = assets.findIndex((a) => a.symbol === updated.symbol);
+            if (index !== -1) {
+              assets[index] = updated;
+            } else {
+              assets.push(updated);
+            }
+          }
+        }
+      }
+    }
+
+    return assets;
   }
 
   async getAssetHistory7Days(asset: AssetEntity | string): Promise<AssetPriceHistoryEntity[]> {

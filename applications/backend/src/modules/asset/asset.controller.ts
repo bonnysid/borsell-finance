@@ -45,33 +45,39 @@ export class AssetController {
   ) {
     const [assetsWithHistory, totalItems] = await this.appService.getAssetsWithHistory(query);
     const userFromDB = user ? await this.userService.findOne(user?.username) : null;
-    const mappedAssets: AssetWithHistoryDto[] = [];
 
-    for (const { asset, history } of assetsWithHistory) {
-      if (userFromDB) {
-        const convertedPrice = await this.currencyConverterService.convertAmount({
-          amount: asset.cachedMarketPrice,
-          toCurrency: userFromDB.currencyCode,
-          fromCurrency: asset.currencyCode,
-        });
+    if (userFromDB) {
+      const convertItems = assetsWithHistory.map(({ asset }) => ({
+        amount: asset.cachedMarketPrice,
+        toCurrency: userFromDB.currencyCode,
+        fromCurrency: asset.currencyCode,
+      }));
 
-        mappedAssets.push(
-          new AssetWithHistoryDto(
-            {
-              ...asset,
-              cachedMarketPrice: convertedPrice.amount.toString(),
-              currencyCode: convertedPrice.toCurrency,
-            },
-            history,
-          ),
+      const convertedPrices = await this.currencyConverterService.convertMany(convertItems);
+
+      const mappedAssets = assetsWithHistory.map(({ asset, history }, index) => {
+        const converted = convertedPrices[index];
+        return new AssetWithHistoryDto(
+          {
+            ...asset,
+            cachedMarketPrice: converted.amount.toString(),
+            currencyCode: converted.toCurrency,
+          },
+          history,
         );
-      } else {
-        mappedAssets.push(new AssetWithHistoryDto(asset, history));
-      }
+      });
+
+      const result: TableResponse<AssetWithHistoryDto> = {
+        data: mappedAssets,
+        totalItems,
+        page: query.page || 1,
+      };
+
+      return res.status(200).json(result);
     }
 
     const result: TableResponse<AssetWithHistoryDto> = {
-      data: mappedAssets,
+      data: assetsWithHistory.map(({ asset, history }) => new AssetWithHistoryDto(asset, history)),
       totalItems,
       page: query.page || 1,
     };
