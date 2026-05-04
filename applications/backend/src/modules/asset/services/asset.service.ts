@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AssetPriceTimeframe, StockMetadata } from '@packages/types';
+import { AssetPriceTimeframe, BaseMetadata, StockMetadata } from '@packages/types';
 import { subDays } from 'date-fns';
 import { Between, ILike, In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
@@ -134,7 +134,7 @@ export class AssetService {
             issueCapitalization: moexData.issueCapitalization?.toString(),
             valToday: moexData.valToday?.toString(),
             moexData: moexData.moexData,
-          } as StockMetadata;
+          } as StockMetadata & BaseMetadata;
 
           updatedAssets.push(asset);
         }
@@ -220,7 +220,7 @@ export class AssetService {
         issueCapitalization: moexData.issueCapitalization?.toString(),
         valToday: moexData.valToday?.toString(),
         moexData: moexData.moexData,
-      } as StockMetadata;
+      } as StockMetadata & BaseMetadata;
 
       // Сохраняем в БД
       asset = await this.assetRepo.save(asset);
