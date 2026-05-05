@@ -12,6 +12,7 @@ export enum AssetType {
   COMMODITY = 'COMMODITY',
   CSGO_SKIN = 'CSGO_SKIN',
   CASH = 'CASH',
+  CURRENCY = 'CURRENCY',
 }
 
 export enum AssetPriceTimeframe {

@@ -2,33 +2,27 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { MoexBoardEntity, MoexEngineEntity, MoexMarketEntity } from './entities';
 import {
-  MoexEtfService,
-  MoexMapperService,
-  MoexSchedulerService,
-  MoexSeederService,
-  MoexService,
-  MoexStockService,
-} from './services';
+  MoexBoardEntity,
+  MoexEngineEntity,
+  MoexMarketEntity,
+  MoexSecurityEntity,
+  MoexTradeEntity,
+} from './entities';
+import { MoexSchedulerService, MoexSeederService, MoexService } from './services';
 
 @Module({
-  imports: [HttpModule, TypeOrmModule.forFeature([MoexEngineEntity, MoexMarketEntity, MoexBoardEntity])],
-  providers: [
-    MoexStockService,
-    MoexEtfService,
-    MoexMapperService,
-    MoexService,
-    MoexSeederService,
-    MoexSchedulerService,
+  imports: [
+    HttpModule,
+    TypeOrmModule.forFeature([
+      MoexEngineEntity,
+      MoexMarketEntity,
+      MoexBoardEntity,
+      MoexSecurityEntity,
+      MoexTradeEntity,
+    ]),
   ],
-  exports: [
-    MoexStockService,
-    MoexEtfService,
-    MoexMapperService,
-    MoexService,
-    MoexSeederService,
-    MoexSchedulerService,
-  ],
+  providers: [MoexService, MoexSeederService, MoexSchedulerService],
+  exports: [MoexService, MoexSeederService, MoexSchedulerService],
 })
 export class MoexModule {}

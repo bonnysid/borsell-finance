@@ -1,9 +1,18 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { DateString } from '@packages/types';
 import { AxiosRequestConfig, isAxiosError } from 'axios';
 import { lastValueFrom } from 'rxjs';
+import { Repository } from 'typeorm';
 
+import {
+  MoexBoardEntity,
+  MoexEngineEntity,
+  MoexMarketEntity,
+  MoexSecurityEntity,
+  MoexTradeEntity,
+} from '@/modules/moex/entities';
 import {
   GetCandlesMarketDataRequest,
   GetCandlesMarketDataResponse,
@@ -31,7 +40,19 @@ export class MoexService {
     'iss.json': 'extended',
   };
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectRepository(MoexEngineEntity)
+    private readonly engineRepository: Repository<MoexEngineEntity>,
+    @InjectRepository(MoexMarketEntity)
+    private readonly marketRepository: Repository<MoexMarketEntity>,
+    @InjectRepository(MoexBoardEntity)
+    private readonly boardRepository: Repository<MoexBoardEntity>,
+    @InjectRepository(MoexSecurityEntity)
+    private readonly securityRepository: Repository<MoexSecurityEntity>,
+    @InjectRepository(MoexTradeEntity)
+    private readonly tradeRepository: Repository<MoexTradeEntity>,
+  ) {}
 
   private normalizeParams(params?: Record<string, unknown>) {
     if (!params) return undefined;
@@ -140,27 +161,145 @@ export class MoexService {
   }
 
   // Все торговые системы
-  async getEngines() {
-    return await this.getRequest<{ engines: MoexEngineInfo[] }>('/iss/engines.json');
+  async getEngines(forceRefresh = false): Promise<MoexEngineEntity[]> {
+    this.logger.log('Getting engines');
+    const fromDB = await this.engineRepository.find();
+
+    if (fromDB.length && !forceRefresh) {
+      this.logger.log(`[Cache Hit] Found ${fromDB.length} engines in the database`);
+      return fromDB;
+    }
+
+    const response = await this.getRequest<{ engines: MoexEngineInfo[] }>('/iss/engines.json');
+
+    const engines = response.engines.map((engine) => {
+      return this.engineRepository.create({
+        moexId: engine.id,
+        name: engine.name,
+        title: engine.title,
+      });
+    });
+
+    await this.engineRepository.save(engines);
+
+    this.logger.log(
+      `[${forceRefresh ? 'Force refresh' : 'Cache Miss'}] Saved ${engines.length} engines to the database`,
+    );
+    return engines;
   }
 
   // Рынки внутри торговой системы
-  async getMarkets(engine: MoexEngineName) {
-    return await this.getRequest<{ markets: MoexMarketInfo[] }>(
+  async getMarkets(engine: MoexEngineName, forceRefresh = false) {
+    this.logger.log(`Getting markets for engine: ${engine}`);
+
+    const fromDB = await this.marketRepository.find({
+      where: { engineName: engine },
+    });
+
+    if (fromDB.length && !forceRefresh) {
+      this.logger.log(
+        `[Cache Hit] Found ${fromDB.length} markets in the database for engine: ${engine}`,
+      );
+      return fromDB;
+    }
+
+    const response = await this.getRequest<{ markets: MoexMarketInfo[] }>(
       `/iss/engines/${engine}/markets.json`,
     );
+
+    const markets = response.markets.map((market) => {
+      return this.marketRepository.create({
+        moexId: market.id,
+        name: market.NAME,
+        title: market.title,
+        engineName: engine,
+      });
+    });
+
+    await this.marketRepository.save(markets);
+
+    this.logger.log(
+      `[${forceRefresh ? 'Force refresh' : 'Cache Miss'}] Saved ${markets.length} markets to the database for engine: ${engine}`,
+    );
+    return markets;
   }
 
   // Режимы торгов
-  async getBoards(engine: MoexEngineName, marketName: MoexMarketName) {
-    return await this.getRequest<{ boards: MoexBoardInfo[] }>(
+  async getBoards(engine: MoexEngineName, marketName: MoexMarketName, forceRefresh = false) {
+    this.logger.log(`Getting boards for engine: ${engine}, market: ${marketName}`);
+
+    const fromDB = await this.boardRepository.find({
+      where: { engineName: engine, marketName },
+    });
+
+    if (fromDB.length && !forceRefresh) {
+      this.logger.log(
+        `[Cache Hit] Found ${fromDB.length} boards in the database for engine: ${engine}, market: ${marketName}`,
+      );
+      return fromDB;
+    }
+
+    const response = await this.getRequest<{ boards: MoexBoardInfo[] }>(
       `/iss/engines/${engine}/markets/${marketName}/boards.json`,
     );
+
+    const boards = response.boards.map((board) => {
+      return this.boardRepository.create({
+        boardId: board.boardid,
+        boardGroupId: board.board_group_id,
+        title: board.title,
+        isTraded: board.is_traded === 1,
+        marketName,
+        engineName: engine,
+        moexId: board.id,
+      });
+    });
+
+    await this.boardRepository.save(boards);
+
+    this.logger.log(
+      `[${forceRefresh ? 'Force refresh' : 'Cache Miss'}] Saved ${boards.length} boards to the database for engine: ${engine}, market: ${marketName}`,
+    );
+    return boards;
   }
 
   // Список бумаг
-  async getSecurities() {
-    return await this.getRequest<{ securities: MoexSecurityInfo[] }>('/iss/securities.json');
+  async getSecurities(forceRefresh = false): Promise<MoexSecurityEntity[]> {
+    this.logger.log('Getting securities');
+    const fromDB = await this.securityRepository.find();
+
+    if (fromDB.length && !forceRefresh) {
+      this.logger.log(`[Cache Hit] Found ${fromDB.length} securities in the database`);
+      return fromDB;
+    }
+
+    const securities = await this.getAllSecurities();
+
+    const entities = securities.map((security) => {
+      return this.securityRepository.create({
+        secId: security.secid,
+        shortName: security.shortname,
+        name: security.name,
+        regNumber: security.regnumber,
+        isin: security.isin,
+        isTraded: security.is_traded === 1,
+        emitentId: security.emitent_id,
+        emitentTitle: security.emitent_title,
+        emitentInn: security.emitent_inn,
+        emitentOkpo: security.emitent_okpo,
+        type: security.type,
+        group: security.group,
+        primaryBoardId: security.primary_boardid,
+        marketPriceBoardId: security.marketprice_boardid,
+      });
+    });
+
+    await this.securityRepository.save(entities);
+
+    this.logger.log(
+      `[${forceRefresh ? 'Force refresh' : 'Cache Miss'}] Saved ${entities.length} securities to the database`,
+    );
+    return entities;
   }
 
   // Карточка инструмента
@@ -181,10 +320,51 @@ export class MoexService {
   }
 
   // Сделки
-  async getTradesMarketData(engine: MoexEngineName, marketName: MoexMarketName) {
-    return await this.getRequest<GetTradesMarketDataResponse>(
+  async getTradesMarketData(
+    engine: MoexEngineName,
+    marketName: MoexMarketName,
+    forceRefresh = false,
+  ): Promise<MoexTradeEntity[]> {
+    this.logger.log(`Getting trades for engine: ${engine}, market: ${marketName}`);
+
+    const fromDB = await this.tradeRepository.find({
+      where: { engineName: engine, marketName },
+    });
+
+    if (fromDB.length && !forceRefresh) {
+      this.logger.log(
+        `[Cache Hit] Found ${fromDB.length} trades in the database for engine: ${engine}, market: ${marketName}`,
+      );
+      return fromDB;
+    }
+
+    const response = await this.getRequest<GetTradesMarketDataResponse>(
       `/iss/engines/${engine}/markets/${marketName}/trades.json`,
     );
+
+    const trades = response.trades.map((trade) => {
+      return this.tradeRepository.create({
+        tradeNo: trade.TRADENO.toString(),
+        secId: trade.SECID,
+        boardId: trade.BOARDID,
+        price: trade.PRICE.toString(),
+        value: trade.VALUE.toString(),
+        decimals: trade.DECIMALS,
+        tradeDate: trade.TRADEDATE,
+        tradeTime: trade.TRADETIME,
+        sysTime: new Date(trade.SYSTIME),
+        tradeSessionDate: trade.TRADE_SESSION_DATE,
+        engineName: engine,
+        marketName: marketName,
+      });
+    });
+
+    await this.tradeRepository.save(trades);
+
+    this.logger.log(
+      `[${forceRefresh ? 'Force refresh' : 'Cache Miss'}] Saved ${trades.length} trades to the database for engine: ${engine}, market: ${marketName}`,
+    );
+    return trades;
   }
 
   // Свечи

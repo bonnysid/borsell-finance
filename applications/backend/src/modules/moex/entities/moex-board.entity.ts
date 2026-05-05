@@ -16,6 +16,9 @@ export class MoexBoardEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Column({ name: 'moex_id', type: 'integer' })
+  moexId: number;
+
   @Column({ name: 'engine_name', type: 'varchar' })
   engineName!: string;
 

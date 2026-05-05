@@ -13,7 +13,7 @@ export class MoexSchedulerService {
   async handleMoexSeed() {
     this.logger.log('Starting scheduled MOEX seeding...');
     try {
-      await this.moexSeederService.seed();
+      await this.moexSeederService.seed(true);
       this.logger.log('MOEX seeding completed successfully.');
     } catch (error) {
       this.logger.error('Failed to seed MOEX data.', error.stack);
