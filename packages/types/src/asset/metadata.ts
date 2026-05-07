@@ -29,11 +29,21 @@ export type BaseMetadata = {
   inspectLink?: string;
   isStatTrak?: boolean;
   bankName?: string; // Tinkoff, Revolut
+  moex?: {
+    engineName?: string;
+    marketName?: string;
+    boardId?: string;
+    securityId?: string;
+    primaryBoardId?: string | null;
+    marketPriceBoardId?: string | null;
+    type?: string | null;
+    group?: string | null;
+  };
 };
 
 // 2. Специфика для Акций (Stock)
 export type StockMetadata = {
-  moexData?: Record<string, any>;
+  moexData?: Record<string, unknown>;
 };
 
 // 3. Специфика для Крипты (Crypto)

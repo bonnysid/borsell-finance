@@ -28,6 +28,10 @@ export type AssetDtoShape = {
   name: string;
   symbol: string;
   metadata: AssetMetadata;
+  moexEngineName?: string | null;
+  moexMarketName?: string | null;
+  moexBoardId?: string | null;
+  moexSecurityId?: string | null;
 
   currencyCode: CurrencyCode;
   cachedMarketPrice: NumberString;
@@ -63,6 +67,7 @@ export type AssetPriceHistoryDtoShape = {
   currencyCode: CurrencyCode;
 
   source: string;
+  isSynthesized: boolean;
 
   date: DateString;
   createdAt: DateString;

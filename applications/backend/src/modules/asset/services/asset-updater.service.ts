@@ -8,7 +8,7 @@ import YahooFinance from 'yahoo-finance2';
 
 import { formatDateToSqlDate } from '@/common';
 import { MoexAssetInfo } from '@/modules/moex/moex.types';
-import { MoexEtfService, MoexStockService } from '@/modules/moex/services';
+import { MoexAssetService } from '@/modules/moex/services';
 
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 import { AssetService } from './asset.service';
@@ -23,12 +23,42 @@ export class AssetUpdaterService {
   constructor(
     @InjectRepository(AssetEntity)
     private readonly assetRepo: Repository<AssetEntity>,
-    @InjectRepository(AssetPriceHistoryEntity)
-    private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
-    private readonly moexStockService: MoexStockService,
-    private readonly moexEtfsService: MoexEtfService,
+    private readonly moexAssetService: MoexAssetService,
     private readonly assetService: AssetService,
   ) {}
+
+  private mapAssetInfo(asset: AssetEntity, assetInfo: MoexAssetInfo, fallbackType: AssetType) {
+    asset.name = String(assetInfo.name || assetInfo.shortName || assetInfo.symbol);
+    asset.type = assetInfo.type ?? fallbackType;
+    asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
+    asset.volume = assetInfo.volume?.toFixed(8) || '0';
+    asset.changePercent24h = assetInfo.changePercent?.toFixed(2) || '0';
+    asset.lastPriceUpdateAt = assetInfo.date;
+    asset.currencyCode = assetInfo.currencyCode;
+    asset.moexEngineName = assetInfo.context.engineName;
+    asset.moexMarketName = assetInfo.context.marketName;
+    asset.moexBoardId = assetInfo.context.boardId;
+    asset.moexSecurityId = assetInfo.context.securityId;
+    asset.metadata = {
+      ...asset.metadata,
+      isin: assetInfo.isin,
+      ticker: assetInfo.symbol,
+      lotSize: assetInfo.lotSize?.toFixed(8),
+      shortName: assetInfo.shortName,
+      source: 'MOEX',
+      issueCapitalization: assetInfo.issueCapitalization?.toString(),
+      valToday: assetInfo.valToday?.toString(),
+      moexData: assetInfo.moexData,
+      moex: {
+        engineName: assetInfo.context.engineName,
+        marketName: assetInfo.context.marketName,
+        boardId: assetInfo.context.boardId,
+        securityId: assetInfo.context.securityId,
+        primaryBoardId: assetInfo.context.primaryBoardId,
+        marketPriceBoardId: assetInfo.context.marketPriceBoardId,
+      },
+    };
+  }
 
   @Cron('0 55 23 * * *')
   async handleDailyUpdateCron() {
@@ -47,7 +77,7 @@ export class AssetUpdaterService {
       // Пока что работаем только с MOEX, так как Yahoo имеет свои лимиты и формат
       if (!asset.symbol.includes('.') && asset.currencyCode === 'RUB') {
         try {
-          const history = await this.moexStockService.getStockCandles(asset.symbol, {
+          const history = await this.moexAssetService.getCandles(asset.symbol, {
             isFromTo: true,
             from: fromDate,
             to: toDate,
@@ -62,7 +92,8 @@ export class AssetUpdaterService {
               closePrice: record.close.toFixed(8),
               volume: record.volume.toFixed(8),
               currencyCode: record.currencyCode,
-              source: 'MOEX',
+              source: record.isSynthesized ? 'MOEX_GAP_FILL' : 'MOEX',
+              isSynthesized: record.isSynthesized ?? false,
             }));
 
             await this.assetService.updateAssetHistory(asset, historyToUpdate);
@@ -103,16 +134,8 @@ export class AssetUpdaterService {
     await this.updateAssetsByTickers(tickers, assets);
   }
 
-  async getTickersInfo(tickers: string[], type: AssetType) {
-    if (type === AssetType.STOCK) {
-      return this.moexStockService.getStocksInfo(tickers);
-    }
-
-    if (type === AssetType.ETF) {
-      return this.moexEtfsService.getEtfsInfo(tickers);
-    }
-
-    return [];
+  async getTickersInfo(tickers: string[]) {
+    return this.moexAssetService.getAssetsInfo(tickers);
   }
 
   async updateAssetsByTickers(
@@ -141,7 +164,11 @@ export class AssetUpdaterService {
 
       try {
         this.logger.log(`Fetching MOEX chunk ${i / chunkSize + 1}: ${chunk.join(', ')}`);
-        const data = await this.getTickersInfo(chunk, type);
+        const chunkSymbols = new Set(chunk.map((symbol) => symbol.toUpperCase()));
+        const chunkAssets = existingAssets.filter((asset) =>
+          chunkSymbols.has(asset.symbol.toUpperCase()),
+        );
+        const data = await this.moexAssetService.getAssetsInfo(chunk, chunkAssets);
 
         assetsInfo = assetsInfo ? [...assetsInfo, ...data] : data;
       } catch (error) {
@@ -166,19 +193,7 @@ export class AssetUpdaterService {
         });
       }
 
-      asset.name = String(assetInfo.name || assetInfo.shortName);
-      asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
-      asset.volume = assetInfo.volume?.toFixed(8) || '0';
-      asset.changePercent24h = assetInfo.changePercent?.toFixed(2) || '0';
-      asset.lastPriceUpdateAt = assetInfo.date;
-      asset.metadata = {
-        ...asset.metadata,
-        isin: assetInfo.isin,
-        ticker: assetInfo.symbol,
-        lotSize: assetInfo.lotSize?.toFixed(8),
-        shortName: assetInfo.shortName,
-        source: 'MOEX',
-      };
+      this.mapAssetInfo(asset, assetInfo, type);
 
       if (!assetsToSave.find((a) => a.symbol === asset.symbol)) {
         assetsToSave.push(asset);

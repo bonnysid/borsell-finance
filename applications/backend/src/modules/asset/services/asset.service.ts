@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AssetPriceTimeframe, BaseMetadata, StockMetadata } from '@packages/types';
+import { AssetMetadata, AssetPriceTimeframe } from '@packages/types';
 import { subDays } from 'date-fns';
 import { Between, ILike, In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
@@ -12,8 +12,8 @@ import {
   isSameDay,
   normalizeDate,
 } from '@/common/utils/date.utils';
-import { MoexAssetHistoryPrice } from '@/modules/moex/moex.types';
-import { MoexStockService } from '@/modules/moex/services';
+import { MoexAssetHistoryPrice, MoexAssetInfo } from '@/modules/moex/moex.types';
+import { MoexAssetService } from '@/modules/moex/services';
 import { SettingsService } from '@/modules/settings/services';
 
 import { AssetCandlesQueryDto, AssetHistoryQueryDto, AssetQueryDto } from '../dto';
@@ -30,19 +30,87 @@ export class AssetService {
     private readonly assetRepo: Repository<AssetEntity>,
     @InjectRepository(AssetPriceHistoryEntity)
     private readonly assetPriceHistoryRepo: Repository<AssetPriceHistoryEntity>,
-    private readonly moexStockService: MoexStockService,
+    private readonly moexAssetService: MoexAssetService,
     private readonly settingsService: SettingsService,
   ) {}
 
+  private applyMoexAssetInfo(asset: AssetEntity, moexData: MoexAssetInfo): AssetEntity {
+    asset.type = moexData.type;
+    asset.name = moexData.name || asset.name;
+    asset.cachedMarketPrice = moexData.lastPrice.toString();
+    asset.volume = moexData.volume.toString();
+    asset.changePercent24h = moexData.changePercent.toString();
+    asset.lastPriceUpdateAt = moexData.date;
+    asset.currencyCode = moexData.currencyCode;
+    asset.moexEngineName = moexData.context.engineName;
+    asset.moexMarketName = moexData.context.marketName;
+    asset.moexBoardId = moexData.context.boardId;
+    asset.moexSecurityId = moexData.context.securityId;
+
+    asset.metadata = {
+      ...asset.metadata,
+      isin: moexData.isin,
+      ticker: moexData.symbol,
+      lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
+      shortName: moexData.shortName,
+      source: 'MOEX',
+      issueCapitalization: moexData.issueCapitalization?.toString(),
+      valToday: moexData.valToday?.toString(),
+      moexData: moexData.moexData,
+      moex: {
+        engineName: moexData.context.engineName,
+        marketName: moexData.context.marketName,
+        boardId: moexData.context.boardId,
+        securityId: moexData.context.securityId,
+        primaryBoardId: moexData.context.primaryBoardId,
+        marketPriceBoardId: moexData.context.marketPriceBoardId,
+      },
+    } as AssetMetadata;
+
+    return asset;
+  }
+
+  private mapMoexCandlesToHistory(
+    candles: MoexAssetHistoryPrice[],
+  ): Partial<AssetPriceHistoryEntity>[] {
+    return candles.map((record) => ({
+      date: formatDateToSqlDate(record.date),
+      openPrice: record.open.toFixed(8),
+      highPrice: record.high.toFixed(8),
+      lowPrice: record.low.toFixed(8),
+      closePrice: record.close.toFixed(8),
+      volume: record.volume.toFixed(8),
+      currencyCode: record.currencyCode,
+      source: record.isSynthesized ? 'MOEX_GAP_FILL' : 'MOEX',
+      isSynthesized: record.isSynthesized ?? false,
+    }));
+  }
+
   async getAssets(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
-    const { page = 1, limit = 10, search } = query;
+    const { page = 1, limit = 10, search, type } = query;
+    const where = search
+      ? [
+          { symbol: ILike(`%${search}%`), ...(type ? { type } : {}) },
+          { name: ILike(`%${search}%`), ...(type ? { type } : {}) },
+        ]
+      : type
+        ? { type }
+        : {};
 
     const [assets, count] = await this.assetRepo.findAndCount({
-      where: search ? [{ symbol: ILike(`%${search}%`) }, { name: ILike(`%${search}%`) }] : {},
+      where,
       take: limit,
       skip: (page - 1) * limit,
       order: { symbol: 'ASC' },
     });
+
+    return [assets, count];
+  }
+
+  async getAssetsWithPrices(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
+    const [assetsRaw, count] = await this.getAssets(query);
+    const symbols = assetsRaw.map((asset) => asset.symbol);
+    const assets = await this.getAssetsPriceBatch(symbols);
 
     return [assets, count];
   }
@@ -93,9 +161,7 @@ export class AssetService {
     if (symbols.length === 0) return [];
 
     const assets = await this.assetRepo.find({ where: { symbol: In(symbols) } });
-    const staleAssets = assets.filter((asset) =>
-      isDataStale(asset.lastPriceUpdateAt, this.PRICE_CACHE_TTL_MINUTES / 60),
-    );
+    const staleAssets = assets.filter((asset) => isDataStale(asset.lastPriceUpdateAt, 24));
 
     const staleSymbols = staleAssets.map((a) => a.symbol);
     // Also include symbols that are not in DB yet (if any)
@@ -107,7 +173,7 @@ export class AssetService {
         `[Cache Miss/Stale Batch] Fetching fresh data for ${symbolsToFetch.length} assets from MOEX`,
       );
 
-      const moexDataList = await this.moexStockService.getStocksInfo(symbolsToFetch);
+      const moexDataList = await this.moexAssetService.getAssetsInfo(symbolsToFetch, staleAssets);
 
       if (moexDataList.length > 0) {
         const updatedAssets: AssetEntity[] = [];
@@ -119,24 +185,7 @@ export class AssetService {
             asset = this.assetRepo.create({ symbol: moexData.symbol });
           }
 
-          asset.type = moexData.type;
-          asset.name = moexData.name || asset.name;
-          asset.cachedMarketPrice = moexData.lastPrice.toString();
-          asset.volume = moexData.volume.toString();
-          asset.changePercent24h = moexData.changePercent.toString();
-          asset.lastPriceUpdateAt = moexData.date;
-          asset.currencyCode = moexData.currencyCode;
-
-          asset.metadata = {
-            ...asset.metadata,
-            isin: moexData.isin,
-            lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
-            issueCapitalization: moexData.issueCapitalization?.toString(),
-            valToday: moexData.valToday?.toString(),
-            moexData: moexData.moexData,
-          } as StockMetadata & BaseMetadata;
-
-          updatedAssets.push(asset);
+          updatedAssets.push(this.applyMoexAssetInfo(asset, moexData));
         }
 
         if (updatedAssets.length > 0) {
@@ -152,6 +201,8 @@ export class AssetService {
           }
         }
       }
+    } else {
+      this.logger.log(`[Cache Hit Batch] Serving ${assets.length} assets from DB`);
     }
 
     return assets;
@@ -188,7 +239,7 @@ export class AssetService {
     if (isStale) {
       this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${symbol} from MOEX`);
 
-      const moexData = await this.moexStockService.getStockInfo(symbol);
+      const moexData = await this.moexAssetService.getAssetInfo(symbol);
 
       if (!moexData) {
         // Если это новый актив и его нет на MOEX, кидаем ошибку
@@ -203,24 +254,7 @@ export class AssetService {
         asset = this.assetRepo.create({ symbol: symbol });
       }
 
-      asset.type = moexData.type;
-      asset.name = moexData.name || asset.name;
-      // Сохраняем цену как строку (NumberString), так как у тебя Big.js
-      asset.cachedMarketPrice = moexData.lastPrice.toString();
-      asset.volume = moexData.volume.toString();
-      asset.changePercent24h = moexData.changePercent.toString();
-      asset.lastPriceUpdateAt = moexData.date;
-      asset.currencyCode = moexData.currencyCode;
-
-      // Складываем фундаментальные данные в JSONB
-      asset.metadata = {
-        ...asset.metadata,
-        isin: moexData.isin,
-        lotSize: moexData.lotSize ? Number(moexData.lotSize.toString()) : undefined,
-        issueCapitalization: moexData.issueCapitalization?.toString(),
-        valToday: moexData.valToday?.toString(),
-        moexData: moexData.moexData,
-      } as StockMetadata & BaseMetadata;
+      this.applyMoexAssetInfo(asset, moexData);
 
       // Сохраняем в БД
       asset = await this.assetRepo.save(asset);
@@ -249,7 +283,7 @@ export class AssetService {
     };
 
     try {
-      const assetInfo = await this.moexStockService.getStockInfo(symbol);
+      const assetInfo = await this.moexAssetService.getAssetInfo(symbol);
 
       if (assetInfo) {
         asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
@@ -318,25 +352,14 @@ export class AssetService {
       const asset = await this.assetRepo.findOne({ where: { symbol } });
       if (asset) {
         try {
-          const moexHistory = await this.moexStockService.getStockCandles(symbol, {
+          const moexHistory = await this.moexAssetService.getCandles(symbol, {
             isFromTo: true,
             from: startDate,
             to: endDate,
           });
 
           if (moexHistory.length > 0) {
-            const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
-              (record) => ({
-                date: formatDateToSqlDate(record.date),
-                openPrice: record.open.toFixed(8),
-                highPrice: record.high.toFixed(8),
-                lowPrice: record.low.toFixed(8),
-                closePrice: record.close.toFixed(8),
-                volume: record.volume.toFixed(8),
-                currencyCode: record.currencyCode,
-                source: 'MOEX',
-              }),
-            );
+            const historyToUpdate = this.mapMoexCandlesToHistory(moexHistory);
 
             await this.updateAssetHistory(asset, historyToUpdate);
           }
@@ -410,25 +433,14 @@ export class AssetService {
         const asset = await this.assetRepo.findOne({ where: { symbol } });
         if (asset) {
           try {
-            const moexHistory = await this.moexStockService.getStockCandles(symbol, {
+            const moexHistory = await this.moexAssetService.getCandles(symbol, {
               isFromTo: true,
               from: startDate,
               to: endDate,
             });
 
             if (moexHistory.length > 0) {
-              const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexHistory.map(
-                (record) => ({
-                  date: formatDateToSqlDate(record.date),
-                  openPrice: record.open.toFixed(8),
-                  highPrice: record.high.toFixed(8),
-                  lowPrice: record.low.toFixed(8),
-                  closePrice: record.close.toFixed(8),
-                  volume: record.volume.toFixed(8),
-                  currencyCode: record.currencyCode,
-                  source: 'MOEX',
-                }),
-              );
+              const historyToUpdate = this.mapMoexCandlesToHistory(moexHistory);
 
               await this.updateAssetHistory(asset, historyToUpdate);
             }
@@ -459,7 +471,9 @@ export class AssetService {
         result.set(symbol, []);
       }
 
-      const history = result.get(symbol)!;
+      const history = result.get(symbol);
+      if (!history) continue;
+
       const dateKey = formatDateToSqlDate(item.date);
       const existingIndex = history.findIndex((h) => formatDateToSqlDate(h.date) === dateKey);
 
@@ -483,24 +497,17 @@ export class AssetService {
       this.logger.log(`Cache miss or stale data for ${ticker}. Fetching from MOEX...`);
 
       // 3. Идем в MOEX через твой Http-клиент
-      const moexData = await this.moexStockService.getStockInfo(ticker);
+      const moexData = await this.moexAssetService.getAssetInfo(ticker);
 
       if (!moexData) {
         throw new Error(`Asset ${ticker} not found on MOEX`);
       }
 
-      // 4. Сохраняем или обновляем запись в нашей БД
-      asset = await this.assetRepo.save({
-        ...(asset || {}), // Если актив был, обновляем, если нет - создаем
-        symbol: moexData.symbol,
-        name: moexData.name,
-        shortName: moexData.shortName,
-        lotSize: moexData.lotSize?.toNumber(),
-        capitalization: moexData.issueCapitalization?.toString(),
-        // ... маппинг остальных полей
-        metadata: {},
-        updatedAt: new Date(),
-      });
+      if (!asset) {
+        asset = this.assetRepo.create({ symbol: moexData.symbol });
+      }
+
+      asset = await this.assetRepo.save(this.applyMoexAssetInfo(asset, moexData));
     } else {
       this.logger.log(`Serving ${ticker} from local DB`);
     }
@@ -595,28 +602,19 @@ export class AssetService {
 
         if (!lastUpdateAt || localHistory.length < candles) {
           // If we never updated OR we need more historical data than we have in DB
-          moexCandles = await this.moexStockService.getStockCandles(asset.symbol, { candles });
+          moexCandles = await this.moexAssetService.getCandles(asset.symbol, { candles });
         } else {
           const diff = getDaysDifference(lastUpdateAt);
 
           if (diff >= 1) {
-            moexCandles = await this.moexStockService.getStockCandles(asset.symbol, {
+            moexCandles = await this.moexAssetService.getCandles(asset.symbol, {
               candles: diff + 1,
             });
           }
         }
 
         if (moexCandles.length > 0) {
-          const historyToUpdate: Partial<AssetPriceHistoryEntity>[] = moexCandles.map((record) => ({
-            date: formatDateToSqlDate(record.date),
-            openPrice: record.open.toFixed(8),
-            highPrice: record.high.toFixed(8),
-            lowPrice: record.low.toFixed(8),
-            closePrice: record.close.toFixed(8),
-            volume: record.volume.toFixed(8),
-            currencyCode: record.currencyCode,
-            source: 'MOEX',
-          }));
+          const historyToUpdate = this.mapMoexCandlesToHistory(moexCandles);
 
           await this.updateAssetHistory(asset, historyToUpdate);
 

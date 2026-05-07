@@ -441,10 +441,10 @@
     "@deno/shim-deno-test" "^0.5.0"
     which "^4.0.0"
 
-"@devbonnysid/ui-kit-default@1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@devbonnysid/ui-kit-default/-/ui-kit-default-1.9.2.tgz#08583428b203194520570d512265e2cdb7baa929"
-  integrity sha512-8kTUT3gnxqAUj9wIfiLq0/L/Pnqk1s70w6fWt2lV+3WyxJDdSaP7shynZzTepZ9UA/0bSNIA0ZzD17u/loDqLg==
+"@devbonnysid/ui-kit-default@1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@devbonnysid/ui-kit-default/-/ui-kit-default-1.10.0.tgz#74d71044a7f140905c6a439873013eacb7b1b865"
+  integrity sha512-dk3CM26815FLbQ8ykFDKCgrgHsnksVOLt0KPTCWxeCGfmregN9U9NxLoy8T7rzbIQaDOOSH1TaKTaW5PuCmXHw==
   dependencies:
     axios "^1.13.2"
     classnames "^2.5.1"

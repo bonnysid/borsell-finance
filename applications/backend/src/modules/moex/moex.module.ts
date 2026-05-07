@@ -9,7 +9,7 @@ import {
   MoexSecurityEntity,
   MoexTradeEntity,
 } from './entities';
-import { MoexSchedulerService, MoexSeederService, MoexService } from './services';
+import { MoexAssetService, MoexSchedulerService, MoexSeederService, MoexService } from './services';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { MoexSchedulerService, MoexSeederService, MoexService } from './services
       MoexTradeEntity,
     ]),
   ],
-  providers: [MoexService, MoexSeederService, MoexSchedulerService],
-  exports: [MoexService, MoexSeederService, MoexSchedulerService],
+  providers: [MoexService, MoexAssetService, MoexSeederService, MoexSchedulerService],
+  exports: [MoexService, MoexAssetService, MoexSeederService, MoexSchedulerService],
 })
 export class MoexModule {}

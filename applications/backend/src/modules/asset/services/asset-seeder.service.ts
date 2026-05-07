@@ -4,7 +4,7 @@ import { AssetType } from '@packages/types';
 import { In, Repository } from 'typeorm';
 
 import { normalizeDate } from '@/common';
-import { MoexEtfService, MoexStockService } from '@/modules/moex/services';
+import { MoexAssetService } from '@/modules/moex/services';
 import { SettingKey } from '@/modules/settings/entities';
 import { SettingsService } from '@/modules/settings/services';
 
@@ -20,8 +20,7 @@ export class AssetSeederService implements OnModuleInit {
   constructor(
     @InjectRepository(AssetEntity)
     private readonly assetRepo: Repository<AssetEntity>,
-    private readonly moexStockService: MoexStockService,
-    private readonly moexEtfService: MoexEtfService,
+    private readonly moexAssetService: MoexAssetService,
     private readonly assetUpdaterService: AssetUpdaterService,
     private readonly settingsService: SettingsService,
   ) {}
@@ -60,7 +59,7 @@ export class AssetSeederService implements OnModuleInit {
   private async seedStocks() {
     this.logger.log('Start seeding Stocks...');
 
-    const topStocks = await this.moexStockService.getTopStocks();
+    const topStocks = await this.moexAssetService.getTopAssets(AssetType.STOCK);
     const topTickers = topStocks.map((it) => it.symbol);
     const tickers = [...new Set([...this.initialTickers, ...topTickers])];
 
@@ -95,7 +94,7 @@ export class AssetSeederService implements OnModuleInit {
   private async seedEtfs() {
     this.logger.log('Start seeding ETFs...');
 
-    const topEtfs = await this.moexEtfService.getTopEtfs();
+    const topEtfs = await this.moexAssetService.getTopAssets(AssetType.ETF);
     const topTickers = topEtfs.map((it) => it.symbol);
     const tickers = [...new Set([...topTickers])];
 

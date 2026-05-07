@@ -6,9 +6,9 @@ import {
   usePagination,
 } from '@devbonnysid/ui-kit-default';
 import { AssetCell, useGetAssets } from '@entities/assets';
-import { AssetWithHistoryDtoShape } from '@packages/types';
+import { AssetDtoShape, AssetType } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
-import { PageTitle, PageWrapper, PercentText, Sparkline } from '@shared/ui';
+import { PageTitle, PageWrapper, PercentText } from '@shared/ui';
 import { AmountText } from '@shared/ui/AmountText';
 import { FC, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ const cx = bindStyles(styles);
 
 export const AssetsPage: FC<AssetsPageProps> = ({}) => {
   const pagination = usePagination({
-    initialPageSize: 100,
+    initialPageSize: 15,
   });
 
   const {
@@ -32,6 +32,7 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
   } = useGetAssets({
     page: pagination.page,
     limit: pagination.pageSize,
+    type: AssetType.STOCK,
   });
 
   const currentData = paginatedData;
@@ -43,7 +44,7 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const columns = useMemo<TableColumnType<AssetWithHistoryDtoShape>[]>(() => {
+  const columns = useMemo<TableColumnType<AssetDtoShape>[]>(() => {
     return [
       {
         key: 'custom-column-asset',
@@ -58,60 +59,40 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
           <AmountText amount={cachedMarketPrice} currency={currencyCode} />
         ),
       },
-      {
-        key: 'changePercent1h',
-        title: t('change_1h'),
-        align: ColumnAlignVariants.RIGHT,
-        render: (changePercent1h) => <PercentText value={changePercent1h} />,
-      },
+      // {
+      //   key: 'changePercent1h',
+      //   title: t('change_1h'),
+      //   align: ColumnAlignVariants.RIGHT,
+      //   render: (changePercent1h) => <PercentText value={changePercent1h} />,
+      // },
       {
         key: 'changePercent24h',
         title: t('change_24h'),
         align: ColumnAlignVariants.RIGHT,
         render: (changePercent24h) => <PercentText value={changePercent24h} />,
       },
-      {
-        key: 'changePercent7d',
-        title: t('change_7d'),
-        align: ColumnAlignVariants.RIGHT,
-        render: (changePercent7d) => <PercentText value={changePercent7d} />,
-      },
+      // {
+      //   key: 'changePercent7d',
+      //   title: t('change_7d'),
+      //   align: ColumnAlignVariants.RIGHT,
+      //   render: (changePercent7d) => <PercentText value={changePercent7d} />,
+      // },
       {
         key: 'volume',
         title: t('Volume'),
         align: ColumnAlignVariants.RIGHT,
-        render: (volume, { currencyCode }) => (
-          <AmountText amount={volume} currency={currencyCode} />
-        ),
-      },
-      {
-        key: 'custom-column-sparkline',
-        title: t('Last 7 days'),
-        render: (_, asset) => {
-          const sparklineData = asset.history
-            .map((h) => ({
-              time: new Date(h.date),
-              value: Number(h.closePrice),
-            }))
-            .sort((a, b) => a.time.getTime() - b.time.getTime());
-
-          if (sparklineData.length === 0) return null;
-
-          return (
-            <div className={cx('sparkline-wrapper')}>
-              <Sparkline data={sparklineData} />
-            </div>
-          );
+        render: (volume, { currencyCode }) => {
+          return <AmountText amount={volume} currency={currencyCode} />;
         },
       },
     ];
   }, [t]);
 
-  const rowKey = useCallback((userAsset: AssetWithHistoryDtoShape) => {
+  const rowKey = useCallback((userAsset: AssetDtoShape) => {
     return userAsset.id;
   }, []);
 
-  const handleRowClick = (record: AssetWithHistoryDtoShape) => {
+  const handleRowClick = (record: AssetDtoShape) => {
     navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }));
   };
 

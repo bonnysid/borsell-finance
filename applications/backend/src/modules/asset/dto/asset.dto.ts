@@ -17,6 +17,10 @@ export class AssetDto implements AssetDtoShape {
   name: string;
   symbol: string;
   metadata: AssetMetadata;
+  moexEngineName?: string | null;
+  moexMarketName?: string | null;
+  moexBoardId?: string | null;
+  moexSecurityId?: string | null;
 
   currencyCode: CurrencyCode;
   cachedMarketPrice: NumberString;
@@ -36,6 +40,10 @@ export class AssetDto implements AssetDtoShape {
     this.name = asset.name;
     this.symbol = asset.symbol;
     this.metadata = asset.metadata;
+    this.moexEngineName = asset.moexEngineName;
+    this.moexMarketName = asset.moexMarketName;
+    this.moexBoardId = asset.moexBoardId;
+    this.moexSecurityId = asset.moexSecurityId;
     this.cachedMarketPrice = asset.cachedMarketPrice;
     this.volume = asset.volume;
     this.changePercent1h = asset.changePercent1h;

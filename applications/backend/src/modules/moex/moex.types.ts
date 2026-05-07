@@ -358,6 +358,16 @@ export type MoexAssetHistoryPrice = {
   isSynthesized?: boolean;
 };
 
+export type MoexSecurityContext = {
+  engineName: MoexEngineName;
+  marketName: MoexMarketName;
+  boardId: string;
+  securityId: string;
+  assetType?: AssetType;
+  primaryBoardId?: string | null;
+  marketPriceBoardId?: string | null;
+};
+
 export type MoexAssetInfo = {
   symbol: string;
   isin?: string;
@@ -379,9 +389,10 @@ export type MoexAssetInfo = {
   issueCapitalization?: Big.Big | null; // Капитализация
   valToday?: Big.Big | null; // Объем торгов за сегодня в рублях
 
-  moexData?: Record<string, any>;
+  moexData?: Record<string, unknown>;
   isSynthesized?: boolean;
 
   currencyCode: CurrencyCode;
   type: AssetType;
+  context: MoexSecurityContext;
 };

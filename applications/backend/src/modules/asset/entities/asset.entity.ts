@@ -28,6 +28,18 @@ export class AssetEntity {
   @Column({ type: 'jsonb', default: {} })
   metadata: AssetMetadata;
 
+  @Column({ name: 'moex_engine_name', type: 'varchar', length: 255, nullable: true })
+  moexEngineName?: string | null;
+
+  @Column({ name: 'moex_market_name', type: 'varchar', length: 255, nullable: true })
+  moexMarketName?: string | null;
+
+  @Column({ name: 'moex_board_id', type: 'varchar', length: 255, nullable: true })
+  moexBoardId?: string | null;
+
+  @Column({ name: 'moex_security_id', type: 'varchar', length: 255, nullable: true })
+  moexSecurityId?: string | null;
+
   @PriceColumn()
   cachedMarketPrice: NumberString;
 

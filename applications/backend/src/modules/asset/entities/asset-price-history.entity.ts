@@ -58,6 +58,9 @@ export class AssetPriceHistoryEntity {
   @Column({ nullable: true })
   source: string;
 
+  @Column({ name: 'is_synthesized', type: 'boolean', default: false })
+  isSynthesized: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

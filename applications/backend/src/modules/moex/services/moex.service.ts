@@ -70,12 +70,14 @@ export class MoexService {
 
   private async getRequest<T>(url: string, params?: AxiosRequestConfig['params']) {
     try {
-      this.logger.log(`Request url: ${url}`);
-
       const currentParams: AxiosRequestConfig['params'] = this.normalizeParams({
         ...this.defaultParams,
         ...(params || {}),
       });
+
+      this.logger.log(
+        `Request url: ${this.baseUrl}${url}?${new URLSearchParams(currentParams).toString()}`,
+      );
 
       const response = await lastValueFrom(
         this.httpService.get<[MoexCharsetInfo, T]>(`${this.baseUrl}${url}`, {
@@ -112,6 +114,9 @@ export class MoexService {
     params?: Record<string, unknown>,
     limit = 100,
   ): Promise<TItem[]> {
+    this.logger.log(
+      `Paginated Request url: ${url}, params: ${JSON.stringify(params)}, limit: ${limit}`,
+    );
     const result: TItem[] = [];
     let start = 0;
 

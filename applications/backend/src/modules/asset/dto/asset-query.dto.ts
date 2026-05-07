@@ -1,6 +1,6 @@
-import { PaginationDtoShape, SearchDtoShape } from '@packages/types';
+import { AssetType, PaginationDtoShape, SearchDtoShape } from '@packages/types';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class AssetQueryDto implements PaginationDtoShape, SearchDtoShape {
   @IsOptional()
@@ -19,4 +19,8 @@ export class AssetQueryDto implements PaginationDtoShape, SearchDtoShape {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsEnum(AssetType)
+  type?: AssetType;
 }

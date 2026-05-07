@@ -22,6 +22,7 @@ export class AssetPriceHistoryDto implements AssetPriceHistoryDtoShape {
 
   currencyCode: CurrencyCode;
   source: string;
+  isSynthesized: boolean;
 
   date: DateString;
   createdAt: DateString;
@@ -40,6 +41,7 @@ export class AssetPriceHistoryDto implements AssetPriceHistoryDtoShape {
 
     this.currencyCode = history.currencyCode;
     this.source = history.source;
+    this.isSynthesized = history.isSynthesized;
 
     this.date = history.date;
     this.createdAt = history.createdAt.toISOString();

@@ -23,7 +23,6 @@ import {
   AssetPriceDto,
   AssetPriceHistoryDto,
   AssetQueryDto,
-  AssetWithHistoryDto,
 } from './dto';
 import { AssetService, AssetUpdaterService } from './services';
 
@@ -43,11 +42,11 @@ export class AssetController {
     @Res() res: Response,
     @CurrentUser() user?: UserJWT,
   ) {
-    const [assetsWithHistory, totalItems] = await this.appService.getAssetsWithHistory(query);
+    const [assets, totalItems] = await this.appService.getAssetsWithPrices(query);
     const userFromDB = user ? await this.userService.findOne(user?.username) : null;
 
     if (userFromDB) {
-      const convertItems = assetsWithHistory.map(({ asset }) => ({
+      const convertItems = assets.map((asset) => ({
         amount: asset.cachedMarketPrice,
         toCurrency: userFromDB.currencyCode,
         fromCurrency: asset.currencyCode,
@@ -55,19 +54,16 @@ export class AssetController {
 
       const convertedPrices = await this.currencyConverterService.convertMany(convertItems);
 
-      const mappedAssets = assetsWithHistory.map(({ asset, history }, index) => {
+      const mappedAssets = assets.map((asset, index) => {
         const converted = convertedPrices[index];
-        return new AssetWithHistoryDto(
-          {
-            ...asset,
-            cachedMarketPrice: converted.amount.toString(),
-            currencyCode: converted.toCurrency,
-          },
-          history,
-        );
+        return new AssetDto({
+          ...asset,
+          cachedMarketPrice: converted.amount.toString(),
+          currencyCode: converted.toCurrency,
+        });
       });
 
-      const result: TableResponse<AssetWithHistoryDto> = {
+      const result: TableResponse<AssetDto> = {
         data: mappedAssets,
         totalItems,
         page: query.page || 1,
@@ -76,8 +72,8 @@ export class AssetController {
       return res.status(200).json(result);
     }
 
-    const result: TableResponse<AssetWithHistoryDto> = {
-      data: assetsWithHistory.map(({ asset, history }) => new AssetWithHistoryDto(asset, history)),
+    const result: TableResponse<AssetDto> = {
+      data: assets.map((asset) => new AssetDto(asset)),
       totalItems,
       page: query.page || 1,
     };

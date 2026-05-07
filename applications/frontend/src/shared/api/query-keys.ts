@@ -1,17 +1,20 @@
 import {
   AssetCandlesQueryDtoShape,
   AssetPriceHistoryQueryDtoShape,
+  AssetType,
   GetTransactionsDtoShape,
   PaginationDtoShape,
   SearchDtoShape,
 } from '@packages/types';
+
+export type AssetsListQuery = PaginationDtoShape & SearchDtoShape & { type?: AssetType };
 
 export const ASSETS_QUERY_KEYS = {
   all: ['assets'] as const,
   lists: () => [...ASSETS_QUERY_KEYS.all, 'list'] as const,
   userAssetsList: () => [...ASSETS_QUERY_KEYS.lists(), 'user-assets'] as const,
   userAsset: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'user-asset', symbol] as const,
-  assetsList: (params?: PaginationDtoShape & SearchDtoShape) =>
+  assetsList: (params?: AssetsListQuery) =>
     [...ASSETS_QUERY_KEYS.lists(), 'assets', params] as const,
 
   assetInfo: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'info', symbol] as const,
