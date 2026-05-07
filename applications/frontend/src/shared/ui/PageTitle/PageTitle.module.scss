@@ -1,4 +1,6 @@
 .page-title {
-  font: var(--font-heading-sb-24);
+  display: flex;
+  align-items: center;
+  font: var(--font-heading-sb-18);
   color: var(--color-text-primary);
 }

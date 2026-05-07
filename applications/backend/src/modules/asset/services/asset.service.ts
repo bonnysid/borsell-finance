@@ -559,7 +559,17 @@ export class AssetService {
     }
   }
 
-  async getAssetPriceCandles(symbol: string, { candles = 500 }: AssetCandlesQueryDto) {
+  async getAssetPriceCandles(symbol: string, query: AssetCandlesQueryDto) {
+    const { candles = 500, from, to } = query;
+
+    if (from || to) {
+      return this.getAssetPriceHistory(symbol, {
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+        timeframe: AssetPriceTimeframe.DAY,
+      });
+    }
+
     const asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
 
     if (!asset) {

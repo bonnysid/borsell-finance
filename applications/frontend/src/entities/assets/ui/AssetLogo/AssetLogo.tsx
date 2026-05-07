@@ -1,17 +1,18 @@
 import { bindStyles, Icon } from '@devbonnysid/ui-kit-default';
 import { AssetDtoShape } from '@packages/types';
-import { FC, useMemo, useState } from 'react';
+import { CSSProperties, FC, useMemo, useState } from 'react';
 
 import styles from './AssetLogo.module.scss';
 
 type AssetLogoProps = {
   asset: AssetDtoShape;
   className?: string;
+  size?: number;
 };
 
 const cx = bindStyles(styles);
 
-export const AssetLogo: FC<AssetLogoProps> = ({ asset, className }) => {
+export const AssetLogo: FC<AssetLogoProps> = ({ asset, className, size = 32 }) => {
   const [error, setError] = useState(false);
 
   const icon = useMemo(() => {
@@ -20,6 +21,10 @@ export const AssetLogo: FC<AssetLogoProps> = ({ asset, className }) => {
     }
     return null;
   }, [asset.metadata.isin]);
+
+  const styles = {
+    '--logo-size': `${size}px`,
+  } as CSSProperties;
 
   if (!icon || error) {
     return (
@@ -30,12 +35,8 @@ export const AssetLogo: FC<AssetLogoProps> = ({ asset, className }) => {
   }
 
   return (
-    <div className={cx('asset-logo', className)}>
-      <img
-        src={icon}
-        alt={asset.name}
-        onError={() => setError(true)}
-      />
+    <div className={cx('asset-logo', className)} style={styles}>
+      <img src={icon} alt={asset.name} onError={() => setError(true)} />
     </div>
   );
 };

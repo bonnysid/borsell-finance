@@ -1,5 +1,5 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
-import { AssetPrice, useGetAssetInfo, useGetAssetPrice } from '@entities/assets';
+import { AssetLogo, AssetPrice, useGetAssetInfo, useGetAssetPrice } from '@entities/assets';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { ChartAssetPriceHistory } from '@widgets/chart-asset-price-history';
@@ -31,7 +31,8 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
   return (
     <PageWrapper className={cx('asset-details-page')}>
       <PageTitle className={cx('title')}>
-        {params.symbol}&nbsp;
+        {assetInfo && <AssetLogo asset={assetInfo} />}
+        {params.symbol}
         {assetInfo && <span>({assetInfo.name})</span>}
         {assetPrice && <AssetPrice assetPrice={assetPrice} />}
       </PageTitle>

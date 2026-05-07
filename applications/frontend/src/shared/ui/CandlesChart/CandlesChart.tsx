@@ -24,11 +24,19 @@ export type ChartDataCandle = {
 
 export type CandlesChartProps = {
   data: ChartDataCandle[];
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void | Promise<unknown>;
 };
 
 const cx = bindStyles(styles);
 
-export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
+export const CandlesChart: FC<CandlesChartProps> = ({
+  data,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+}) => {
   const { i18n } = useTranslation();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +44,16 @@ export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
   const chartApiRef = useRef<IChartApi>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'>>(null);
+  const didSetInitialRangeRef = useRef(false);
+  const hasMoreRef = useRef(hasMore);
+  const isLoadingMoreRef = useRef(isLoadingMore);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+    isLoadingMoreRef.current = isLoadingMore;
+    onLoadMoreRef.current = onLoadMore;
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   // 1. Инициализация графика (только при первом рендере)
   useEffect(() => {
@@ -90,6 +108,17 @@ export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
     chartApiRef.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
+    didSetInitialRangeRef.current = false;
+
+    const handleVisibleRangeChange = (logicalRange: { from: number; to: number } | null) => {
+      if (!logicalRange || logicalRange.from > 50) return;
+      if (!hasMoreRef.current || isLoadingMoreRef.current) return;
+
+      isLoadingMoreRef.current = true;
+      onLoadMoreRef.current?.();
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     // Ресайз через ResizeObserver (более современно, чем window.resize)
     const handleResize = () => {
@@ -98,6 +127,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
@@ -127,8 +157,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
 
       volumeSeriesRef.current.setData(volumeData);
 
-      // Устанавливаем видимый диапазон на последний месяц
-      if (sortedData.length > 0) {
+      if (sortedData.length > 0 && !didSetInitialRangeRef.current) {
         const lastDataPoint = sortedData[sortedData.length - 1];
         const lastDate = new Date(lastDataPoint.time);
         const oneMonthAgo = new Date(lastDate);
@@ -138,6 +167,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({ data }) => {
           from: oneMonthAgo.toISOString().split('T')[0],
           to: lastDate.toISOString().split('T')[0],
         });
+        didSetInitialRangeRef.current = true;
       }
     }
   }, [data, i18n.language]);

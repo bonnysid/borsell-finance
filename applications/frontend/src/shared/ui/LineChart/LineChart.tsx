@@ -13,16 +13,34 @@ export type LineChartDataPoint = {
 
 export type LineChartProps = {
   data: LineChartDataPoint[];
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void | Promise<unknown>;
 };
 
 const cx = bindStyles(styles);
 
-export const LineChart: FC<LineChartProps> = ({ data }) => {
+export const LineChart: FC<LineChartProps> = ({
+  data,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+}) => {
   const { i18n } = useTranslation();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const chartApiRef = useRef<IChartApi>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Area'>>(null);
+  const didSetInitialRangeRef = useRef(false);
+  const hasMoreRef = useRef(hasMore);
+  const isLoadingMoreRef = useRef(isLoadingMore);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+    isLoadingMoreRef.current = isLoadingMore;
+    onLoadMoreRef.current = onLoadMore;
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   useEffect(() => {
     const container = chartContainerRef.current;
@@ -53,6 +71,17 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
 
     chartApiRef.current = chart;
     lineSeriesRef.current = lineSeries;
+    didSetInitialRangeRef.current = false;
+
+    const handleVisibleRangeChange = (logicalRange: { from: number; to: number } | null) => {
+      if (!logicalRange || logicalRange.from > 50) return;
+      if (!hasMoreRef.current || isLoadingMoreRef.current) return;
+
+      isLoadingMoreRef.current = true;
+      onLoadMoreRef.current?.();
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     const resizeObserver = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
@@ -62,6 +91,7 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
     resizeObserver.observe(container);
 
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       resizeObserver.disconnect();
       chart.remove();
     };
@@ -78,8 +108,7 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
 
       lineSeriesRef.current.setData(sortedData);
 
-      // Устанавливаем видимый диапазон на последний месяц
-      if (sortedData.length > 0) {
+      if (sortedData.length > 0 && !didSetInitialRangeRef.current) {
         const lastDataPoint = sortedData[sortedData.length - 1];
         const lastDate = new Date(lastDataPoint.time);
         const oneMonthAgo = new Date(lastDate);
@@ -89,6 +118,7 @@ export const LineChart: FC<LineChartProps> = ({ data }) => {
           from: oneMonthAgo.toISOString().split('T')[0],
           to: lastDate.toISOString().split('T')[0],
         });
+        didSetInitialRangeRef.current = true;
       }
     }
   }, [data, i18n.language]);

@@ -1,7 +1,7 @@
 import { bindStyles, TabList, TabType } from '@devbonnysid/ui-kit-default';
-import { useGetAssetCandles } from '@entities/assets';
+import { useInfiniteAssetCandles } from '@entities/assets';
 import { CandlesChart, ChartDataCandle, LineChart, LineChartDataPoint } from '@shared/ui';
-import { FC, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 
 import styles from './ChartAssetPriceHistory.module.scss';
 
@@ -17,11 +17,23 @@ type ChartAssetPriceHistoryProps = {
 const cx = bindStyles(styles);
 
 export const ChartAssetPriceHistory: FC<ChartAssetPriceHistoryProps> = ({ symbol }) => {
-  const { data } = useGetAssetCandles(symbol);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteAssetCandles(symbol);
   const [selectedChartVariant, setSelectedChartVariant] = useState(ChartVariants.CANDLES);
 
+  const history = useMemo(() => {
+    const byDate = new Map<string, NonNullable<typeof data>['pages'][number][number]>();
+
+    for (const item of data?.pages.flat() ?? []) {
+      byDate.set(item.date, item);
+    }
+
+    return Array.from(byDate.values()).toSorted(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+  }, [data]);
+
   const candlesData = useMemo<ChartDataCandle[]>(() => {
-    return (data ?? []).map(
+    return history.map(
       (it) =>
         ({
           close: Number(it.closePrice),
@@ -32,17 +44,23 @@ export const ChartAssetPriceHistory: FC<ChartAssetPriceHistoryProps> = ({ symbol
           open: Number(it.openPrice),
         }) satisfies ChartDataCandle,
     );
-  }, [data]);
+  }, [history]);
 
   const lineData = useMemo<LineChartDataPoint[]>(() => {
-    return (data ?? []).map(
+    return history.map(
       (it) =>
         ({
           value: Number(it.closePrice),
           time: new Date(it.date),
         }) satisfies LineChartDataPoint,
     );
-  }, [data]);
+  }, [history]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    return fetchNextPage({ cancelRefetch: false });
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const tabs = useMemo<TabType<ChartVariants>[]>(() => {
     return [
@@ -63,9 +81,23 @@ export const ChartAssetPriceHistory: FC<ChartAssetPriceHistoryProps> = ({ symbol
         <TabList tabs={tabs} value={selectedChartVariant} onChange={setSelectedChartVariant} />
       </div>
 
-      {selectedChartVariant === ChartVariants.CANDLES && <CandlesChart data={candlesData} />}
+      {selectedChartVariant === ChartVariants.CANDLES && (
+        <CandlesChart
+          data={candlesData}
+          hasMore={hasNextPage}
+          isLoadingMore={isFetchingNextPage}
+          onLoadMore={handleLoadMore}
+        />
+      )}
 
-      {selectedChartVariant === ChartVariants.LINE && <LineChart data={lineData} />}
+      {selectedChartVariant === ChartVariants.LINE && (
+        <LineChart
+          data={lineData}
+          hasMore={hasNextPage}
+          isLoadingMore={isFetchingNextPage}
+          onLoadMore={handleLoadMore}
+        />
+      )}
     </div>
   );
 };

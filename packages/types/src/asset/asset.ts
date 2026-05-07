@@ -82,6 +82,8 @@ export type AssetPriceHistoryQueryDtoShape = {
 
 export type AssetCandlesQueryDtoShape = {
   candles?: number;
+  from?: Date | DateString;
+  to?: Date | DateString;
 };
 
 export type AssetPriceDtoShape = {
