@@ -14,32 +14,24 @@ import { FC, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import styles from './AssetsPage.module.scss';
+import styles from './AssetsEtfsPage.module.scss';
 
-type AssetsPageProps = {};
+type AssetsEtfsPageProps = {};
 
 const cx = bindStyles(styles);
 
-export const AssetsPage: FC<AssetsPageProps> = ({}) => {
+export const AssetsEtfsPage: FC<AssetsEtfsPageProps> = ({}) => {
   const pagination = usePagination({
     initialPageSize: 15,
   });
 
-  const {
-    data: paginatedData,
-    isLoading: isPaginatedLoading,
-    isFetching: isPaginatedFetching,
-  } = useGetAssets({
+  const { data, isLoading, isFetching } = useGetAssets({
     page: pagination.page,
     limit: pagination.pageSize,
-    type: AssetType.STOCK,
+    type: AssetType.ETF,
   });
 
-  const currentData = paginatedData;
-  const currentLoading = isPaginatedLoading;
-  const currentFetching = isPaginatedFetching;
-
-  const isEmpty = currentData?.totalItems === 0;
+  const isEmpty = data?.totalItems === 0;
 
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -59,24 +51,12 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
           <AmountText amount={cachedMarketPrice} currency={currencyCode} />
         ),
       },
-      // {
-      //   key: 'changePercent1h',
-      //   title: t('change_1h'),
-      //   align: ColumnAlignVariants.RIGHT,
-      //   render: (changePercent1h) => <PercentText value={changePercent1h} />,
-      // },
       {
         key: 'changePercent24h',
         title: t('change_24h'),
         align: ColumnAlignVariants.RIGHT,
         render: (changePercent24h) => <PercentText value={changePercent24h} />,
       },
-      // {
-      //   key: 'changePercent7d',
-      //   title: t('change_7d'),
-      //   align: ColumnAlignVariants.RIGHT,
-      //   render: (changePercent7d) => <PercentText value={changePercent7d} />,
-      // },
       {
         key: 'volume',
         title: t('Volume'),
@@ -88,8 +68,8 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
     ];
   }, [t]);
 
-  const rowKey = useCallback((userAsset: AssetDtoShape) => {
-    return userAsset.id;
+  const rowKey = useCallback((asset: AssetDtoShape) => {
+    return asset.id;
   }, []);
 
   const handleRowClick = (record: AssetDtoShape) => {
@@ -97,19 +77,19 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
   };
 
   useEffect(() => {
-    pagination.setTotalItems(currentData?.totalItems || 0);
-  }, [currentData?.totalItems]);
+    pagination.setTotalItems(data?.totalItems || 0);
+  }, [data?.totalItems]);
 
   return (
-    <PageWrapper className={cx('assets-page')}>
-      <PageTitle>{t('Assets')}</PageTitle>
+    <PageWrapper className={cx('assets-etfs-page')}>
+      <PageTitle>{t('ETFs')}</PageTitle>
 
       <Table
         columns={columns}
         rowKey={rowKey}
-        data={currentData?.data}
-        isLoading={currentLoading}
-        isFetching={currentFetching}
+        data={data?.data}
+        isLoading={isLoading}
+        isFetching={isFetching}
         isEmpty={isEmpty}
         onRowClick={handleRowClick}
         pagination={pagination}
@@ -118,4 +98,4 @@ export const AssetsPage: FC<AssetsPageProps> = ({}) => {
   );
 };
 
-export default AssetsPage;
+export default AssetsEtfsPage;

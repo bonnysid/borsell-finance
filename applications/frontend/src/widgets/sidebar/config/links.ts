@@ -28,7 +28,7 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
   },
   {
     id: 'Assets',
-    to: AppRoutePaths.ASSETS(),
+    to: AppRoutePaths.ASSETS_STOCKS(),
     caption: 'Assets',
     icon: 'coins',
     subItems: [
@@ -38,9 +38,14 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
         to: AppRoutePaths.ASSETS_ME(),
       },
       {
-        id: 'Assets',
-        caption: 'Assets',
-        to: AppRoutePaths.ASSETS(),
+        id: 'Stocks',
+        caption: 'Stocks',
+        to: AppRoutePaths.ASSETS_STOCKS(),
+      },
+      {
+        id: 'ETFs',
+        caption: 'ETFs',
+        to: AppRoutePaths.ASSETS_ETFS(),
       },
     ],
   },

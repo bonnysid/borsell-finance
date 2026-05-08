@@ -13,6 +13,8 @@
   "CreatePortfolio": "Create portfolio",
   "NoData": "No data",
   "Assets": "Assets",
+  "Stocks": "Stocks",
+  "ETFs": "ETFs",
   "AddAsset": "Add asset",
   "EmptyPortfolio": "Your portfolio is empty, try to add somethings assets",
   "Asset": "Asset",

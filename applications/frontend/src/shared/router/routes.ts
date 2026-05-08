@@ -14,6 +14,8 @@ export enum AppRoutes {
   PORTFOLIO_CREATE = '/portfolio/create',
 
   ASSETS = '/assets',
+  ASSETS_STOCKS = '/assets/stocks',
+  ASSETS_ETFS = '/assets/etfs',
   ASSETS_DETAILS = '/assets/:symbol',
   ASSETS_ME = '/assets/me',
   ASSETS_OPERATIONS = '/assets/operations',

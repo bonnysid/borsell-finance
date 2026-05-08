@@ -129,7 +129,7 @@ export class MoexAssetService {
         high: new Big(candle.high ?? 0),
         low: new Big(candle.low ?? 0),
         close: new Big(candle.close ?? 0),
-        volume: new Big(candle.volume ?? 0),
+        volume: new Big(candle.value ?? 0),
         currencyCode: this.normalizeCurrencyCode('RUB'),
       }))
       .filter((candle) => candle.close.gt(0));
@@ -209,16 +209,13 @@ export class MoexAssetService {
     if (cached) return cached;
 
     const security = await this.resolveSecurity(symbol);
-    const preferredBoardId =
-      security?.marketPriceBoardId || security?.primaryBoardId || undefined;
+    const preferredBoardId = security?.marketPriceBoardId || security?.primaryBoardId || undefined;
     const boardContext = await this.resolveBoardContext(symbol, preferredBoardId);
 
     const context: MoexSecurityContext = {
       ...boardContext,
       securityId: symbol,
-      assetType: security
-        ? this.resolveAssetType(security as unknown as SecurityRow)
-        : undefined,
+      assetType: security ? this.resolveAssetType(security as unknown as SecurityRow) : undefined,
       primaryBoardId: security?.primaryBoardId ?? null,
       marketPriceBoardId: security?.marketPriceBoardId ?? null,
     };
