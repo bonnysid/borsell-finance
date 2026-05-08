@@ -61,8 +61,8 @@ export const AssetsEtfsPage: FC<AssetsEtfsPageProps> = ({}) => {
         key: 'volume',
         title: t('Volume'),
         align: ColumnAlignVariants.RIGHT,
-        render: (volume, { currencyCode }) => {
-          return <AmountText amount={volume} currency={currencyCode} />;
+        render: (volume, { currencyCode, metadata }) => {
+          return <AmountText amount={metadata.valToday || volume} currency={currencyCode} />;
         },
       },
     ];

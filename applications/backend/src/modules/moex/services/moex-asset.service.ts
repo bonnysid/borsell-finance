@@ -281,7 +281,14 @@ export class MoexAssetService {
       marketPriceBoardId: security.marketprice_boardid,
     });
 
-    return await this.securityRepository.save(entity);
+    await this.securityRepository.upsert(entity, {
+      conflictPaths: ['secId'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+
+    return await this.securityRepository.findOne({
+      where: { secId: security.secid },
+    });
   }
 
   private async resolveBoardContext(symbol: string, preferredBoardId?: string) {
@@ -369,7 +376,7 @@ export class MoexAssetService {
       lastPrice,
       prevWaPrice: this.bigFromFirst(marketData.PREVWAPRICE),
       prevDate: this.parseDateValue(marketData.PREVDATE),
-      volume: this.bigFromFirst(marketData.VOLTODAY, marketData.VOLUME, 0),
+      volume: this.bigFromFirst(marketData.VALTODAY, marketData.VOLTODAY, marketData.VOLUME, 0),
       changePercent: this.bigFromFirst(
         marketData.LASTCHANGEPRCNT,
         marketData.LASTCHANGEPRC,

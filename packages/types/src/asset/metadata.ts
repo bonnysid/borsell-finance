@@ -1,5 +1,6 @@
 export type BaseMetadata = {
   iconUrl?: string;
+  logoName?: string;
   userNote?: string;
   ticker?: string; // AAPL
   isin?: string; // US0378331005

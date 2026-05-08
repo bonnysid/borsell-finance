@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AssetMetadata, AssetPriceTimeframe } from '@packages/types';
 import { subDays } from 'date-fns';
-import { Between, ILike, In, Repository } from 'typeorm';
+import { Between, Brackets, In, Repository } from 'typeorm';
 import YahooFinance from 'yahoo-finance2';
 
 import {
@@ -23,7 +23,6 @@ import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 export class AssetService {
   private readonly logger = new Logger(AssetService.name);
   private readonly yahooFinance = new YahooFinance();
-  private readonly PRICE_CACHE_TTL_MINUTES = 15;
 
   constructor(
     @InjectRepository(AssetEntity)
@@ -88,21 +87,33 @@ export class AssetService {
 
   async getAssets(query: AssetQueryDto): Promise<[AssetEntity[], number]> {
     const { page = 1, limit = 10, search, type } = query;
-    const where = search
-      ? [
-          { symbol: ILike(`%${search}%`), ...(type ? { type } : {}) },
-          { name: ILike(`%${search}%`), ...(type ? { type } : {}) },
-        ]
-      : type
-        ? { type }
-        : {};
 
-    const [assets, count] = await this.assetRepo.findAndCount({
-      where,
-      take: limit,
-      skip: (page - 1) * limit,
-      order: { symbol: 'ASC' },
-    });
+    const qb = this.assetRepo.createQueryBuilder('asset');
+
+    if (type) {
+      qb.andWhere('asset.type = :type', { type });
+    }
+
+    if (search) {
+      qb.andWhere(
+        new Brackets((qb) => {
+          qb.where('asset.symbol ILIKE :search', { search: `%${search}%` }).orWhere(
+            'asset.name ILIKE :search',
+            { search: `%${search}%` },
+          );
+        }),
+      );
+    }
+
+    const [assets, count] = await qb
+      .orderBy(
+        "COALESCE(NULLIF(asset.metadata ->> 'valToday', '')::numeric, asset.volume, 0)",
+        'DESC',
+      )
+      .addOrderBy('asset.symbol', 'ASC')
+      .take(limit)
+      .skip((page - 1) * limit)
+      .getManyAndCount();
 
     return [assets, count];
   }
@@ -112,7 +123,7 @@ export class AssetService {
     const symbols = assetsRaw.map((asset) => asset.symbol);
     const assets = await this.getAssetsPriceBatch(symbols);
 
-    return [assets, count];
+    return [this.sortAssetsByPopularity(assets), count];
   }
 
   async getAssetsWithHistory(
@@ -205,7 +216,35 @@ export class AssetService {
       this.logger.log(`[Cache Hit Batch] Serving ${assets.length} assets from DB`);
     }
 
-    return assets;
+    return this.sortAssetsByInputSymbols(assets, symbols);
+  }
+
+  private getAssetPopularityValue(asset: AssetEntity): number {
+    const valToday = asset.metadata?.valToday;
+    const popularityValue = Number(valToday || asset.volume || 0);
+
+    return Number.isFinite(popularityValue) ? popularityValue : 0;
+  }
+
+  private sortAssetsByPopularity(assets: AssetEntity[]): AssetEntity[] {
+    return [...assets].sort((a, b) => {
+      const diff = this.getAssetPopularityValue(b) - this.getAssetPopularityValue(a);
+
+      if (diff !== 0) return diff;
+
+      return a.symbol.localeCompare(b.symbol);
+    });
+  }
+
+  private sortAssetsByInputSymbols(assets: AssetEntity[], symbols: string[]): AssetEntity[] {
+    const order = new Map(symbols.map((symbol, index) => [symbol, index]));
+
+    return [...assets].sort((a, b) => {
+      const aOrder = order.get(a.symbol) ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = order.get(b.symbol) ?? Number.MAX_SAFE_INTEGER;
+
+      return aOrder - bOrder;
+    });
   }
 
   async getAssetHistory7Days(asset: AssetEntity | string): Promise<AssetPriceHistoryEntity[]> {
@@ -226,47 +265,76 @@ export class AssetService {
     });
   }
 
+  private async refreshAssetFromMoex(
+    symbol: string,
+    asset: AssetEntity | null,
+  ): Promise<{ asset: AssetEntity | null; moexData: MoexAssetInfo | null }> {
+    const moexData = await this.moexAssetService.getAssetInfo(symbol);
+
+    if (!moexData) {
+      return { asset, moexData: null };
+    }
+
+    const assetToSave = this.applyMoexAssetInfo(
+      asset ?? this.assetRepo.create({ symbol }),
+      moexData,
+    );
+
+    if (asset) {
+      const savedAsset = await this.assetRepo.save(assetToSave);
+
+      return { asset: savedAsset, moexData };
+    }
+
+    await this.assetRepo.upsert(assetToSave, {
+      conflictPaths: ['symbol'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+
+    const savedAsset = await this.assetRepo.findOne({ where: { symbol: moexData.symbol } });
+
+    return { asset: savedAsset, moexData };
+  }
+
   async getAsset(symbol: string): Promise<AssetEntity | null> {
     // 1. Ищем актив в нашей БД
     let asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
 
-    // 2. Проверяем, протухли ли данные
-    const isStale = asset
-      ? isDataStale(asset.lastPriceUpdateAt, this.PRICE_CACHE_TTL_MINUTES / 60)
-      : true;
+    this.logger.log(`[Refresh] Fetching fresh data for ${symbol} from MOEX`);
 
-    // 3. Если данных нет или они старые — идем в MOEX
-    if (isStale) {
-      this.logger.log(`[Cache Miss/Stale] Fetching fresh data for ${symbol} from MOEX`);
+    try {
+      const refreshResult = await this.refreshAssetFromMoex(symbol, asset);
+      asset = refreshResult.asset;
 
-      const moexData = await this.moexAssetService.getAssetInfo(symbol);
-
-      if (!moexData) {
+      if (!refreshResult.moexData) {
         // Если это новый актив и его нет на MOEX, кидаем ошибку
         if (!asset) throw new Error(`Asset ${symbol} not found on MOEX`);
         // Если MOEX лежит, но у нас есть старые данные в БД — отдаем их (Graceful degradation)
         this.logger.warn(`MOEX is unavailable for ${symbol}. Serving stale data.`);
-        return asset;
       }
+    } catch (e) {
+      if (!asset) throw e;
 
-      // 4. Обновляем или создаем сущность
-      if (!asset) {
-        asset = this.assetRepo.create({ symbol: symbol });
-      }
-
-      this.applyMoexAssetInfo(asset, moexData);
-
-      // Сохраняем в БД
-      asset = await this.assetRepo.save(asset);
-    } else {
-      this.logger.log(`[Cache Hit] Serving ${symbol} from DB`);
+      this.logger.warn(`Failed to refresh ${symbol} from MOEX. Serving stale data.`);
     }
 
     return asset;
   }
 
   async getAssetPriceWithChange(symbol: string) {
-    const asset = await this.getAsset(symbol);
+    const existingAsset = await this.assetRepo.findOne({ where: { symbol } });
+    let asset = existingAsset;
+    let assetInfo: MoexAssetInfo | null = null;
+
+    try {
+      const refreshResult = await this.refreshAssetFromMoex(symbol, existingAsset);
+      asset = refreshResult.asset;
+      assetInfo = refreshResult.moexData;
+    } catch (e) {
+      if (!asset) throw e;
+
+      this.logger.warn(`Failed to refresh ${symbol} price from MOEX. Serving stale data.`);
+    }
 
     if (!asset) {
       throw new NotFoundException(`Asset with symbol ${symbol} not found`);
@@ -283,13 +351,7 @@ export class AssetService {
     };
 
     try {
-      const assetInfo = await this.moexAssetService.getAssetInfo(symbol);
-
       if (assetInfo) {
-        asset.cachedMarketPrice = assetInfo.lastPrice.toFixed(8);
-        asset.lastPriceUpdateAt = assetInfo.date;
-        await this.assetRepo.save(asset);
-
         const currentPrice = assetInfo.lastPrice;
         const openPrice = assetInfo.open;
         const change = currentPrice.minus(openPrice);
