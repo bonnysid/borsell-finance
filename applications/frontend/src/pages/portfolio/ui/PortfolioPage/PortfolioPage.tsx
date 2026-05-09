@@ -22,14 +22,15 @@ export const PortfolioPage: FC<PortfolioPageProps> = () => {
 
   return (
     <div className={cn('portfolio-page')}>
-      <div className={cn('side-content')}>
-        <PortfolioSummary />
-        <PortfolioAllocation />
-      </div>
-      <div className={cn('main-content')}>
+      <div className={cn('row')}>
+        <div className={cn('side-content')}>
+          <PortfolioSummary />
+          <PortfolioAllocation />
+        </div>
         <PortfolioHistoryChart />
-        <UserAssetsWidget />
       </div>
+
+      <UserAssetsWidget hasDelete />
     </div>
   );
 };

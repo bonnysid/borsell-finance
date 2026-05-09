@@ -57,6 +57,7 @@
     "confirm": "Are you sure you want to transfer {{quantity}} {{symbol}} at price {{price}}?"
   },
   "Confirm": "Confirm",
+  "PortfolioAllocation": "Portfolio Allocation",
   "volume_short": "Vol",
   "change_1h": "1h %",
   "change_24h": "24h %",

@@ -33,11 +33,6 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
     icon: 'coins',
     subItems: [
       {
-        id: 'MyAssets',
-        caption: 'MyAssets',
-        to: AppRoutePaths.ASSETS_ME(),
-      },
-      {
         id: 'Stocks',
         caption: 'Stocks',
         to: AppRoutePaths.ASSETS_STOCKS(),

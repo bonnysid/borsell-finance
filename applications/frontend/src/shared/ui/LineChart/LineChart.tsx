@@ -52,7 +52,7 @@ export const LineChart: FC<LineChartProps> = ({
         textColor: getCssVariable('--color-text-primary'),
       },
       width: container.clientWidth,
-      height: 400,
+      height: container.clientHeight,
       grid: {
         vertLines: { color: getCssVariable('--color-border-primary') },
         horzLines: { color: getCssVariable('--color-border-primary') },

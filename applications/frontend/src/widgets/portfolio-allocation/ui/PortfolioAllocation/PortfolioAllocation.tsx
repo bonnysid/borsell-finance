@@ -2,6 +2,7 @@ import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { useGetPortfolioAllocation } from '@entities/portfolio';
 import { Block, DonutChart } from '@shared/ui';
 import { FC, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import styles from './PortfolioAllocation.module.scss';
 
@@ -10,6 +11,7 @@ type PortfolioAllocationProps = {};
 const cx = bindStyles(styles);
 
 export const PortfolioAllocation: FC<PortfolioAllocationProps> = ({}) => {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetPortfolioAllocation();
 
   const chartData = useMemo(() => {
@@ -25,7 +27,7 @@ export const PortfolioAllocation: FC<PortfolioAllocationProps> = ({}) => {
 
   return (
     <Block
-      title="Portfolio Allocation"
+      title={t('PortfolioAllocation')}
       className={cx('portfolio-allocation')}
       isLoading={isLoading}
     >
