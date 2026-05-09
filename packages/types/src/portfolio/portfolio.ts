@@ -38,8 +38,8 @@ export type PortfolioSummaryDtoShape = {
   totalWithdrawn: NumberString;
   realizedPnl: NumberString;
 
-  pnlToday: NumberString;
-  pnlTodayPercent: number;
+  pnlMonth: NumberString;
+  pnlMonthPercent: number;
 
   currencyCode: CurrencyCode;
 };

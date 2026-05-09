@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
 import Big from 'big.js';
-import { addDays, startOfDay } from 'date-fns';
+import { addDays, startOfMonth } from 'date-fns';
 import { Between, LessThanOrEqual, Repository } from 'typeorm';
 
 import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
@@ -119,23 +119,22 @@ export class PortfolioService {
       targetCurrency,
     );
 
-    // Calculate PnL Today
-    const todayStart = startOfDay(new Date());
+    const monthStart = startOfMonth(new Date());
 
-    const lastSnapshotBeforeToday = await this.portfolioSnapshotRepository.findOne({
+    const lastSnapshotBeforeMonthStart = await this.portfolioSnapshotRepository.findOne({
       where: {
         portfolio: { id: portfolio.id },
-        createdAt: LessThanOrEqual(formatDateToSqlDate(todayStart)),
+        createdAt: LessThanOrEqual(formatDateToSqlDate(monthStart)),
       },
       order: { createdAt: 'DESC' },
     });
 
-    let pnlToday = new Big(0);
-    let pnlTodayPercent = 0;
+    let pnlMonth = new Big(0);
+    let pnlMonthPercent = 0;
 
-    if (lastSnapshotBeforeToday) {
+    if (lastSnapshotBeforeMonthStart) {
       const currentMarketPrice = new Big(metrics.marketPrice);
-      const previousMarketPrice = new Big(lastSnapshotBeforeToday.marketPrice);
+      const previousMarketPrice = new Big(lastSnapshotBeforeMonthStart.marketPrice);
 
       // Convert previous market price to target currency if needed
       const convertedPrevious = await this.currencyConverterService.convertAmount({
@@ -144,16 +143,16 @@ export class PortfolioService {
         toCurrency: targetCurrency,
       });
 
-      pnlToday = currentMarketPrice.minus(convertedPrevious.amount);
+      pnlMonth = currentMarketPrice.minus(convertedPrevious.amount);
       if (!convertedPrevious.amount.eq(0)) {
-        pnlTodayPercent = pnlToday.div(convertedPrevious.amount).mul(100).toNumber();
+        pnlMonthPercent = pnlMonth.div(convertedPrevious.amount).mul(100).toNumber();
       }
     }
 
     return {
       ...metrics,
-      pnlToday: pnlToday.toFixed(8),
-      pnlTodayPercent,
+      pnlMonth: pnlMonth.toFixed(8),
+      pnlMonthPercent,
       currencyCode: targetCurrency,
     };
   }
@@ -360,7 +359,6 @@ export class PortfolioService {
 
         for (const tx of txsBeforeOrOnDay) {
           const txQty = new Big(tx.quantity);
-          const txPrice = new Big(tx.price);
           const txAmount = new Big(tx.amount);
 
           if (tx.type === TransactionType.BUY) {
@@ -524,7 +522,7 @@ export class PortfolioService {
   }
 
   async createPortfolio(userId: ID, dto: CreatePortfolioDto) {
-    const userAssets = await this.userAssetService.getUserAssetsByIds(userId, dto.userAssetsIds);
+    await this.userAssetService.getUserAssetsByIds(userId, dto.userAssetsIds);
 
     const baseCurrencyCode = await this.settingsService.getBaseCurrencyCode();
 

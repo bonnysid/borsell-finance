@@ -139,7 +139,7 @@ export const UserAssetsTable: FC<UserAssetsTableProps> = ({
     ];
   }, [t, hasDelete]);
 
-  const isEmpty = data.length === 0;
+  const isEmpty = data.length === 0 && !isLoading;
 
   return (
     <div className={cx('user-assets-table')}>
@@ -152,6 +152,7 @@ export const UserAssetsTable: FC<UserAssetsTableProps> = ({
         isEmpty={isEmpty}
         onRowClick={handleRowClick}
         emptyPlug={<EmptyUserAssets />}
+        skeletonHeights={57}
       />
 
       {userAssetToDelete && (

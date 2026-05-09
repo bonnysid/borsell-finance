@@ -7,8 +7,8 @@ export class PortfolioSummaryDto implements PortfolioSummaryDtoShape {
   totalWithdrawn: NumberString;
   realizedPnl: NumberString;
 
-  pnlToday: NumberString;
-  pnlTodayPercent: number;
+  pnlMonth: NumberString;
+  pnlMonthPercent: number;
 
   currencyCode: CurrencyCode;
 
@@ -18,8 +18,8 @@ export class PortfolioSummaryDto implements PortfolioSummaryDtoShape {
     this.totalInvested = data.totalInvested;
     this.totalWithdrawn = data.totalWithdrawn;
     this.realizedPnl = data.realizedPnl;
-    this.pnlToday = data.pnlToday;
-    this.pnlTodayPercent = data.pnlTodayPercent;
+    this.pnlMonth = data.pnlMonth;
+    this.pnlMonthPercent = data.pnlMonthPercent;
 
     this.currencyCode = data.currencyCode;
   }

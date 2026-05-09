@@ -8,17 +8,15 @@ import { useTranslation } from 'react-i18next';
 
 import styles from './PortfolioSummary.module.scss';
 
-type PortfolioSummaryProps = {};
-
 const cx = bindStyles(styles);
 
-export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
+export const PortfolioSummary: FC = () => {
   const { t } = useTranslation();
   const { data: portfolio, isLoading } = useGetPortfolioSummary();
 
-  const { totalPnl, totalPnlPercent, pnlToday, pnlTodayPercent } = useMemo(() => {
+  const { totalPnl, totalPnlPercent, pnlMonth, pnlMonthPercent } = useMemo(() => {
     if (!portfolio) {
-      return { totalPnl: 0, totalPnlPercent: 0, pnlToday: 0, pnlTodayPercent: 0 };
+      return { totalPnl: 0, totalPnlPercent: 0, pnlMonth: 0, pnlMonthPercent: 0 };
     }
 
     const pnl = Number(portfolio.marketPrice) - Number(portfolio.costBasis);
@@ -26,9 +24,9 @@ export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
 
     return {
       totalPnl: pnl,
-      totalPnlPercent: isNaN(pnlPercent) ? 0 : pnlPercent,
-      pnlToday: Number(portfolio.pnlToday) < 0.01 ? 0 : Number(portfolio.pnlToday),
-      pnlTodayPercent: portfolio.pnlTodayPercent < 0.01 ? 0 : portfolio.pnlTodayPercent,
+      totalPnlPercent: Number.isNaN(pnlPercent) ? 0 : pnlPercent,
+      pnlMonth: Math.abs(Number(portfolio.pnlMonth)) < 0.01 ? 0 : Number(portfolio.pnlMonth),
+      pnlMonthPercent: Math.abs(portfolio.pnlMonthPercent) < 0.01 ? 0 : portfolio.pnlMonthPercent,
     };
   }, [portfolio]);
 
@@ -56,10 +54,10 @@ export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
         ? AmountTextTypes.NEGATIVE
         : AmountTextTypes.DEFAULT;
 
-  const pnlTodayType =
-    pnlToday > 0
+  const pnlMonthType =
+    pnlMonth > 0
       ? AmountTextTypes.POSITIVE
-      : pnlToday < 0
+      : pnlMonth < 0
         ? AmountTextTypes.NEGATIVE
         : AmountTextTypes.DEFAULT;
 
@@ -84,13 +82,13 @@ export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
           <span className={cx('pnl-period')}>{t('AllTime')}</span>
         </div>
 
-        <div className={cx('pnl-badge', pnlTodayType)}>
-          <AmountText amount={pnlToday} type={pnlTodayType} currency={portfolio.currencyCode} />
+        <div className={cx('pnl-badge', pnlMonthType)}>
+          <AmountText amount={pnlMonth} type={pnlMonthType} currency={portfolio.currencyCode} />
           <div className={cx('pnl-percent-container')}>
-            <DirectionArrow value={pnlToday} />
-            <PercentText value={pnlTodayPercent} showPlus={false} />
+            <DirectionArrow value={pnlMonth} />
+            <PercentText value={pnlMonthPercent} showPlus={false} />
           </div>
-          <span className={cx('pnl-period')}>{t('Today')}</span>
+          <span className={cx('pnl-period')}>{t('ThisMonth')}</span>
         </div>
       </div>
     </Block>
