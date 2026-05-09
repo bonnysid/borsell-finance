@@ -41,17 +41,9 @@ export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
     return { integer, decimal, currency: getCurrencySymbol(portfolio.currencyCode) };
   }, [portfolio]);
 
-  if (isLoading) {
-    return (
-      <Block className={cx('portfolio-summary')}>
-        <div className={cx('loading')}>{t('NoData')}...</div>
-      </Block>
-    );
-  }
-
   if (!portfolio) {
     return (
-      <Block className={cx('portfolio-summary')}>
+      <Block className={cx('portfolio-summary')} isLoading={isLoading}>
         <div className={cx('no-data')}>{t('NoData')}</div>
       </Block>
     );
@@ -72,7 +64,7 @@ export const PortfolioSummary: FC<PortfolioSummaryProps> = ({}) => {
         : AmountTextTypes.DEFAULT;
 
   return (
-    <Block className={cx('portfolio-summary')}>
+    <Block className={cx('portfolio-summary')} isLoading={isLoading}>
       <div className={cx('label')}>{t('Balance')}</div>
 
       <Tooltip text={`${formatNumber(portfolio.marketPrice)} ${balanceParts.currency}`}>

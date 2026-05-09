@@ -1,14 +1,11 @@
-import { bindStyles, usePagination } from '@devbonnysid/ui-kit-default';
+import { usePagination } from '@devbonnysid/ui-kit-default';
 import { useGetTransactions } from '@entities/transaction';
 import { GetTransactionsDtoShape } from '@packages/types';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 
 import { TransactionsTable } from '../TransactionsTable';
-import styles from './TransactionsHistory.module.scss';
 
 type TransactionsHistoryProps = GetTransactionsDtoShape & {};
-
-const cx = bindStyles(styles);
 
 export const TransactionsHistory: FC<TransactionsHistoryProps> = ({
   assetId,
@@ -17,16 +14,23 @@ export const TransactionsHistory: FC<TransactionsHistoryProps> = ({
   quantity,
   amount,
 }) => {
+  const pagination = usePagination({
+    initialPageSize: 15,
+  });
+
   const { data, isLoading, isFetching } = useGetTransactions({
+    page: pagination.page,
+    limit: pagination.pageSize,
     currencyCode,
     amount,
     quantity,
     type,
     assetId,
   });
-  const pagination = usePagination({
-    totalItems: data?.totalItems || 0,
-  });
+
+  useEffect(() => {
+    pagination.setTotalItems(data?.totalItems || 0);
+  }, [data?.totalItems]);
 
   return (
     <TransactionsTable

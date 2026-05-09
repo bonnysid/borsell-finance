@@ -11,7 +11,7 @@
 
 .top {
   display: grid;
-  gap: 16px;
+  gap: var(--MarginM);
   grid-template-columns: 1fr 300px;
 }
 

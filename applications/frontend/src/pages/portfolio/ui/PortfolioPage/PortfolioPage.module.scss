@@ -1,7 +1,7 @@
 .portfolio-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--MarginM);
   width: 100%;
   height: 100%;
 
@@ -12,7 +12,7 @@
   .main-content {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--MarginM);
     flex: 1;
     min-width: 0;
     height: 100%;
@@ -21,7 +21,7 @@
   .side-content {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--MarginM);
     width: 400px;
 
     @media (max-width: 1250px) {
@@ -34,6 +34,6 @@
 
 .row {
   display: flex;
-  gap: 24px;
+  gap: var(--MarginM);
   width: 100%;
 }

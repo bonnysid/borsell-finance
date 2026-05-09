@@ -8,7 +8,7 @@
 .content {
   &-wrapper {
     display: flex;
-    gap: 16px;
+    gap: var(--MarginM);
     padding-right: var(--PaddingS);
     padding-left: var(--PaddingS);
     padding-bottom: var(--PaddingS);

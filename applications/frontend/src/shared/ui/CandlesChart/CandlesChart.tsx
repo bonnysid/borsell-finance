@@ -1,4 +1,4 @@
-import { bindStyles } from '@devbonnysid/ui-kit-default';
+import { bindStyles, formatNumber } from '@devbonnysid/ui-kit-default';
 import { getCssVariable } from '@shared/utils';
 import {
   CandlestickSeries,
@@ -7,8 +7,9 @@ import {
   HistogramSeries,
   IChartApi,
   ISeriesApi,
+  MouseEventParams,
 } from 'lightweight-charts';
-import { FC, useEffect, useRef } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './CandlesChart.module.scss';
@@ -26,10 +27,21 @@ export type CandlesChartProps = {
   data: ChartDataCandle[];
   hasMore?: boolean;
   isLoadingMore?: boolean;
-  onLoadMore?: () => void | Promise<unknown>;
+  onLoadMore?: () => undefined | Promise<unknown>;
 };
 
 const cx = bindStyles(styles);
+
+type CandlesTooltip = {
+  x: number;
+  y: number;
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
 
 export const CandlesChart: FC<CandlesChartProps> = ({
   data,
@@ -39,6 +51,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({
 }) => {
   const { i18n } = useTranslation();
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<CandlesTooltip | null>(null);
 
   // Используем Ref для хранения инстансов, чтобы не пересоздавать их
   const chartApiRef = useRef<IChartApi>(null);
@@ -120,6 +133,51 @@ export const CandlesChart: FC<CandlesChartProps> = ({
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
+    const handleCrosshairMove = (param: MouseEventParams) => {
+      const point = param.point;
+
+      if (!point || !param.time) {
+        setTooltip(null);
+        return;
+      }
+
+      const candleData = param.seriesData.get(candleSeries) as
+        | { open: number; high: number; low: number; close: number; time: string }
+        | undefined;
+      const volumeData = param.seriesData.get(volumeSeries) as { value?: number } | undefined;
+
+      if (!candleData) {
+        setTooltip(null);
+        return;
+      }
+
+      const container = chartContainerRef.current;
+      const tooltipWidth = 180;
+      const tooltipHeight = 168;
+      const left = Math.max(
+        8,
+        Math.min(point.x + 12, (container?.clientWidth ?? 0) - tooltipWidth - 8),
+      );
+      const nextTop =
+        point.y + tooltipHeight + 16 > (container?.clientHeight ?? 0)
+          ? point.y - tooltipHeight - 12
+          : point.y + 12;
+      const top = Math.max(8, nextTop);
+
+      setTooltip({
+        x: left,
+        y: top,
+        time: new Intl.DateTimeFormat(i18n.language).format(new Date(candleData.time)),
+        open: candleData.open,
+        high: candleData.high,
+        low: candleData.low,
+        close: candleData.close,
+        volume: volumeData?.value ?? 0,
+      });
+    };
+
+    chart.subscribeCrosshairMove(handleCrosshairMove);
+
     // Ресайз через ResizeObserver (более современно, чем window.resize)
     const handleResize = () => {
       chart.applyOptions({ width: chartContainerRef.current?.clientWidth });
@@ -128,6 +186,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({
 
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+      chart.unsubscribeCrosshairMove(handleCrosshairMove);
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
@@ -172,5 +231,33 @@ export const CandlesChart: FC<CandlesChartProps> = ({
     }
   }, [data, i18n.language]);
 
-  return <div ref={chartContainerRef} className={cx('candles-chart')} />;
+  return (
+    <div ref={chartContainerRef} className={cx('candles-chart')}>
+      {tooltip && (
+        <div className={cx('tooltip')} style={{ left: tooltip.x, top: tooltip.y }}>
+          <div className={cx('tooltip-date')}>{tooltip.time}</div>
+          <div className={cx('tooltip-row')}>
+            <span>Open</span>
+            <strong>{formatNumber(tooltip.open)}</strong>
+          </div>
+          <div className={cx('tooltip-row')}>
+            <span>High</span>
+            <strong>{formatNumber(tooltip.high)}</strong>
+          </div>
+          <div className={cx('tooltip-row')}>
+            <span>Low</span>
+            <strong>{formatNumber(tooltip.low)}</strong>
+          </div>
+          <div className={cx('tooltip-row')}>
+            <span>Close</span>
+            <strong>{formatNumber(tooltip.close)}</strong>
+          </div>
+          <div className={cx('tooltip-row')}>
+            <span>Volume</span>
+            <strong>{formatNumber(tooltip.volume, 0)}</strong>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };

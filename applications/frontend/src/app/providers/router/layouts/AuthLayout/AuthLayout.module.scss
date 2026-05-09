@@ -9,7 +9,7 @@
 .block {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--MarginM);
   max-width: min(400px, 100%);
   width: 100%;
   padding: var(--PaddingM);

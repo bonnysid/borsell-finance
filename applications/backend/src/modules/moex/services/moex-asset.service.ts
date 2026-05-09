@@ -107,7 +107,7 @@ export class MoexAssetService {
     const from =
       query.isFromTo && query.from
         ? normalizeDate(query.from)
-        : subDays(to, Math.ceil((query.candles ?? 500) * 1.8) + 10);
+        : subDays(to, Math.ceil((query.candles ?? 160) * 1.8) + 10);
 
     const response = await this.moexService.getBoardCandlesMarketData(
       context.engineName,

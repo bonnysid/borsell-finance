@@ -53,6 +53,8 @@ export const TRANSACTIONS_QUERY_KEYS = {
       dto?.amount,
       dto?.quantity,
       dto?.currencyCode,
+      dto?.page,
+      dto?.limit,
     ] as const,
 } as const;
 

@@ -52,6 +52,11 @@ export const ChartAssetPriceHistory: FC<ChartAssetPriceHistoryProps> = ({ symbol
         ({
           value: Number(it.closePrice),
           time: new Date(it.date),
+          close: Number(it.closePrice),
+          low: Number(it.lowPrice),
+          high: Number(it.highPrice),
+          volume: Number(it.volume),
+          open: Number(it.openPrice),
         }) satisfies LineChartDataPoint,
     );
   }, [history]);

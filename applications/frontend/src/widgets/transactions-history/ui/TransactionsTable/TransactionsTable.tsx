@@ -88,6 +88,7 @@ export const TransactionsTable: FC<TransactionsTableProps> = ({
       isFetching={isFetching}
       isEmpty={isEmpty}
       pagination={pagination}
+      skeletonHeights={49}
     ></Table>
   );
 };

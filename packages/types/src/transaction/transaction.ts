@@ -1,5 +1,6 @@
 import { AssetDtoShape } from '../asset';
 import { CurrencyCode } from '../currency';
+import { PaginationDtoShape } from '../response';
 import { DateString, ID, NumberString } from '../shared';
 
 export enum TransactionType {
@@ -21,7 +22,7 @@ export type TransactionDtoShape = {
   createdAt: DateString;
 };
 
-export type GetTransactionsDtoShape = {
+export type GetTransactionsDtoShape = PaginationDtoShape & {
   assetId?: ID;
   amount?: number;
   quantity?: number;

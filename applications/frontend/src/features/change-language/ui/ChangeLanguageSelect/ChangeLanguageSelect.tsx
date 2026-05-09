@@ -38,6 +38,7 @@ export const ChangeLanguageSelect: FC<ChangeLanguageSelectProps> = ({}) => {
       onChange={handleChangeLanguage}
       options={options}
       className={cx('change-language-select')}
+      dropdownWidth={100}
     ></Select>
   );
 };

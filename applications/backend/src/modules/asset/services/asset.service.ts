@@ -622,15 +622,18 @@ export class AssetService {
   }
 
   async getAssetPriceCandles(symbol: string, query: AssetCandlesQueryDto) {
-    const { candles = 500, from, to } = query;
+    const { from, to } = query;
+    const hasDateRange = from && to;
 
-    if (from || to) {
+    if (hasDateRange) {
       return this.getAssetPriceHistory(symbol, {
-        from: from ? new Date(from) : undefined,
-        to: to ? new Date(to) : undefined,
+        from: new Date(from),
+        to: new Date(to),
         timeframe: AssetPriceTimeframe.DAY,
       });
     }
+
+    const candles = query.candles ?? 500;
 
     const asset = await this.assetRepo.findOne({ where: { symbol: symbol } });
 
