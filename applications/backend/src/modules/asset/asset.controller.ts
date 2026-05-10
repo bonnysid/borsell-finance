@@ -23,6 +23,7 @@ import {
   AssetPriceDto,
   AssetPriceHistoryDto,
   AssetQueryDto,
+  AssetSearchQueryDto,
 } from './dto';
 import { AssetService, AssetUpdaterService } from './services';
 
@@ -79,6 +80,14 @@ export class AssetController {
     };
 
     res.status(200).json(result);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/search')
+  async searchAssets(@Query() query: AssetSearchQueryDto, @Res() res: Response) {
+    const result = await this.appService.searchAssets(query);
+
+    return res.status(200).json(result);
   }
 
   @UseGuards(AuthGuard)
@@ -186,12 +195,6 @@ export class AssetController {
 
     for (const h of history) {
       if (userFromDB) {
-        const converted = await this.currencyConverterService.convertAmount({
-          amount: h.closePrice, // Assuming we want closePrice converted for history simple view
-          toCurrency: userFromDB.currencyCode,
-          fromCurrency: h.currencyCode,
-        });
-
         // We need to convert all prices if it's a history/candle view
         const convert = async (amount: string) => {
           const res = await this.currencyConverterService.convertAmount({

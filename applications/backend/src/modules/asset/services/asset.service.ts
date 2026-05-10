@@ -16,7 +16,13 @@ import { MoexAssetHistoryPrice, MoexAssetInfo } from '@/modules/moex/moex.types'
 import { MoexAssetService } from '@/modules/moex/services';
 import { SettingsService } from '@/modules/settings/services';
 
-import { AssetCandlesQueryDto, AssetHistoryQueryDto, AssetQueryDto } from '../dto';
+import {
+  AssetCandlesQueryDto,
+  AssetHistoryQueryDto,
+  AssetQueryDto,
+  AssetSearchQueryDto,
+  AssetSearchResultDto,
+} from '../dto';
 import { AssetEntity, AssetPriceHistoryEntity } from '../entities';
 
 @Injectable()
@@ -124,6 +130,60 @@ export class AssetService {
     const assets = await this.getAssetsPriceBatch(symbols);
 
     return [this.sortAssetsByPopularity(assets), count];
+  }
+
+  async searchAssets(query: AssetSearchQueryDto): Promise<AssetSearchResultDto[]> {
+    const search = query.search.trim();
+    const searchLike = `%${search}%`;
+    const exactSearch = search.toUpperCase();
+    const prefixLike = `${exactSearch}%`;
+
+    const localAssets = await this.assetRepo
+      .createQueryBuilder('asset')
+      .where(
+        new Brackets((qb) => {
+          qb.where('asset.symbol ILIKE :search', { search: searchLike })
+            .orWhere('asset.name ILIKE :search', { search: searchLike })
+            .orWhere("asset.metadata ->> 'isin' ILIKE :search", { search: searchLike })
+            .orWhere("asset.metadata ->> 'shortName' ILIKE :search", { search: searchLike });
+        }),
+      )
+      .orderBy(
+        `CASE
+          WHEN UPPER(asset.symbol) = :exactSearch THEN 0
+          WHEN UPPER(asset.symbol) LIKE :prefixLike THEN 1
+          ELSE 2
+        END`,
+        'ASC',
+      )
+      .addOrderBy(
+        "COALESCE(NULLIF(asset.metadata ->> 'valToday', '')::numeric, asset.volume, 0)",
+        'DESC',
+      )
+      .addOrderBy('asset.symbol', 'ASC')
+      .setParameters({ exactSearch, prefixLike })
+      .take(query.limit)
+      .getMany();
+
+    if (localAssets.length > 0) {
+      return localAssets.map(
+        (asset) =>
+          new AssetSearchResultDto({
+            ...asset,
+            source: 'LOCAL',
+          }),
+      );
+    }
+
+    const moexAssets = await this.moexAssetService.searchAssets(search, query.limit);
+
+    return moexAssets.map(
+      (asset) =>
+        new AssetSearchResultDto({
+          ...asset,
+          source: 'MOEX',
+        }),
+    );
   }
 
   async getAssetsWithHistory(

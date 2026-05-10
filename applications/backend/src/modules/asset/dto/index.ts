@@ -4,4 +4,6 @@ export * from './asset-history-query.dto';
 export * from './asset-price.dto';
 export * from './asset-price-history.dto';
 export * from './asset-query.dto';
+export * from './asset-search-query.dto';
+export * from './asset-search-result.dto';
 export * from './asset-with-history.dto';

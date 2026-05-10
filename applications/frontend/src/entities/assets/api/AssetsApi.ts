@@ -4,14 +4,12 @@ import {
   AssetPriceDtoShape,
   AssetPriceHistoryDtoShape,
   AssetPriceHistoryQueryDtoShape,
+  AssetSearchResultDtoShape,
   ID,
-  PaginationDtoShape,
-  SearchDtoShape,
   TableResponse,
   UserAssetDtoShape,
 } from '@packages/types';
-import { restService } from '@shared/api';
-import { AssetsListQuery } from '@shared/api';
+import { AssetsListQuery, restService } from '@shared/api';
 
 export class AssetsApi {
   deleteUserAsset = async (id: ID) => {
@@ -21,6 +19,17 @@ export class AssetsApi {
   getAssets = async (params?: AssetsListQuery) => {
     const res = await restService.GET<TableResponse<AssetDtoShape>>('/assets', {
       params,
+    });
+
+    return res.data;
+  };
+
+  searchAssets = async (search: string, limit = 8) => {
+    const res = await restService.GET<AssetSearchResultDtoShape[]>('/assets/search', {
+      params: {
+        search,
+        limit,
+      },
     });
 
     return res.data;

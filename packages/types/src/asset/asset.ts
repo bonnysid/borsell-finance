@@ -45,6 +45,19 @@ export type AssetDtoShape = {
   updatedAt: DateString;
 };
 
+export type AssetSearchResultDtoShape = {
+  id?: ID;
+  type: AssetType;
+  name: string;
+  symbol: string;
+  metadata: AssetMetadata;
+  moexEngineName?: string | null;
+  moexMarketName?: string | null;
+  moexBoardId?: string | null;
+  moexSecurityId?: string | null;
+  source: 'LOCAL' | 'MOEX';
+};
+
 export type AssetWithHistoryDtoShape = AssetDtoShape & {
   history: AssetPriceHistoryDtoShape[];
 };

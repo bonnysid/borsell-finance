@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AssetType, CurrencyCode } from '@packages/types';
+import { AssetMetadata, AssetType, CurrencyCode } from '@packages/types';
 import Big from 'big.js';
 import { addDays, isValid, subDays } from 'date-fns';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 
 import { formatDateToSqlDate, normalizeDate } from '@/common';
 import { AssetEntity } from '@/modules/asset/entities';
@@ -15,6 +15,7 @@ import {
   MoexEngineName,
   MoexMarketName,
   MoexSecurityContext,
+  MoexSecurityInfo,
 } from '@/modules/moex/moex.types';
 
 import { MoexService } from './moex.service';
@@ -28,6 +29,15 @@ type AssetCandlesQuery = {
   isFromTo?: boolean;
   from?: Date;
   to?: Date;
+};
+
+export type MoexAssetSearchResult = {
+  type: AssetType;
+  name: string;
+  symbol: string;
+  metadata: AssetMetadata;
+  moexBoardId?: string | null;
+  moexSecurityId?: string | null;
 };
 
 @Injectable()
@@ -84,6 +94,61 @@ export class MoexAssetService {
     }
 
     return result;
+  }
+
+  async searchAssets(search: string, limit: number): Promise<MoexAssetSearchResult[]> {
+    const normalizedSearch = search.trim();
+    const exactSearch = normalizedSearch.toUpperCase();
+    const searchLike = `%${normalizedSearch}%`;
+    const prefixLike = `${exactSearch}%`;
+
+    const cachedSecurities = await this.securityRepository
+      .createQueryBuilder('security')
+      .where('security.isTraded = :isTraded', { isTraded: true })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('security.secId ILIKE :search', { search: searchLike })
+            .orWhere('security.shortName ILIKE :search', { search: searchLike })
+            .orWhere('security.name ILIKE :search', { search: searchLike })
+            .orWhere('security.isin ILIKE :search', { search: searchLike });
+        }),
+      )
+      .orderBy(
+        `CASE
+          WHEN UPPER(security.secId) = :exactSearch THEN 0
+          WHEN UPPER(security.secId) LIKE :prefixLike THEN 1
+          ELSE 2
+        END`,
+        'ASC',
+      )
+      .addOrderBy('security.secId', 'ASC')
+      .setParameters({ exactSearch, prefixLike })
+      .take(limit)
+      .getMany();
+
+    if (cachedSecurities.length > 0) {
+      return cachedSecurities.map((security) => this.mapSecurityToSearchResult(security));
+    }
+
+    const response = await this.moexService.searchSecurities({
+      q: normalizedSearch,
+      engine: this.defaultEngine,
+      is_trading: 1,
+      limit: 20,
+    });
+
+    const entities = response.securities
+      .slice(0, limit)
+      .map((security) => this.createSecurityEntityFromInfo(security));
+
+    if (entities.length > 0) {
+      await this.securityRepository.upsert(entities, {
+        conflictPaths: ['secId'],
+        skipUpdateIfNoValuesChanged: true,
+      });
+    }
+
+    return entities.map((security) => this.mapSecurityToSearchResult(security));
   }
 
   async getTopAssets(type: AssetType): Promise<MoexAssetInfo[]> {
@@ -264,7 +329,20 @@ export class MoexAssetService {
     const security = searchResult.securities.find((it) => it.secid.toUpperCase() === symbol);
     if (!security) return null;
 
-    const entity = this.securityRepository.create({
+    const entity = this.createSecurityEntityFromInfo(security);
+
+    await this.securityRepository.upsert(entity, {
+      conflictPaths: ['secId'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+
+    return await this.securityRepository.findOne({
+      where: { secId: security.secid },
+    });
+  }
+
+  private createSecurityEntityFromInfo(security: MoexSecurityInfo): MoexSecurityEntity {
+    return this.securityRepository.create({
       secId: security.secid,
       shortName: security.shortname,
       name: security.name,
@@ -280,15 +358,31 @@ export class MoexAssetService {
       primaryBoardId: security.primary_boardid,
       marketPriceBoardId: security.marketprice_boardid,
     });
+  }
 
-    await this.securityRepository.upsert(entity, {
-      conflictPaths: ['secId'],
-      skipUpdateIfNoValuesChanged: true,
-    });
+  private mapSecurityToSearchResult(security: MoexSecurityEntity): MoexAssetSearchResult {
+    const symbol = security.secId;
 
-    return await this.securityRepository.findOne({
-      where: { secId: security.secid },
-    });
+    return {
+      type: this.resolveAssetType(security as unknown as SecurityRow),
+      name: security.name || security.shortName || symbol,
+      symbol,
+      metadata: {
+        ticker: symbol,
+        isin: security.isin ?? undefined,
+        shortName: security.shortName ?? undefined,
+        source: 'MOEX',
+        moex: {
+          securityId: symbol,
+          primaryBoardId: security.primaryBoardId ?? null,
+          marketPriceBoardId: security.marketPriceBoardId ?? null,
+          type: security.type ?? null,
+          group: security.group ?? null,
+        },
+      } as AssetMetadata,
+      moexBoardId: security.marketPriceBoardId || security.primaryBoardId || null,
+      moexSecurityId: symbol,
+    };
   }
 
   private async resolveBoardContext(symbol: string, preferredBoardId?: string) {

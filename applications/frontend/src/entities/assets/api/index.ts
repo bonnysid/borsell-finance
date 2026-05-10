@@ -6,3 +6,4 @@ export * from './useGetAssetPriceHistory';
 export * from './useGetAssets';
 export * from './useGetUserAsset';
 export * from './useGetUserAssets';
+export * from './useSearchAssets';

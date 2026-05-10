@@ -16,6 +16,8 @@ export const ASSETS_QUERY_KEYS = {
   userAsset: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'user-asset', symbol] as const,
   assetsList: (params?: AssetsListQuery) =>
     [...ASSETS_QUERY_KEYS.lists(), 'assets', params] as const,
+  search: (search: string, limit?: number) =>
+    [...ASSETS_QUERY_KEYS.all, 'search', search, limit] as const,
 
   assetInfo: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'info', symbol] as const,
   assetPrice: (symbol: string) => [...ASSETS_QUERY_KEYS.all, 'price', symbol] as const,

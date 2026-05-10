@@ -1,5 +1,5 @@
 import { bindStyles, Icon } from '@devbonnysid/ui-kit-default';
-import { AssetDtoShape } from '@packages/types';
+import { AssetDtoShape, AssetMetadata } from '@packages/types';
 import { CSSProperties, FC, useEffect, useMemo, useState } from 'react';
 
 import styles from './AssetLogo.module.scss';
@@ -8,8 +8,15 @@ type AssetLogoMetadata = AssetDtoShape['metadata'] & {
   logoName?: string;
 };
 
+type AssetLogoAsset = {
+  name: string;
+  symbol: string;
+  metadata: AssetMetadata;
+  moexSecurityId?: string | null;
+};
+
 type AssetLogoProps = {
-  asset: AssetDtoShape;
+  asset: AssetLogoAsset;
   className?: string;
   size?: number;
 };
