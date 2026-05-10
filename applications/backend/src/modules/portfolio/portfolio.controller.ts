@@ -5,7 +5,7 @@ import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
 import { UserService } from '@/modules/user/user.service';
 
-import { CreatePortfolioDto, PortfolioDto, PortfolioSummaryDto } from './dto';
+import { CreatePortfolioDto, PortfolioDto, PortfolioInsightDto, PortfolioSummaryDto } from './dto';
 import { PortfolioService } from './services';
 
 @UseGuards(AuthGuard)
@@ -87,6 +87,26 @@ export class PortfolioController {
     }
 
     return res.status(200).json(history);
+  }
+
+  @Get('/insight')
+  async getPortfolioInsight(@CurrentUser() user: UserJWT, @Res() res: Response) {
+    const dbUser = await this.userService.findOne(user.username);
+
+    if (!dbUser) {
+      return res.status(200).json(null);
+    }
+
+    const insight = await this.portfolioService.getPortfolioInsight(
+      user.userId,
+      dbUser.currencyCode,
+    );
+
+    if (!insight) {
+      return res.status(200).json(null);
+    }
+
+    return res.status(200).json(new PortfolioInsightDto(insight));
   }
 
   @Post('/create')

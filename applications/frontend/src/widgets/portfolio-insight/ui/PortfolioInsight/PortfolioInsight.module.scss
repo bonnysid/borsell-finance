@@ -1,0 +1,144 @@
+.portfolio-insight {
+  --status-color: var(--color-text-secondary);
+  --status-bg: var(--color-bg-opacity);
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--MarginM);
+    align-items: flex-start;
+  }
+
+  .status {
+    width: fit-content;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--status-bg);
+    color: var(--status-color);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .title {
+    margin-top: 10px;
+    color: var(--color-text-primary);
+    font: var(--font-heading-sb-18);
+    text-align: left;
+  }
+
+  .score {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    color: var(--status-color);
+    white-space: nowrap;
+
+    span {
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    small {
+      color: var(--color-text-secondary);
+      font-size: 13px;
+    }
+  }
+
+  .summary {
+    margin: 0;
+    color: var(--color-text-secondary);
+    line-height: 1.45;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+
+    @media (max-width: 760px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--RoundingS);
+    background: var(--color-bg-primary);
+
+    span {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+    }
+
+    strong {
+      color: var(--color-text-primary);
+      font-size: 15px;
+    }
+
+    &.good strong {
+      color: var(--color-positive);
+    }
+
+    &.bad strong {
+      color: var(--color-negative);
+    }
+  }
+
+  .recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      padding-left: 16px;
+      color: var(--color-text-primary);
+      line-height: 1.4;
+
+      &::before {
+        position: absolute;
+        top: 9px;
+        left: 0;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--status-color);
+        content: '';
+      }
+    }
+  }
+
+  &.good {
+    --status-color: var(--color-text-success);
+    --status-bg: var(--color-bg-success);
+  }
+
+  &.average {
+    --status-color: var(--color-text-warning);
+    --status-bg: var(--color-bg-warning);
+  }
+
+  &.bad {
+    --status-color: var(--color-error-primary);
+    --status-bg: var(--color-bg-error);
+  }
+
+  &.compact {
+    .title {
+      font-size: 16px;
+    }
+
+    .score span {
+      font-size: 28px;
+    }
+  }
+}

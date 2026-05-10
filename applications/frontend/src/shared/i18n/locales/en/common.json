@@ -86,5 +86,64 @@
     "low": "Low",
     "close": "Close",
     "volume": "Volume"
+  },
+  "portfolio": {
+    "insight": {
+      "block_title": "Insight",
+      "status_label": {
+        "good": "Good",
+        "average": "Average",
+        "bad": "Bad"
+      },
+      "title": {
+        "good": "Portfolio looks good",
+        "average": "Portfolio is in average zone",
+        "bad": "Portfolio requires attention"
+      },
+      "summary": {
+        "good": "Profitability and structure look stable, the key task is to prevent imbalance in individual positions.",
+        "average": "There is a working base, but concentration, drawdown, or low diversification reduce the quality of the portfolio.",
+        "bad": "There are currently noticeable risks in profitability or structure. Start with concentration and reasons for drawdown."
+      },
+      "metric": {
+        "profitability": "Profitability",
+        "monthly_pnl": "Monthly",
+        "assets_count": "Assets",
+        "top_position": "Top Position",
+        "diversification": "Diversification"
+      },
+      "recommendation": {
+        "low_diversification": "Increase diversification: the portfolio currently depends on a small number of assets.",
+        "high_concentration": "Reduce concentration in {{symbol}}: the position occupies {{percent}}% of the portfolio.",
+        "high_sector_concentration": "High concentration in the {{sector}} sector: {{percent}}% of the portfolio. Consider spreading across other industries.",
+        "review_losing_positions": "Check losing positions: fix the reason for owning the asset before averaging or buying more.",
+        "monthly_drop_evaluation": "The portfolio dropped for the month: evaluate whether it's market volatility or an error in the risk structure.",
+        "maintain_rebalancing": "Maintain rebalancing and pre-set a share for each major position.",
+        "track_thesis": "Record the investment thesis for assets that have grown significantly or become a large share."
+      }
+    }
+  },
+  "assistant": {
+    "page_title": "AI Portfolio Assistant",
+    "page_description": "The assistant uses the current profitability, allocation, and concentration of the portfolio.",
+    "no_data_yet": "Not enough data yet. Add assets and transactions, after which the assistant will be able to evaluate profitability, diversification, and concentration.",
+    "you": "You",
+    "assistant": "Assistant",
+    "placeholder": "Ask how to improve your portfolio",
+    "send": "Send",
+    "get_digest": "News Digest",
+    "loading_digest": "Loading news digest and analyzing the market...",
+    "error_digest": "Failed to get news digest.",
+    "error": "Error getting response",
+    "prompts": {
+      "improve": "What to improve in the portfolio?",
+      "risks": "What are the main risks?",
+      "rebalance": "Is rebalancing needed?"
+    },
+    "answers": {
+      "rebalance_good": "Strict rebalancing doesn't seem mandatory right now. It's enough to monitor the share of the largest position and set target weights in advance.",
+      "rebalance_bad": "Rebalancing is useful: start with the largest position and bring the structure to target shares without changing everything in one operation.",
+      "risks_prefix": "The main risks right now are:"
+    }
   }
 }

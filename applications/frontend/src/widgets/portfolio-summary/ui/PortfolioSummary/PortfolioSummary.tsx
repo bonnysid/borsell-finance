@@ -62,33 +62,33 @@ export const PortfolioSummary: FC = () => {
         : AmountTextTypes.DEFAULT;
 
   return (
-    <Block className={cx('portfolio-summary')} isLoading={isLoading}>
-      <div className={cx('label')}>{t('Balance')}</div>
-
-      <Tooltip text={`${formatNumber(portfolio.marketPrice)} ${balanceParts.currency}`}>
-        <div className={cx('total-balance-container')}>
-          <span className={cx('integer')}>{balanceParts.integer}</span>
-          {balanceParts.decimal && <span className={cx('decimal')}>.{balanceParts.decimal}</span>}
-        </div>
-      </Tooltip>
-
-      <div className={cx('pnl-badges')}>
-        <div className={cx('pnl-badge', pnlType)}>
-          <AmountText amount={totalPnl} type={pnlType} currency={portfolio.currencyCode} />
-          <div className={cx('pnl-percent-container')}>
-            <DirectionArrow value={totalPnl} />
-            <PercentText value={totalPnlPercent} showPlus={false} />
+    <Block title={t('Balance')} className={cx('portfolio-summary')} isLoading={isLoading}>
+      <div className={cx('content')}>
+        <Tooltip text={`${formatNumber(portfolio.marketPrice)} ${balanceParts.currency}`}>
+          <div className={cx('total-balance-container')}>
+            <span className={cx('integer')}>{balanceParts.integer}</span>
+            {balanceParts.decimal && <span className={cx('decimal')}>.{balanceParts.decimal}</span>}
           </div>
-          <span className={cx('pnl-period')}>{t('AllTime')}</span>
-        </div>
+        </Tooltip>
 
-        <div className={cx('pnl-badge', pnlMonthType)}>
-          <AmountText amount={pnlMonth} type={pnlMonthType} currency={portfolio.currencyCode} />
-          <div className={cx('pnl-percent-container')}>
-            <DirectionArrow value={pnlMonth} />
-            <PercentText value={pnlMonthPercent} showPlus={false} />
+        <div className={cx('pnl-badges')}>
+          <div className={cx('pnl-badge', pnlType)}>
+            <AmountText amount={totalPnl} type={pnlType} currency={portfolio.currencyCode} />
+            <div className={cx('pnl-percent-container')}>
+              <DirectionArrow value={totalPnl} />
+              <PercentText value={totalPnlPercent} showPlus={false} />
+            </div>
+            <span className={cx('pnl-period')}>{t('AllTime')}</span>
           </div>
-          <span className={cx('pnl-period')}>{t('ThisMonth')}</span>
+
+          <div className={cx('pnl-badge', pnlMonthType)}>
+            <AmountText amount={pnlMonth} type={pnlMonthType} currency={portfolio.currencyCode} />
+            <div className={cx('pnl-percent-container')}>
+              <DirectionArrow value={pnlMonth} />
+              <PercentText value={pnlMonthPercent} showPlus={false} />
+            </div>
+            <span className={cx('pnl-period')}>{t('ThisMonth')}</span>
+          </div>
         </div>
       </div>
     </Block>

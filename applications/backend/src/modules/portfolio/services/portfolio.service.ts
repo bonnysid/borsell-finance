@@ -1,6 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CurrencyCode, ID, PortfolioSummaryDtoShape, TransactionType } from '@packages/types';
+import {
+  CurrencyCode,
+  ID,
+  PortfolioHealthStatus,
+  PortfolioInsightDtoShape,
+  PortfolioInsightRecommendationShape,
+  PortfolioSummaryDtoShape,
+  TransactionType,
+} from '@packages/types';
 import Big from 'big.js';
 import { addDays, startOfMonth } from 'date-fns';
 import { Between, LessThanOrEqual, Repository } from 'typeorm';
@@ -154,6 +162,115 @@ export class PortfolioService {
       pnlMonth: pnlMonth.toFixed(8),
       pnlMonthPercent,
       currencyCode: targetCurrency,
+    };
+  }
+
+  async getPortfolioInsight(
+    userId: ID,
+    targetCurrency: CurrencyCode,
+  ): Promise<PortfolioInsightDtoShape | null> {
+    const summary = await this.getPortfolioSummary(userId, targetCurrency);
+
+    if (!summary) {
+      return null;
+    }
+
+    const allocation = await this.getPortfolioAllocation(userId, targetCurrency);
+    const marketPrice = new Big(summary.marketPrice);
+    const costBasis = new Big(summary.costBasis);
+    const totalPnl = marketPrice.minus(costBasis);
+    const totalPnlPercent = costBasis.gt(0) ? totalPnl.div(costBasis).mul(100).toNumber() : 0;
+    const monthPnlPercent = Number(summary.pnlMonthPercent) || 0;
+    const assetsCount = allocation?.items.length ?? 0;
+    const topPosition = allocation?.items[0];
+    const topPositionPercent = topPosition?.percentage ?? 0;
+
+    let score = 70;
+
+    if (totalPnlPercent >= 10) score += 10;
+    if (totalPnlPercent < 0) score -= 8;
+    if (totalPnlPercent <= -10) score -= 10;
+
+    if (monthPnlPercent >= 3) score += 6;
+    if (monthPnlPercent < 0) score -= 5;
+    if (monthPnlPercent <= -5) score -= 8;
+
+    if (assetsCount > 0 && assetsCount < 3) score -= 14;
+    if (assetsCount >= 6) score += 5;
+
+    if (topPositionPercent > 60) score -= 20;
+    else if (topPositionPercent > 40) score -= 10;
+
+    const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
+    const status: PortfolioHealthStatus =
+      normalizedScore >= 75 ? 'good' : normalizedScore >= 50 ? 'average' : 'bad';
+
+    const recommendations: PortfolioInsightRecommendationShape[] = [];
+
+    if (assetsCount > 0 && assetsCount < 3) {
+      recommendations.push({ key: 'portfolio.insight.recommendation.low_diversification' });
+    }
+
+    if (topPosition && topPositionPercent > 40) {
+      recommendations.push({
+        key: 'portfolio.insight.recommendation.high_concentration',
+        params: { symbol: topPosition.symbol, percent: topPositionPercent.toFixed(1) },
+      });
+    }
+
+    if (totalPnlPercent <= -10) {
+      recommendations.push({ key: 'portfolio.insight.recommendation.review_losing_positions' });
+    }
+
+    if (monthPnlPercent <= -5) {
+      recommendations.push({ key: 'portfolio.insight.recommendation.monthly_drop_evaluation' });
+    }
+
+    if (!recommendations.length) {
+      recommendations.push({ key: 'portfolio.insight.recommendation.maintain_rebalancing' });
+      recommendations.push({ key: 'portfolio.insight.recommendation.track_thesis' });
+    }
+
+    return {
+      status,
+      score: normalizedScore,
+      titleKey: `portfolio.insight.title.${status}`,
+      summaryKey: `portfolio.insight.summary.${status}`,
+      recommendations,
+      metrics: [
+        {
+          labelKey: 'portfolio.insight.metric.profitability',
+          value: `${totalPnlPercent > 0 ? '+' : ''}${totalPnlPercent.toFixed(1)}%`,
+          tone: totalPnlPercent >= 5 ? 'good' : totalPnlPercent >= -5 ? 'average' : 'bad',
+        },
+        {
+          labelKey: 'portfolio.insight.metric.monthly_pnl',
+          value: `${monthPnlPercent > 0 ? '+' : ''}${monthPnlPercent.toFixed(1)}%`,
+          tone: monthPnlPercent >= 3 ? 'good' : monthPnlPercent >= -3 ? 'average' : 'bad',
+        },
+        {
+          labelKey: 'portfolio.insight.metric.assets_count',
+          value: String(assetsCount),
+          tone: assetsCount >= 6 ? 'good' : assetsCount >= 3 ? 'average' : 'bad',
+        },
+        {
+          labelKey: 'portfolio.insight.metric.top_position',
+          value: `${topPositionPercent.toFixed(1)}%`,
+          tone: topPositionPercent <= 30 ? 'good' : topPositionPercent <= 50 ? 'average' : 'bad',
+        },
+      ],
+      context: {
+        currencyCode: targetCurrency,
+        marketPrice: summary.marketPrice,
+        costBasis: summary.costBasis,
+        totalPnl: totalPnl.toFixed(8),
+        totalPnlPercent,
+        pnlMonth: summary.pnlMonth,
+        pnlMonthPercent: monthPnlPercent,
+        assetsCount,
+        topPositionSymbol: topPosition?.symbol,
+        topPositionPercent,
+      },
     };
   }
 

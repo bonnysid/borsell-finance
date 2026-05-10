@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { HttpLoggerMiddleware } from '@/common';
 import { DatabaseModule } from '@/database';
 import { I18nAppModule } from '@/i18n';
+import { AssistantModule } from '@/modules/assistant/assistant.module';
 import { AssetModule } from '@/modules/asset/asset.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { CurrencyModule } from '@/modules/currency/currency.module';
@@ -15,6 +16,7 @@ import { SettingsModule } from '@/modules/settings/settings.module';
 import { TransactionModule } from '@/modules/transaction/transaction.module';
 import { UserModule } from '@/modules/user/user.module';
 import { UserAssetModule } from '@/modules/user-asset/user-asset.module';
+import { AiModule } from '@/modules/ai/ai.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -34,8 +36,10 @@ import { AppService } from './app.service';
     MoexModule,
     AssetModule,
     PortfolioModule,
+    AssistantModule,
     TransactionModule,
     UserAssetModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

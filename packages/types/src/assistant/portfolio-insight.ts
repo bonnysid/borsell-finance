@@ -1,0 +1,37 @@
+import { CurrencyCode } from '../currency';
+
+export type PortfolioHealthStatus = 'good' | 'average' | 'bad';
+
+export type PortfolioInsightMetricShape = {
+  labelKey: string;
+  value: string;
+  tone: PortfolioHealthStatus;
+};
+
+export type PortfolioInsightRecommendationShape = {
+  key: string;
+  params?: Record<string, string | number>;
+};
+
+export type PortfolioInsightContextShape = {
+  currencyCode: CurrencyCode;
+  marketPrice: string;
+  costBasis: string;
+  totalPnl: string;
+  totalPnlPercent: number;
+  pnlMonth: string;
+  pnlMonthPercent: number;
+  assetsCount: number;
+  topPositionSymbol?: string;
+  topPositionPercent: number;
+};
+
+export type PortfolioInsightDtoShape = {
+  status: PortfolioHealthStatus;
+  score: number;
+  titleKey: string;
+  summaryKey: string;
+  recommendations: PortfolioInsightRecommendationShape[];
+  metrics: PortfolioInsightMetricShape[];
+  context: PortfolioInsightContextShape;
+};

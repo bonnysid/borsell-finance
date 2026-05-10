@@ -2,6 +2,7 @@ import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { useGetPortfolio } from '@entities/portfolio';
 import { PortfolioAllocation } from '@widgets/portfolio-allocation';
 import { PortfolioHistoryChart } from '@widgets/portfolio-history-chart';
+import { PortfolioInsight } from '@widgets/portfolio-insight';
 import { PortfolioSummary } from '@widgets/portfolio-summary';
 import { UserAssetsWidget } from '@widgets/user-assets';
 import { FC } from 'react';
@@ -9,11 +10,9 @@ import { FC } from 'react';
 import { EmptyPortfolio } from '../EmptyPortfolio';
 import styles from './PortfolioPage.module.scss';
 
-type PortfolioPageProps = {};
-
 const cn = bindStyles(styles);
 
-export const PortfolioPage: FC<PortfolioPageProps> = () => {
+export const PortfolioPage: FC = () => {
   const { data } = useGetPortfolio();
 
   if (!data) {
@@ -22,11 +21,13 @@ export const PortfolioPage: FC<PortfolioPageProps> = () => {
 
   return (
     <div className={cn('portfolio-page')}>
+      <div className={cn('widgets')}>
+        <PortfolioInsight compact />
+        <PortfolioSummary />
+        <PortfolioAllocation />
+      </div>
+
       <div className={cn('row')}>
-        <div className={cn('side-content')}>
-          <PortfolioSummary />
-          <PortfolioAllocation />
-        </div>
         <PortfolioHistoryChart />
       </div>
 

@@ -25,9 +25,14 @@
     width: 400px;
 
     @media (max-width: 1250px) {
-      flex-direction: row;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       width: 100%;
       height: fit-content;
+    }
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
     }
   }
 }
@@ -36,4 +41,17 @@
   display: flex;
   gap: var(--MarginM);
   width: 100%;
+  min-height: 500px;
+
+  @media (max-width: 1250px) {
+    flex-direction: column;
+  }
+}
+
+.widgets {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--MarginM);
+  flex: 1;
+  min-width: 0;
 }

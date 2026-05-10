@@ -1,3 +1,122 @@
 .assistant-page {
+  width: 100%;
+  min-height: 0;
+}
 
+.content {
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+  gap: var(--MarginM);
+  width: 100%;
+
+  @media (max-width: 1050px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.assistant-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--MarginM);
+  min-width: 0;
+  padding: var(--PaddingM);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--RoundingM);
+  background: var(--color-bg-secondary);
+}
+
+.assistant-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--MarginM);
+
+  h1 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font: var(--font-heading-sb-18);
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: var(--color-text-secondary);
+    line-height: 1.45;
+  }
+}
+
+.quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--RoundingS);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--color-text-secondary);
+    }
+  }
+
+  .digest-btn {
+    border-color: var(--color-status-success);
+    background: var(--color-status-success-bg);
+  }
+}
+
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  max-width: 780px;
+  padding: 12px 14px;
+  border-radius: var(--RoundingM);
+  line-height: 1.5;
+
+  &.assistant {
+    align-self: flex-start;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  &.user {
+    align-self: flex-end;
+    background: var(--color-bg-opacity);
+    color: var(--color-text-primary);
+  }
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: auto;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 84px;
+    resize: vertical;
+    padding: 12px;
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--RoundingS);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font: inherit;
+    outline: none;
+
+    &:focus {
+      border-color: var(--color-text-secondary);
+    }
+  }
 }

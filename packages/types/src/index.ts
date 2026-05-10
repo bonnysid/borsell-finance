@@ -1,4 +1,5 @@
 export * from './asset';
+export * from './assistant';
 export * from './auth';
 export * from './currency';
 export * from './portfolio';
