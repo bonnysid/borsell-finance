@@ -59,8 +59,24 @@ export class AssistantService {
       return 'You have no assets in your portfolio.';
     }
 
-    const symbols = allocation.items.map((item) => item.symbol);
-    const news = await this.newsService.getPortfolioNews(symbols);
+    const portfolio = await this.portfolioService.findByUserId(userId);
+    const assetsBySymbol = new Map(
+      portfolio?.assets.map((portfolioAsset) => {
+        const asset = portfolioAsset.userAsset.asset;
+        return [asset.symbol, asset];
+      }) ?? [],
+    );
+    const newsAssets = allocation.items.map((item) => {
+      const asset = assetsBySymbol.get(item.symbol);
+
+      return {
+        symbol: item.symbol,
+        name: item.name,
+        currencyCode: asset?.currencyCode,
+        source: asset?.metadata?.source,
+      };
+    });
+    const news = await this.newsService.getPortfolioNews(newsAssets);
 
     if (news.length === 0) {
       return 'No news found for your assets.';

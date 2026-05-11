@@ -6,7 +6,7 @@ export const useAskAssistant = () => {
     mutationFn: async (question: string) => {
       const { data } = await restService.POST<{ response: string }, { question: string }>(
         '/assistant/ask',
-        { data: { question } },
+        { data: { question }, timeout: 0 },
       );
       return data.response;
     },
