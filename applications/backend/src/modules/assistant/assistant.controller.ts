@@ -1,17 +1,18 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
 import { UserService } from '@/modules/user/user.service';
 
 import { AskQuestionDto } from './dto';
-import { AssistantService } from './services';
+import { AssistantService, ChatService } from './services';
 
 @UseGuards(AuthGuard)
 @Controller('assistant')
 export class AssistantController {
   constructor(
     private readonly assistantService: AssistantService,
+    private readonly chatService: ChatService,
     private readonly userService: UserService,
   ) {}
 
@@ -20,12 +21,13 @@ export class AssistantController {
     const dbUser = await this.userService.findOne(user.username);
     const currencyCode = dbUser?.currencyCode || 'USD';
 
-    const response = await this.assistantService.askQuestion(
+    const result = await this.assistantService.askQuestion(
       user.userId,
       currencyCode,
       dto.question,
+      dto.sessionId,
     );
-    return { response };
+    return result;
   }
 
   @Post('digest')
@@ -35,5 +37,25 @@ export class AssistantController {
 
     const response = await this.assistantService.getNewsDigest(user.userId, currencyCode);
     return { response };
+  }
+
+  @Get('sessions')
+  async getSessions(@CurrentUser() user: UserJWT) {
+    return this.chatService.getSessions(user.userId);
+  }
+
+  @Get('sessions/:sessionId/messages')
+  async getMessages(@CurrentUser() user: UserJWT, @Param('sessionId') sessionId: string) {
+    const session = await this.chatService.getSession(sessionId);
+    if (!session || session.userId !== user.userId) {
+      return [];
+    }
+    return this.chatService.getMessages(sessionId);
+  }
+
+  @Delete('sessions/:sessionId')
+  async deleteSession(@CurrentUser() user: UserJWT, @Param('sessionId') sessionId: string) {
+    await this.chatService.deleteSession(sessionId, user.userId);
+    return { success: true };
   }
 }

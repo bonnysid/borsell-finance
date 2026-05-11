@@ -34,4 +34,20 @@ export type PortfolioInsightDtoShape = {
   recommendations: PortfolioInsightRecommendationShape[];
   metrics: PortfolioInsightMetricShape[];
   context: PortfolioInsightContextShape;
+  aiSummary?: string;
+};
+
+export type ChatSessionShape = {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChatMessageShape = {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
 };

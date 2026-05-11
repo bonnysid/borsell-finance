@@ -1,6 +1,6 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Message } from 'ollama';
 
 import { OllamaService } from '@/modules/ai/services/ollama.service';
 
@@ -12,7 +12,6 @@ export class AiService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly httpService: HttpService,
     private readonly ollamaService: OllamaService,
   ) {
     this.provider = this.configService.get<string>('AI_PROVIDER', 'ollama');
@@ -21,21 +20,31 @@ export class AiService {
 
   async generateResponse(prompt: string, context?: string): Promise<string> {
     try {
-      this.logger.log(`Generating response from ${this.provider} ${this.model}...`);
+      this.logger.log(`Generating response [${this.provider}/${this.model}]`);
 
       if (this.provider === 'ollama') {
-        const res = await this.ollamaService.generateResponse(prompt, context);
-
-        this.logger.log(`Response from ${this.provider} ${this.model}: ${res.response}`);
-
-        return res.response;
+        return await this.ollamaService.generate(prompt, context);
       }
     } catch (e) {
-      this.logger.error(`Failed to generate response from ${this.provider} ${this.model}`, e);
+      this.logger.error(`Failed to generate response`, e);
       return 'Error connecting to AI.';
     }
 
-    // Fallback or other providers
+    return 'AI provider not configured or not supported.';
+  }
+
+  async chatWithHistory(messages: Message[], system?: string): Promise<string> {
+    try {
+      this.logger.log(`Chat with history [${this.provider}/${this.model}], messages: ${messages.length}`);
+
+      if (this.provider === 'ollama') {
+        return await this.ollamaService.chat(messages, system);
+      }
+    } catch (e) {
+      this.logger.error(`Failed to chat with history`, e);
+      return 'Error connecting to AI.';
+    }
+
     return 'AI provider not configured or not supported.';
   }
 

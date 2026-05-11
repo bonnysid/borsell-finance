@@ -53,6 +53,7 @@ export class PortfolioInsightDto implements PortfolioInsightDtoShape {
   recommendations: PortfolioInsightRecommendationShape[];
   metrics: PortfolioInsightMetricDto[];
   context: PortfolioInsightContextDto;
+  aiSummary?: string;
 
   constructor(data: PortfolioInsightDtoShape) {
     this.status = data.status;
@@ -62,5 +63,6 @@ export class PortfolioInsightDto implements PortfolioInsightDtoShape {
     this.recommendations = data.recommendations;
     this.metrics = data.metrics.map((metric) => new PortfolioInsightMetricDto(metric));
     this.context = new PortfolioInsightContextDto(data.context);
+    this.aiSummary = data.aiSummary;
   }
 }

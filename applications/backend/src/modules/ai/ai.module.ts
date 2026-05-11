@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { OllamaService } from '@/modules/ai/services/ollama.service';
 
-import { NewsArticleEntity, NewsSymbolSyncEntity } from './entities';
+import { ChatMessageEntity, ChatSessionEntity, NewsArticleEntity, NewsSymbolSyncEntity } from './entities';
 import { AiService } from './services/ai.service';
 import { NewsService } from './services/news.service';
 
@@ -13,9 +13,9 @@ import { NewsService } from './services/news.service';
   imports: [
     ConfigModule,
     HttpModule,
-    TypeOrmModule.forFeature([NewsArticleEntity, NewsSymbolSyncEntity]),
+    TypeOrmModule.forFeature([NewsArticleEntity, NewsSymbolSyncEntity, ChatSessionEntity, ChatMessageEntity]),
   ],
   providers: [AiService, NewsService, OllamaService],
-  exports: [AiService, NewsService, OllamaService],
+  exports: [AiService, NewsService, OllamaService, TypeOrmModule],
 })
 export class AiModule {}

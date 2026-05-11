@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 
 import { AuthGuard, CurrentUser } from '@/common';
@@ -90,7 +90,11 @@ export class PortfolioController {
   }
 
   @Get('/insight')
-  async getPortfolioInsight(@CurrentUser() user: UserJWT, @Res() res: Response) {
+  async getPortfolioInsight(
+    @CurrentUser() user: UserJWT,
+    @Res() res: Response,
+    @Query('refresh') refresh?: string,
+  ) {
     const dbUser = await this.userService.findOne(user.username);
 
     if (!dbUser) {
@@ -100,6 +104,7 @@ export class PortfolioController {
     const insight = await this.portfolioService.getPortfolioInsight(
       user.userId,
       dbUser.currencyCode,
+      refresh === 'true',
     );
 
     if (!insight) {
@@ -107,6 +112,12 @@ export class PortfolioController {
     }
 
     return res.status(200).json(new PortfolioInsightDto(insight));
+  }
+
+  @Delete('/insight/cache')
+  async clearInsightCache(@CurrentUser() user: UserJWT) {
+    await this.portfolioService.clearInsightCache(user.userId);
+    return { success: true };
   }
 
   @Post('/create')

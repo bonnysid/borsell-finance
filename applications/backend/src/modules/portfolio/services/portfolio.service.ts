@@ -15,6 +15,7 @@ import { Between, LessThanOrEqual, Repository } from 'typeorm';
 
 import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
 import { AssetService } from '@/modules/asset/services';
+import { AiService } from '@/modules/ai/services/ai.service';
 import { CurrencyConverterService } from '@/modules/currency/services';
 import {
   CreatePortfolioDto,
@@ -27,8 +28,10 @@ import { SettingsService } from '@/modules/settings/services';
 import { UserAssetEntity } from '@/modules/user-asset/entities';
 import { UserAssetService } from '@/modules/user-asset/services';
 
-import { PortfolioEntity, PortfolioSnapshotEntity } from '../entities';
+import { PortfolioEntity, PortfolioInsightCacheEntity, PortfolioSnapshotEntity } from '../entities';
 import { PortfolioAssetService } from './protfolio-asset.service';
+
+const INSIGHT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 час
 
 @Injectable()
 export class PortfolioService {
@@ -39,12 +42,19 @@ export class PortfolioService {
     private readonly portfolioRepository: Repository<PortfolioEntity>,
     @InjectRepository(PortfolioSnapshotEntity)
     private readonly portfolioSnapshotRepository: Repository<PortfolioSnapshotEntity>,
+    @InjectRepository(PortfolioInsightCacheEntity)
+    private readonly insightCacheRepository: Repository<PortfolioInsightCacheEntity>,
     private readonly userAssetService: UserAssetService,
     private readonly settingsService: SettingsService,
     private readonly portfolioAssetService: PortfolioAssetService,
     private readonly currencyConverterService: CurrencyConverterService,
     private readonly assetService: AssetService,
+    private readonly aiService: AiService,
   ) {}
+
+  async clearInsightCache(userId: string): Promise<void> {
+    await this.insightCacheRepository.delete({ userId });
+  }
 
   async findByUserId(userId: string) {
     return this.portfolioRepository.findOne({
@@ -168,7 +178,18 @@ export class PortfolioService {
   async getPortfolioInsight(
     userId: ID,
     targetCurrency: CurrencyCode,
+    refresh = false,
   ): Promise<PortfolioInsightDtoShape | null> {
+    if (!refresh) {
+      const cached = await this.insightCacheRepository.findOne({
+        where: { userId: String(userId), currencyCode: targetCurrency },
+      });
+      if (cached && cached.expiresAt > new Date()) {
+        this.logger.log(`Portfolio insight served from cache for user ${userId}`);
+        return cached.data;
+      }
+    }
+
     const summary = await this.getPortfolioSummary(userId, targetCurrency);
 
     if (!summary) {
@@ -231,7 +252,7 @@ export class PortfolioService {
       recommendations.push({ key: 'portfolio.insight.recommendation.track_thesis' });
     }
 
-    return {
+    const result: PortfolioInsightDtoShape = {
       status,
       score: normalizedScore,
       titleKey: `portfolio.insight.title.${status}`,
@@ -272,6 +293,44 @@ export class PortfolioService {
         topPositionPercent,
       },
     };
+
+    result.aiSummary = await this.generateAiInsightSummary(result, targetCurrency);
+
+    await this.insightCacheRepository.upsert(
+      {
+        userId: String(userId),
+        currencyCode: targetCurrency,
+        data: result,
+        expiresAt: new Date(Date.now() + INSIGHT_CACHE_TTL_MS),
+      },
+      ['userId', 'currencyCode'],
+    );
+
+    return result;
+  }
+
+  private async generateAiInsightSummary(
+    insight: PortfolioInsightDtoShape,
+    currencyCode: string,
+  ): Promise<string> {
+    try {
+      const prompt = `Ты финансовый аналитик. Дай краткую оценку инвестиционного портфеля в 2-3 предложениях на русском языке.
+
+Данные портфеля:
+- Общая доходность: ${insight.context.totalPnlPercent.toFixed(1)}%
+- Доходность за месяц: ${insight.context.pnlMonthPercent.toFixed(1)}%
+- Количество активов: ${insight.context.assetsCount}
+- Крупнейшая позиция: ${insight.context.topPositionSymbol ?? 'нет'} (${insight.context.topPositionPercent.toFixed(1)}% портфеля)
+- Рыночная стоимость: ${insight.context.marketPrice} ${currencyCode}
+- Оценка здоровья системы: ${insight.score}/100, статус: ${insight.status}
+
+Будь конкретен, укажи главное наблюдение и один практический совет. Только текст, без markdown.`;
+
+      return await this.aiService.generateResponse(prompt);
+    } catch (e) {
+      this.logger.error('Failed to generate AI insight summary', e);
+      return '';
+    }
   }
 
   async getPortfolioAllocation(

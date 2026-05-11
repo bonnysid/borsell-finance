@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GenerateResponse, Ollama } from 'ollama';
+import { Message, Ollama } from 'ollama';
 
 @Injectable()
 export class OllamaService {
@@ -14,9 +14,18 @@ export class OllamaService {
     this.ollama = new Ollama({ host });
   }
 
-  async generateResponse(prompt: string, context?: string): Promise<GenerateResponse> {
+  async generate(prompt: string, context?: string): Promise<string> {
     const fullPrompt = context ? `Context: ${context}\n\nQuestion: ${prompt}` : prompt;
     const response = await this.ollama.generate({ model: this.model, prompt: fullPrompt });
-    return response;
+    return response.response;
+  }
+
+  async chat(messages: Message[], system?: string): Promise<string> {
+    const allMessages: Message[] = system
+      ? [{ role: 'system', content: system }, ...messages]
+      : messages;
+
+    const response = await this.ollama.chat({ model: this.model, messages: allMessages });
+    return response.message.content;
   }
 }
