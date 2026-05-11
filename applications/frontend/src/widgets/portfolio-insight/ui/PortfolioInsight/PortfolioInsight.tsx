@@ -1,12 +1,12 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
-import { useGetPortfolioInsight } from '@entities/portfolio';
+import { useGetPortfolioInsight, useRefreshPortfolioInsight } from '@entities/portfolio';
 import { Block } from '@shared/ui';
 import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './PortfolioInsight.module.scss';
 
-type PortfolioAiSummaryProps = {
+type PortfolioInsightProps = {
   compact?: boolean;
 };
 
@@ -18,14 +18,7 @@ export const usePortfolioInsights = () => {
 
   return useMemo(() => {
     if (!insight) {
-      return {
-        hasData: false,
-        title: '',
-        summary: '',
-        recommendations: [],
-        status: 'average',
-        isLoading,
-      };
+      return { hasData: false, title: '', summary: '', recommendations: [], status: 'average', isLoading };
     }
 
     return {
@@ -39,9 +32,10 @@ export const usePortfolioInsights = () => {
   }, [insight, isLoading, t]);
 };
 
-export const PortfolioInsight: FC<PortfolioAiSummaryProps> = ({ compact = false }) => {
+export const PortfolioInsight: FC<PortfolioInsightProps> = ({ compact = false }) => {
   const { t } = useTranslation();
   const { data: insight, isLoading } = useGetPortfolioInsight();
+  const refresh = useRefreshPortfolioInsight();
 
   return (
     <Block
@@ -58,13 +52,30 @@ export const PortfolioInsight: FC<PortfolioAiSummaryProps> = ({ compact = false 
           )}
           <div className={cx('title')}>{insight && t(insight.titleKey as any)}</div>
         </div>
-        <div className={cx('score')}>
-          <span>{insight?.score}</span>
-          <small>/100</small>
+        <div className={cx('header-right')}>
+          <div className={cx('score')}>
+            <span>{insight?.score}</span>
+            <small>/100</small>
+          </div>
+          {!compact && (
+            <button
+              type="button"
+              className={cx('refresh-btn')}
+              onClick={() => refresh.mutate()}
+              disabled={refresh.isPending}
+              title={t('portfolio.insight.refresh')}
+            >
+              {refresh.isPending ? '…' : '↻'}
+            </button>
+          )}
         </div>
       </div>
 
-      <p className={cx('summary')}>{insight && t(insight.summaryKey as any)}</p>
+      {insight?.aiSummary ? (
+        <p className={cx('ai-summary')}>{insight.aiSummary}</p>
+      ) : (
+        <p className={cx('summary')}>{insight && t(insight.summaryKey as any)}</p>
+      )}
 
       {!compact && (
         <div className={cx('metrics')}>

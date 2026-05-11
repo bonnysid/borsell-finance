@@ -1,27 +1,47 @@
 import { Button, bindStyles } from '@devbonnysid/ui-kit-default';
-import { useAskAssistant, useGetAssistantDigest } from '@entities/assistant';
-import { PortfolioInsight, usePortfolioInsights } from '@widgets/portfolio-insight';
-import { FC, FormEvent, useMemo, useState } from 'react';
+import {
+  useAskAssistant,
+  useDeleteChatSession,
+  useGetAssistantDigest,
+  useGetChatMessages,
+  useGetChatSessions,
+} from '@entities/assistant';
+import { ChatMessageShape } from '@packages/types';
+import { FC, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import styles from './AssistantPage.module.scss';
 
-type AssistantMessage = {
+type LocalMessage = {
   id: string;
-  author: 'user' | 'assistant';
-  text: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isLoading?: boolean;
 };
 
 const cn = bindStyles(styles);
 
-export const AssistantPage: FC = () => {
-  const { t } = useTranslation();
-  const insight = usePortfolioInsights();
-  const [message, setMessage] = useState('');
-  const [answers, setAnswers] = useState<AssistantMessage[]>([]);
+function fromRemote(m: ChatMessageShape): LocalMessage {
+  return { id: m.id, role: m.role, content: m.content };
+}
 
+export const AssistantPage: FC = () => {
+  const { t, i18n } = useTranslation();
+  const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<LocalMessage[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: sessions = [] } = useGetChatSessions();
+  const { data: remoteMessages } = useGetChatMessages(activeSessionId);
   const askAssistant = useAskAssistant();
   const getDigest = useGetAssistantDigest();
+  const deleteSession = useDeleteChatSession();
+
+  const isLoading = messages.some((m) => m.isLoading);
 
   const QUICK_PROMPTS = useMemo(
     () => [
@@ -32,146 +52,222 @@ export const AssistantPage: FC = () => {
     [t],
   );
 
-  const initialAnswer = useMemo(() => {
-    if (!insight.hasData) {
-      return t('assistant.no_data_yet');
+  const greeting: LocalMessage = useMemo(
+    () => ({ id: 'greeting', role: 'assistant', content: t('assistant.greeting') }),
+    [t],
+  );
+
+  useEffect(() => {
+    if (remoteMessages && remoteMessages.length > 0) {
+      setMessages(remoteMessages.map(fromRemote));
+    } else if (!activeSessionId) {
+      setMessages([greeting]);
     }
+  }, [remoteMessages, activeSessionId]);
 
-    return `${insight.title}. ${insight.summary}: ${insight.recommendations[0]}`;
-  }, [insight, t]);
+  useEffect(() => {
+    if (!activeSessionId) {
+      setMessages([greeting]);
+    }
+  }, [i18n.language]);
 
-  const sendQuestion = async (question: string) => {
-    const trimmedQuestion = question.trim();
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    if (!trimmedQuestion) return;
+  const startNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([greeting]);
+    textareaRef.current?.focus();
+  };
 
-    const userMessageId = `${Date.now()}-user`;
-    const assistantMessageId = `${Date.now()}-assistant`;
+  const selectSession = (sessionId: string) => {
+    if (sessionId === activeSessionId) return;
+    setActiveSessionId(sessionId);
+    setMessages([]);
+  };
 
-    setAnswers((prev) => [
-      {
-        id: userMessageId,
-        author: 'user',
-        text: `${t('assistant.you')}: ${trimmedQuestion}`,
-      },
+  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    await deleteSession.mutateAsync(sessionId);
+    if (activeSessionId === sessionId) startNewChat();
+  };
+
+  const sendMessage = async (question: string) => {
+    const text = question.trim();
+    if (!text || isLoading) return;
+
+    const userId = `${Date.now()}-u`;
+    const botId = `${Date.now()}-a`;
+
+    setMessages((prev) => [
       ...prev,
+      { id: userId, role: 'user', content: text },
+      { id: botId, role: 'assistant', content: '', isLoading: true },
     ]);
-
-    setMessage('');
+    setInputValue('');
 
     try {
-      const response = await askAssistant.mutateAsync(trimmedQuestion);
+      const result = await askAssistant.mutateAsync({
+        question: text,
+        sessionId: activeSessionId ?? undefined,
+      });
 
-      setAnswers((prev) => [
-        {
-          id: assistantMessageId,
-          author: 'assistant',
-          text: `${t('assistant.assistant')}: ${response}`,
-        },
-        ...prev,
-      ]);
-    } catch (error) {
-      setAnswers((prev) => [
-        {
-          id: assistantMessageId,
-          author: 'assistant',
-          text: `${t('assistant.assistant')}: ${t('assistant.error') || 'Ошибка при получении ответа'}`,
-        },
-        ...prev,
-      ]);
+      if (!activeSessionId) setActiveSessionId(result.sessionId);
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId ? { ...m, content: result.response, isLoading: false } : m,
+        ),
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId ? { ...m, content: t('assistant.error'), isLoading: false } : m,
+        ),
+      );
     }
   };
 
-  const handleGetDigest = async () => {
-    const assistantMessageId = `${Date.now()}-assistant`;
+  const handleDigest = async () => {
+    if (isLoading) return;
+    const botId = `${Date.now()}-digest`;
 
-    setAnswers((prev) => [
-      {
-        id: assistantMessageId,
-        author: 'assistant',
-        text: `${t('assistant.assistant')}: ${t('assistant.loading_digest') || 'Загружаю сводку новостей...'}`,
-      },
+    setMessages((prev) => [
       ...prev,
+      { id: botId, role: 'assistant', content: '', isLoading: true },
     ]);
 
     try {
       const response = await getDigest.mutateAsync();
-
-      setAnswers((prev) => [
-        {
-          id: assistantMessageId,
-          author: 'assistant',
-          text: `${t('assistant.assistant')}: ${response}`,
-        },
-        ...prev.filter((a) => a.id !== assistantMessageId),
-      ]);
-    } catch (error) {
-      setAnswers((prev) => [
-        {
-          id: assistantMessageId,
-          author: 'assistant',
-          text: `${t('assistant.assistant')}: ${t('assistant.error_digest') || 'Не удалось получить сводку новостей.'}`,
-        },
-        ...prev.filter((a) => a.id !== assistantMessageId),
-      ]);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === botId ? { ...m, content: response, isLoading: false } : m)),
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId ? { ...m, content: t('assistant.error_digest'), isLoading: false } : m,
+        ),
+      );
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    sendQuestion(message);
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    sendMessage(inputValue);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputValue);
+    }
+  };
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) {
+      return d.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
   };
 
   return (
-    <div className={cn('assistant-page')}>
-      <div className={cn('content')}>
-        <PortfolioInsight />
-
-        <div className={cn('assistant-card')}>
-          <div className={cn('assistant-header')}>
-            <div>
-              <h1>{t('assistant.page_title')}</h1>
-              <p>{t('assistant.page_description')}</p>
+    <div className={cn('page')}>
+      {/* Sidebar */}
+      <aside className={cn('sidebar')}>
+        <div className={cn('sidebar-head')}>
+          <Button type="button" onClick={startNewChat} isFullWidth>
+            + {t('assistant.new_chat')}
+          </Button>
+        </div>
+        <div className={cn('session-list')}>
+          {sessions.map((s) => (
+            <div
+              key={s.id}
+              className={cn('session-item', { active: s.id === activeSessionId })}
+              onClick={() => selectSession(s.id)}
+            >
+              <div className={cn('session-title')}>{s.title}</div>
+              <div className={cn('session-meta')}>
+                <span>{fmtDate(s.updatedAt)}</span>
+                <button
+                  type="button"
+                  className={cn('session-del')}
+                  onClick={(e) => handleDelete(e, s.id)}
+                  title={t('assistant.delete_chat')}
+                >
+                  ×
+                </button>
+              </div>
             </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* Chat */}
+      <div className={cn('chat')}>
+        <div className={cn('chat-header')}>
+          <div>
+            <h1>{t('assistant.page_title')}</h1>
+            <p>{t('assistant.page_description')}</p>
           </div>
+        </div>
 
-          <div className={cn('message', 'assistant')}>{initialAnswer}</div>
+        <div className={cn('messages')}>
+          {messages.map((msg) => (
+            <div key={msg.id} className={cn('msg', msg.role)}>
+              {msg.isLoading ? (
+                <div className={cn('typing')}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              ) : msg.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              ) : (
+                msg.content
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
 
+        <div className={cn('bottom')}>
           <div className={cn('quick-prompts')}>
             <button
-              key="digest"
               type="button"
-              onClick={handleGetDigest}
               className={cn('digest-btn')}
+              onClick={handleDigest}
+              disabled={isLoading}
             >
-              ✨ {t('assistant.get_digest') || 'Сводка новостей'}
+              ✨ {t('assistant.get_digest')}
             </button>
-            {QUICK_PROMPTS.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => sendQuestion(prompt)}>
-                {prompt}
+            {QUICK_PROMPTS.map((p) => (
+              <button key={p} type="button" disabled={isLoading} onClick={() => sendMessage(p)}>
+                {p}
               </button>
             ))}
           </div>
 
-          <div className={cn('answers')}>
-            {answers.map((answer) => (
-              <div key={answer.id} className={cn('message', answer.author)}>
-                {answer.text}
-              </div>
-            ))}
-          </div>
-
           <form className={cn('form')} onSubmit={handleSubmit}>
-            <textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder={t('assistant.placeholder')}
-              rows={3}
-            />
-            <Button type="submit" disabled={!message.trim()}>
+            <div className={cn('textarea-wrap')}>
+              <textarea
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('assistant.placeholder')}
+                rows={2}
+                disabled={isLoading}
+              />
+            </div>
+            <Button type="submit" disabled={!inputValue.trim() || isLoading}>
               {t('assistant.send')}
             </Button>
           </form>
+          <span className={cn('hint')}>{t('assistant.enter_hint')}</span>
         </div>
       </div>
     </div>

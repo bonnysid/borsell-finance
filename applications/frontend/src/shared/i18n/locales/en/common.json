@@ -112,6 +112,7 @@
         "top_position": "Top Position",
         "diversification": "Diversification"
       },
+      "refresh": "Refresh assessment",
       "recommendation": {
         "low_diversification": "Increase diversification: the portfolio currently depends on a small number of assets.",
         "high_concentration": "Reduce concentration in {{symbol}}: the position occupies {{percent}}% of the portfolio.",
@@ -140,6 +141,11 @@
       "risks": "What are the main risks?",
       "rebalance": "Is rebalancing needed?"
     },
+    "greeting": "Hi! I'm your AI investment portfolio assistant.\n\nAsk about composition, risks or rebalancing — I'll take your current assets and performance into account.",
+    "enter_hint": "Enter — send, Shift+Enter — new line",
+    "new_chat": "New chat",
+    "delete_chat": "Delete chat",
+    "thinking": "Thinking...",
     "answers": {
       "rebalance_good": "Strict rebalancing doesn't seem mandatory right now. It's enough to monitor the share of the largest position and set target weights in advance.",
       "rebalance_bad": "Rebalancing is useful: start with the largest position and bring the structure to target shares without changing everything in one operation.",
