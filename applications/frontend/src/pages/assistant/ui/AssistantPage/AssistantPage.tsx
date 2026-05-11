@@ -18,13 +18,14 @@ type LocalMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
   isLoading?: boolean;
 };
 
 const cn = bindStyles(styles);
 
 function fromRemote(m: ChatMessageShape): LocalMessage {
-  return { id: m.id, role: m.role, content: m.content };
+  return { id: m.id, role: m.role, content: m.content, createdAt: m.createdAt };
 }
 
 export const AssistantPage: FC = () => {
@@ -100,9 +101,10 @@ export const AssistantPage: FC = () => {
     const userId = `${Date.now()}-u`;
     const botId = `${Date.now()}-a`;
 
+    const now = new Date().toISOString();
     setMessages((prev) => [
       ...prev,
-      { id: userId, role: 'user', content: text },
+      { id: userId, role: 'user', content: text, createdAt: now },
       { id: botId, role: 'assistant', content: '', isLoading: true },
     ]);
     setInputValue('');
@@ -117,13 +119,13 @@ export const AssistantPage: FC = () => {
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === botId ? { ...m, content: result.response, isLoading: false } : m,
+          m.id === botId ? { ...m, content: result.response, isLoading: false, createdAt: new Date().toISOString() } : m,
         ),
       );
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === botId ? { ...m, content: t('assistant.error'), isLoading: false } : m,
+          m.id === botId ? { ...m, content: t('assistant.error'), isLoading: false, createdAt: new Date().toISOString() } : m,
         ),
       );
     }
@@ -141,12 +143,12 @@ export const AssistantPage: FC = () => {
     try {
       const response = await getDigest.mutateAsync();
       setMessages((prev) =>
-        prev.map((m) => (m.id === botId ? { ...m, content: response, isLoading: false } : m)),
+        prev.map((m) => (m.id === botId ? { ...m, content: response, isLoading: false, createdAt: new Date().toISOString() } : m)),
       );
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === botId ? { ...m, content: t('assistant.error_digest'), isLoading: false } : m,
+          m.id === botId ? { ...m, content: t('assistant.error_digest'), isLoading: false, createdAt: new Date().toISOString() } : m,
         ),
       );
     }
@@ -163,6 +165,9 @@ export const AssistantPage: FC = () => {
       sendMessage(inputValue);
     }
   };
+
+  const fmtMsgTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
 
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
@@ -224,10 +229,17 @@ export const AssistantPage: FC = () => {
                   <span />
                   <span />
                 </div>
-              ) : msg.role === 'assistant' ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
               ) : (
-                msg.content
+                <>
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
+                  {msg.createdAt && (
+                    <span className={cn('msg-time')}>{fmtMsgTime(msg.createdAt)}</span>
+                  )}
+                </>
               )}
             </div>
           ))}
