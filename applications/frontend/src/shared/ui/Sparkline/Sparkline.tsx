@@ -1,4 +1,4 @@
-import { bindStyles } from '@devbonnysid/ui-kit-default';
+import { bindStyles, useTheme } from '@devbonnysid/ui-kit-default';
 import { getCssVariable } from '@shared/utils';
 import { AreaSeries, ColorType, createChart, IChartApi, ISeriesApi } from 'lightweight-charts';
 import { FC, useEffect, useRef } from 'react';
@@ -19,6 +19,7 @@ export type SparklineProps = {
 const cx = bindStyles(styles);
 
 export const Sparkline: FC<SparklineProps> = ({ data, width = 120, height = 40 }) => {
+  const { theme } = useTheme();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartApiRef = useRef<IChartApi>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Area'>>(null);
@@ -65,7 +66,7 @@ export const Sparkline: FC<SparklineProps> = ({ data, width = 120, height = 40 }
     return () => {
       chart.remove();
     };
-  }, [width, height, data]);
+  }, [width, height, data, theme]);
 
   useEffect(() => {
     if (lineSeriesRef.current && data.length > 0) {
@@ -77,7 +78,7 @@ export const Sparkline: FC<SparklineProps> = ({ data, width = 120, height = 40 }
       );
       chartApiRef.current?.timeScale().fitContent();
     }
-  }, [data]);
+  }, [data, theme]);
 
   return <div ref={chartContainerRef} className={cx('sparkline')} />;
 };

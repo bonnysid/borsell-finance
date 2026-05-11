@@ -6,11 +6,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   background: transparent;
-  transition: background-color .2s;
+  border: none;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  text-decoration: none;
 
   &:hover {
     background-color: var(--color-bg-opacity);
@@ -23,15 +26,170 @@
 
     background-color: var(--color-bg-opacity);
   }
+
+  &.isCollapsed {
+    justify-content: center;
+    padding: 6px;
+    width: auto;
+  }
 }
 
 .caption {
   font: var(--text-font);
   color: var(--text-color);
-  transition: color .2s, font .2s;
+  transition: color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .icon {
   color: var(--icon-color);
-  transition: color .2s;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+// expandable parent item
+
+.expandable {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.expandable-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chevron {
+  color: var(--color-icon-primary);
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+
+  &.isOpen {
+    transform: rotate(180deg);
+  }
+}
+
+// children with tree connector lines
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.child-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px 2px 32px;
+
+  // non-last: full-height vertical line + horizontal branch (├ shape)
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--color-border-primary);
+  }
+
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    width: 14px;
+    border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  // last: L-shape from top-left to center-right (└ shape with rounded corner)
+  &:last-child::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    height: 50%;
+    width: 14px;
+    border-left: 1px solid var(--color-border-primary);
+    border-bottom: 1px solid var(--color-border-primary);
+    border-bottom-left-radius: 4px;
+  }
+}
+
+.child-content {
+  --icon-color: var(--color-icon-primary);
+  --text-color: var(--color-text-secondary);
+  --text-font: var(--font-body-r-14);
+
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  min-width: 0;
+
+  &:hover {
+    background-color: var(--color-bg-opacity);
+  }
+
+  &.isActive {
+    --text-color: var(--color-text-info);
+    --icon-color: var(--color-icon-info);
+  }
+
+  .caption {
+    font: var(--text-font);
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .icon {
+    color: var(--icon-color);
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+}
+
+// flyout for collapsed mode
+
+.flyout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--RoundingL);
+  box-shadow: var(--shadow-primary);
+  min-width: 160px;
+}
+
+.flyout-title {
+  font: var(--font-heading-sb-14);
+  color: var(--color-text-secondary);
+  padding: 4px 6px;
 }

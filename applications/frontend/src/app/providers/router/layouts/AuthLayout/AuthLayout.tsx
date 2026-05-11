@@ -1,4 +1,5 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
+import { ChangeThemeToggle } from '@features/change-theme/ui';
 import { Logo } from '@shared/ui';
 import { FC } from 'react';
 import { Outlet } from 'react-router';
@@ -15,6 +16,8 @@ export const AuthLayout: FC<AuthLayoutProps> = () => {
       <div className={cx('block')}>
         <div className={cx('header')}>
           <Logo className={cx('logo')} />
+
+          <ChangeThemeToggle className={cx('theme')} isMinimized />
         </div>
 
         <Outlet />

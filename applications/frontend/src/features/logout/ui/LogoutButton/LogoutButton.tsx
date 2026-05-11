@@ -20,6 +20,7 @@ export const LogoutButton: FC<LogoutButtonProps> = (props) => {
       isLoading={logoutMutation.isPending}
       onClick={handleClick}
       variant={ButtonVariants.QUATERNARY}
+      isFullWidth
     >
       {t('Logout')}
     </Button>

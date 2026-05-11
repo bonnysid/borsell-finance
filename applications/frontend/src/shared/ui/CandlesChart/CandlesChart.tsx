@@ -1,4 +1,4 @@
-import { bindStyles, formatNumber } from '@devbonnysid/ui-kit-default';
+import { bindStyles, formatNumber, useTheme } from '@devbonnysid/ui-kit-default';
 import { getCssVariable } from '@shared/utils';
 import {
   CandlestickSeries,
@@ -50,6 +50,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({
   onLoadMore,
 }) => {
   const { i18n } = useTranslation();
+  const { theme } = useTheme();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<CandlesTooltip | null>(null);
 
@@ -190,7 +191,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [i18n.language]); // Пересоздаем график при смене языка
+  }, [i18n.language, theme]);
 
   // 2. Обновление только данных (при изменении пропса data или смене языка)
   useEffect(() => {
@@ -229,7 +230,7 @@ export const CandlesChart: FC<CandlesChartProps> = ({
         didSetInitialRangeRef.current = true;
       }
     }
-  }, [data, i18n.language]);
+  }, [data, i18n.language, theme]);
 
   return (
     <div ref={chartContainerRef} className={cx('candles-chart')}>

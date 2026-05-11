@@ -1,4 +1,4 @@
-import { bindStyles, formatNumber } from '@devbonnysid/ui-kit-default';
+import { bindStyles, formatNumber, useTheme } from '@devbonnysid/ui-kit-default';
 import { getCssVariable } from '@shared/utils';
 import {
   AreaSeries,
@@ -52,6 +52,7 @@ export const LineChart: FC<LineChartProps> = ({
   onLoadMore,
 }) => {
   const { i18n } = useTranslation();
+  const { theme } = useTheme();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const dataByTimeRef = useRef(new Map<string, LineChartDataPoint>());
   const [tooltip, setTooltip] = useState<LineTooltip | null>(null);
@@ -169,7 +170,7 @@ export const LineChart: FC<LineChartProps> = ({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [i18n.language]);
+  }, [i18n.language, theme]);
 
   useEffect(() => {
     if (lineSeriesRef.current && data.length > 0) {
@@ -197,7 +198,7 @@ export const LineChart: FC<LineChartProps> = ({
         didSetInitialRangeRef.current = true;
       }
     }
-  }, [data, i18n.language]);
+  }, [data, i18n.language, theme]);
 
   return (
     <div ref={chartContainerRef} className={cx('line-chart')}>

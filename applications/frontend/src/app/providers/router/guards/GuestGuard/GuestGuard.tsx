@@ -9,7 +9,7 @@ export const GuestGuard: FC<PublicRouteProps> = ({ children }) => {
   const { isAuth } = useIsAuth();
 
   if (isAuth) {
-    return <Navigate to={AppRoutePaths.DASHBOARD()} />;
+    return <Navigate to={AppRoutePaths.PORTFOLIO()} />;
   }
 
   return <>{children}</>;

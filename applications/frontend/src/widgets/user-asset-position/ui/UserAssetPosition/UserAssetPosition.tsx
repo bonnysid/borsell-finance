@@ -31,7 +31,7 @@ const validationSchema = yup.object({
 });
 
 export const UserAssetPosition: FC<UserAssetPositionProps> = ({ symbol, price }) => {
-  const { data: assetInfo } = useGetAssetInfo(symbol);
+  const { data: assetInfo, isLoading: isLoadingAssetInfo } = useGetAssetInfo(symbol);
   const { isLoading, data, error } = useGetUserAsset(symbol);
   const { t } = useTranslation();
 
@@ -70,7 +70,11 @@ export const UserAssetPosition: FC<UserAssetPositionProps> = ({ symbol, price })
   }, [price]);
 
   return (
-    <Block className={cx('user-asset-position')} title={t('MyPosition')}>
+    <Block
+      className={cx('user-asset-position')}
+      title={t('MyPosition')}
+      isLoading={isLoading || isLoadingAssetInfo}
+    >
       <RowInfo caption={t('Quantity')}>{formatNumber(data?.quantity || 0)}</RowInfo>
       <RowInfo caption={t('AvgBuyPrice')}>
         <AmountText amount={data?.avgBuyPrice} currency={data?.currencyCode} />

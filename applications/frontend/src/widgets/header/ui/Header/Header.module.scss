@@ -3,13 +3,14 @@
   align-items: center;
   grid-template-columns: 1fr auto 1fr;
   padding: var(--PaddingS);
+  margin-bottom: var(--MarginM);
 }
 
 .logo {
-  --logo-size: 24px;
+  --logo-size: 80px;
 
   width: var(--logo-size);
-  height: var(--logo-size);
+  height: auto;
 }
 
 .right {

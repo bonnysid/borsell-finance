@@ -55,12 +55,12 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to={AppRoutePaths.DASHBOARD()} />,
+            element: <Navigate to={AppRoutePaths.PORTFOLIO()} />,
           },
-          {
-            path: AppRoutes.DASHBOARD,
-            element: <DashboardPage />,
-          },
+          // {
+          //   path: AppRoutes.DASHBOARD,
+          //   element: <DashboardPage />,
+          // },
           {
             path: AppRoutes.PORTFOLIO,
             element: <PortfolioPage />,
@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '*',
-            element: <Navigate to={AppRoutePaths.DASHBOARD()} />,
+            element: <Navigate to={AppRoutePaths.PORTFOLIO()} />,
           },
         ],
       },
