@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
 
 import { AuthGuard } from '@/common';
 
@@ -11,7 +11,10 @@ export class AiController {
 
   // GET /ai/news-analysis?symbols=AFKS,SBER,LKOH
   @Get('news-analysis')
-  async getNewsAnalysis(@Query('symbols') symbolsParam: string) {
+  async getNewsAnalysis(
+    @Query('symbols') symbolsParam: string,
+    @Headers('accept-language') lang: string,
+  ) {
     const symbols = (symbolsParam || '')
       .split(',')
       .map((s) => s.trim())
@@ -21,6 +24,6 @@ export class AiController {
       return { error: 'symbols query param is required' };
     }
 
-    return this.newsAnalysisService.analyzeAssets(symbols);
+    return this.newsAnalysisService.analyzeAssets(symbols, lang);
   }
 }

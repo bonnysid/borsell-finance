@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
 
 import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
 import { UserService } from '@/modules/user/user.service';
 
-import { AskQuestionDto } from './dto';
+import { AskQuestionDto, DigestDto } from './dto';
 import { AssistantService, ChatService } from './services';
 
 @UseGuards(AuthGuard)
@@ -17,7 +17,11 @@ export class AssistantController {
   ) {}
 
   @Post('ask')
-  async askQuestion(@CurrentUser() user: UserJWT, @Body() dto: AskQuestionDto) {
+  async askQuestion(
+    @CurrentUser() user: UserJWT,
+    @Body() dto: AskQuestionDto,
+    @Headers('accept-language') lang: string,
+  ) {
     const dbUser = await this.userService.findOne(user.username);
     const currencyCode = dbUser?.currencyCode || 'USD';
 
@@ -25,18 +29,22 @@ export class AssistantController {
       user.userId,
       currencyCode,
       dto.question,
+      lang,
       dto.sessionId,
     );
     return result;
   }
 
   @Post('digest')
-  async getNewsDigest(@CurrentUser() user: UserJWT) {
+  async getNewsDigest(
+    @CurrentUser() user: UserJWT,
+    @Body() dto: DigestDto,
+    @Headers('accept-language') lang: string,
+  ) {
     const dbUser = await this.userService.findOne(user.username);
     const currencyCode = dbUser?.currencyCode || 'USD';
 
-    const response = await this.assistantService.getNewsDigest(user.userId, currencyCode);
-    return { response };
+    return this.assistantService.getNewsDigest(user.userId, currencyCode, lang, dto.sessionId);
   }
 
   @Get('sessions')

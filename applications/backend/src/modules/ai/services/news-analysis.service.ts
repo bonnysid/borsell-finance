@@ -8,8 +8,8 @@ import { AssetNewsAnalysisEntity, NewsSentiment } from '../entities/asset-news-a
 import { AiService } from './ai.service';
 import { NewsService, PortfolioNewsAsset } from './news.service';
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const MAX_TEXT_LENGTH = 1000; // chars per article passed to LLM
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_TEXT_LENGTH = 1000;
 const MAX_ARTICLES_IN_PROMPT = 10;
 
 export type NewsAnalysisResult = {
@@ -33,9 +33,10 @@ export class NewsAnalysisService {
     private readonly repo: Repository<AssetNewsAnalysisEntity>,
   ) {}
 
-  async analyzeAssets(symbols: string[]): Promise<NewsAnalysisResult> {
-    const symbolKey = this.buildSymbolKey(symbols);
-    this.logger.log(`Analyzing assets: ${symbolKey}`);
+  async analyzeAssets(symbols: string[], lang = 'ru'): Promise<NewsAnalysisResult> {
+    const language = this.normalizeLanguage(lang);
+    const symbolKey = this.buildSymbolKey(symbols, language);
+    this.logger.log(`Analyzing assets: ${symbolKey}, language=${language}`);
 
     const cached = await this.repo.findOne({ where: { symbolKey } });
 
@@ -52,7 +53,9 @@ export class NewsAnalysisService {
     if (articles.length === 0) {
       const empty: NewsAnalysisResult = {
         symbolKey,
-        analysis: 'Новостей по данным активам не найдено.',
+        analysis: language === 'ru'
+          ? 'Новостей по данным активам не найдено.'
+          : 'No news found for these assets.',
         sentiment: 'neutral',
         newsCount: 0,
         analyzedAt: new Date(),
@@ -62,7 +65,7 @@ export class NewsAnalysisService {
       return empty;
     }
 
-    const prompt = this.buildPrompt(symbols, articles.slice(0, MAX_ARTICLES_IN_PROMPT));
+    const prompt = this.buildPrompt(symbols, articles.slice(0, MAX_ARTICLES_IN_PROMPT), language);
     const raw = await this.aiService.generateResponse(prompt);
 
     const sentiment = this.extractSentiment(raw);
@@ -82,6 +85,10 @@ export class NewsAnalysisService {
     return result;
   }
 
+  private normalizeLanguage(lang: string): string {
+    return (lang || 'ru').split('-')[0].toLowerCase();
+  }
+
   private async enrichSymbols(symbols: string[]): Promise<PortfolioNewsAsset[]> {
     const assets = await this.assetService.getAssetsPriceBatch(symbols);
     const assetMap = new Map(assets.map((a) => [a.symbol.toUpperCase(), a]));
@@ -92,22 +99,22 @@ export class NewsAnalysisService {
       return {
         symbol: upper,
         currencyCode: asset?.currencyCode,
-        // MOEX assets have moexSecurityId set
         source: asset?.moexSecurityId ? 'MOEX' : undefined,
       };
     });
   }
 
-  private buildSymbolKey(symbols: string[]): string {
+  private buildSymbolKey(symbols: string[], language: string): string {
     return [...symbols]
       .map((s) => s.trim().toUpperCase())
       .sort()
-      .join(',');
+      .join(',') + `:${language}`;
   }
 
   private buildPrompt(
     symbols: string[],
     articles: Awaited<ReturnType<NewsService['getPortfolioNews']>>,
+    language: string,
   ): string {
     const articleBlocks = articles
       .map((a, i) => {
@@ -116,7 +123,8 @@ export class NewsAnalysisService {
       })
       .join('\n\n');
 
-    return `Ты — финансовый аналитик. Проанализируй новостной фон по активам: ${symbols.join(', ')}.
+    if (language === 'ru') {
+      return `Ты — финансовый аналитик. Проанализируй новостной фон по активам: ${symbols.join(', ')}.
 
 Ниже приведены последние новости и публикации по этим активам:
 
@@ -130,6 +138,22 @@ SENTIMENT: positive
 или SENTIMENT: negative
 
 Отвечай только на русском языке.`;
+    }
+
+    return `You are a financial analyst. Analyze the news background for assets: ${symbols.join(', ')}.
+
+Latest news and publications:
+
+${articleBlocks}
+
+Task:
+1. Briefly describe the overall news background (3-5 sentences in English).
+2. At the very end of your response, on a separate line, indicate the overall sentiment in the format:
+SENTIMENT: positive
+or SENTIMENT: neutral
+or SENTIMENT: negative
+
+Respond only in English.`;
   }
 
   private extractSentiment(raw: string): NewsSentiment {

@@ -6,6 +6,8 @@ import {
   useGetChatMessages,
   useGetChatSessions,
 } from '@entities/assistant';
+
+import { TypingIndicator } from './TypingIndicator';
 import { ChatMessageShape } from '@packages/types';
 import { FC, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -133,17 +135,21 @@ export const AssistantPage: FC = () => {
 
   const handleDigest = async () => {
     if (isLoading) return;
-    const botId = `${Date.now()}-digest`;
+    const userId = `${Date.now()}-digest-u`;
+    const botId = `${Date.now()}-digest-a`;
+    const now = new Date().toISOString();
 
     setMessages((prev) => [
       ...prev,
+      { id: userId, role: 'user', content: t('assistant.get_digest'), createdAt: now },
       { id: botId, role: 'assistant', content: '', isLoading: true },
     ]);
 
     try {
-      const response = await getDigest.mutateAsync();
+      const result = await getDigest.mutateAsync(activeSessionId ?? undefined);
+      if (!activeSessionId) setActiveSessionId(result.sessionId);
       setMessages((prev) =>
-        prev.map((m) => (m.id === botId ? { ...m, content: response, isLoading: false, createdAt: new Date().toISOString() } : m)),
+        prev.map((m) => (m.id === botId ? { ...m, content: result.response, isLoading: false, createdAt: new Date().toISOString() } : m)),
       );
     } catch {
       setMessages((prev) =>
@@ -224,11 +230,7 @@ export const AssistantPage: FC = () => {
           {messages.map((msg) => (
             <div key={msg.id} className={cn('msg', msg.role)}>
               {msg.isLoading ? (
-                <div className={cn('typing')}>
-                  <span />
-                  <span />
-                  <span />
-                </div>
+                <TypingIndicator />
               ) : (
                 <>
                   {msg.role === 'assistant' ? (

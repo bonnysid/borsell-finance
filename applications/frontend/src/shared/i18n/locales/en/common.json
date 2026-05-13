@@ -4,7 +4,6 @@
   "Username": "Username",
   "Password": "Password",
   "RepeatPassword": "Repeat password",
-
   "Search": "Search",
   "SearchError": "Search failed",
   "Stock": "Stock",
@@ -54,7 +53,6 @@
   "MyAssets": "My assets",
   "operationType": {
     "title": "Operation type",
-
     "BUY": "Buy",
     "SELL": "Sell",
     "TRANSFER_OUT": "Transfer out"
@@ -155,7 +153,16 @@
       "rebalance_good": "Strict rebalancing doesn't seem mandatory right now. It's enough to monitor the share of the largest position and set target weights in advance.",
       "rebalance_bad": "Rebalancing is useful: start with the largest position and bring the structure to target shares without changing everything in one operation.",
       "risks_prefix": "The main risks right now are:"
-    }
+    },
+    "thinking_phrases": [
+      "Thinking...",
+      "Analyzing...",
+      "Reviewing data...",
+      "Processing...",
+      "Gathering thoughts...",
+      "Formulating response...",
+      "Almost there..."
+    ]
   },
   "asset": {
     "news_sentiment": {
