@@ -13,6 +13,8 @@ import { formatDateDDMMYYYYHHMM } from '@shared/utils';
 import { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { TransactionsEmptyPlug } from '../TransactionsEmptyPlug';
+
 type TransactionsTableProps = {
   data: TransactionDtoShape[];
   isLoading?: boolean;
@@ -87,8 +89,9 @@ export const TransactionsTable: FC<TransactionsTableProps> = ({
       isLoading={isLoading}
       isFetching={isFetching}
       isEmpty={isEmpty}
+      emptyPlug={<TransactionsEmptyPlug />}
       pagination={pagination}
       skeletonHeights={49}
-    ></Table>
+    />
   );
 };

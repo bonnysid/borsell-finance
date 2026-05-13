@@ -177,5 +177,9 @@
       "analyzed_at": "Updated: {{date}}",
       "cached": "cached"
     }
+  },
+  "transactions": {
+    "empty_title": "No transactions yet",
+    "empty_subtitle": "Add your first buy or sell to start tracking your transaction history."
   }
 }

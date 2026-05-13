@@ -1,0 +1,67 @@
+.plug {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  height: 100%;
+  justify-content: center;
+}
+
+.icon-wrap {
+  opacity: 0.75;
+}
+
+.text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+
+  &.buy {
+    color: var(--color-text-success);
+    border-color: var(--color-success-primary);
+    background: color-mix(in srgb, var(--color-bg-success) 10%, transparent);
+  }
+
+  &.sell {
+    color: var(--color-text-error);
+    border-color: var(--color-error-primary);
+    background: color-mix(in srgb, var(--color-bg-error) 10%, transparent);
+  }
+
+  &.transfer {
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-primary);
+    background: var(--color-bg-secondary);
+  }
+}
