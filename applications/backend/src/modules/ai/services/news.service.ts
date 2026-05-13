@@ -5,11 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format, subDays } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { NewsArticleEntity, NewsSymbolSyncEntity } from '../entities';
 
-type NewsProviderName = 'finnhub' | 'marketaux';
+type NewsProviderName = 'finnhub' | 'marketaux' | 'financemarker';
 
 type FinnhubCallback<T> = (error: Error | null, data: T | null, response: unknown) => void;
 
@@ -53,7 +53,26 @@ type MarketauxNewsItem = {
   published_at?: string;
 };
 
-type PortfolioNewsAsset = {
+type FinancemarkerNewsResponse = {
+  data?: FinancemarkerNewsItem[];
+};
+
+type FinancemarkerNewsItem = {
+  id?: number;
+  code?: string;
+  exchange?: string;
+  name?: string;
+  source_id?: number;
+  type?: string;
+  url?: string;
+  title?: string;
+  text?: string;
+  link?: string;
+  image?: string;
+  pub_date?: string;
+};
+
+export type PortfolioNewsAsset = {
   symbol: string;
   name?: string;
   currencyCode?: string;
@@ -71,6 +90,7 @@ export type PortfolioNewsItem = {
 
 const FINNHUB_PROVIDER: NewsProviderName = 'finnhub';
 const MARKETAUX_PROVIDER: NewsProviderName = 'marketaux';
+const FINANCEMARKER_PROVIDER: NewsProviderName = 'financemarker';
 const finnhub = require('finnhub') as FinnhubModule;
 
 @Injectable()
@@ -101,7 +121,7 @@ export class NewsService {
       : undefined;
 
     this.logger.log(
-      `News service initialized: providers=${MARKETAUX_PROVIDER},${FINNHUB_PROVIDER}, ttlMinutes=${this.cacheTtlMs / 60 / 1000}, lookbackDays=${this.lookbackDays}, perSymbolLimit=${this.perSymbolLimit}`,
+      `News service initialized: providers=${MARKETAUX_PROVIDER},${FINNHUB_PROVIDER},${FINANCEMARKER_PROVIDER}, ttlMinutes=${this.cacheTtlMs / 60 / 1000}, lookbackDays=${this.lookbackDays}, perSymbolLimit=${this.perSymbolLimit}`,
     );
   }
 
@@ -124,6 +144,7 @@ export class NewsService {
   }
 
   async getPortfolioNews(assets: Array<string | PortfolioNewsAsset>): Promise<PortfolioNewsItem[]> {
+    this.logger.debug(`Fetching portfolio news: assets=${assets.join(',')}`);
     const normalizedAssets = this.normalizeAssets(assets);
 
     if (normalizedAssets.length === 0) {
@@ -204,10 +225,7 @@ export class NewsService {
 
   private getProviderOrder(asset: PortfolioNewsAsset): NewsProviderName[] {
     if (this.isLikelyRussianAsset(asset)) {
-      this.logger.debug(
-        `Russian asset detected for symbol=${asset.symbol}; skipping global news providers until a Russian provider is configured`,
-      );
-      return [];
+      return [FINANCEMARKER_PROVIDER];
     }
 
     return [FINNHUB_PROVIDER, MARKETAUX_PROVIDER];
@@ -260,9 +278,9 @@ export class NewsService {
   }
 
   private isProviderConfigured(provider: NewsProviderName): boolean {
-    return provider === FINNHUB_PROVIDER
-      ? Boolean(this.finnhubClient)
-      : Boolean(this.marketauxApiKey);
+    if (provider === FINNHUB_PROVIDER) return Boolean(this.finnhubClient);
+    if (provider === MARKETAUX_PROVIDER) return Boolean(this.marketauxApiKey);
+    return true; // financemarker — no API key needed
   }
 
   private async fetchAndCacheSymbolNews(provider: NewsProviderName, asset: PortfolioNewsAsset) {
@@ -300,9 +318,13 @@ export class NewsService {
   private fetchProviderCompanyNews(
     provider: NewsProviderName,
     asset: PortfolioNewsAsset,
-  ): Promise<Array<FinnhubCompanyNewsItem | MarketauxNewsItem>> {
+  ): Promise<Array<FinnhubCompanyNewsItem | MarketauxNewsItem | FinancemarkerNewsItem>> {
     if (provider === FINNHUB_PROVIDER) {
       return this.fetchFinnhubCompanyNews(asset.symbol);
+    }
+
+    if (provider === FINANCEMARKER_PROVIDER) {
+      return this.fetchFinancemarkerCompanyNews(asset.symbol);
     }
 
     return this.fetchMarketauxCompanyNews(asset);
@@ -340,6 +362,32 @@ export class NewsService {
     );
 
     return limitedData;
+  }
+
+  private async fetchFinancemarkerCompanyNews(symbol: string): Promise<FinancemarkerNewsItem[]> {
+    const cleanSymbol = symbol.replace(/\.ME$/, '').replace(/\.MOEX$/, '');
+    const query = `MOEX:${cleanSymbol}`;
+
+    this.logger.debug(`Requesting ${FINANCEMARKER_PROVIDER} news for query=${query}`);
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<FinancemarkerNewsResponse>('https://financemarker.ru/api/news', {
+          params: { query, type: 'blog', page: 1 },
+          timeout: 10000,
+        }),
+      );
+
+      const data = Array.isArray(response.data?.data) ? response.data.data : [];
+      this.logger.debug(
+        `${FINANCEMARKER_PROVIDER} returned ${data.length} articles for symbol=${symbol}`,
+      );
+
+      return data.slice(0, this.perSymbolLimit);
+    } catch (error) {
+      this.logger.error(`Failed to fetch ${FINANCEMARKER_PROVIDER} news for ${symbol}`, error);
+      return [];
+    }
   }
 
   private async fetchMarketauxCompanyNews(asset: PortfolioNewsAsset): Promise<MarketauxNewsItem[]> {
@@ -389,7 +437,7 @@ export class NewsService {
   private toNewsArticleEntity(
     provider: NewsProviderName,
     symbol: string,
-    item: FinnhubCompanyNewsItem | MarketauxNewsItem,
+    item: FinnhubCompanyNewsItem | MarketauxNewsItem | FinancemarkerNewsItem,
     fetchedAt: Date,
   ): Partial<NewsArticleEntity> {
     const normalizedItem = this.normalizeProviderNewsItem(provider, item, fetchedAt);
@@ -415,9 +463,22 @@ export class NewsService {
 
   private normalizeProviderNewsItem(
     provider: NewsProviderName,
-    item: FinnhubCompanyNewsItem | MarketauxNewsItem,
+    item: FinnhubCompanyNewsItem | MarketauxNewsItem | FinancemarkerNewsItem,
     fetchedAt: Date,
   ) {
+    if (provider === FINANCEMARKER_PROVIDER) {
+      const fmItem = item as FinancemarkerNewsItem;
+      return {
+        externalId: fmItem.id ? String(fmItem.id) : undefined,
+        title: fmItem.title?.trim(),
+        summary: fmItem.text?.trim(),
+        url: fmItem.link?.trim() || fmItem.url?.trim(),
+        imageUrl: fmItem.image?.trim(),
+        source: fmItem.name?.trim() || FINANCEMARKER_PROVIDER,
+        publishedAt: fmItem.pub_date ? new Date(fmItem.pub_date) : fetchedAt,
+      };
+    }
+
     if (provider === FINNHUB_PROVIDER) {
       const finnhubItem = item as FinnhubCompanyNewsItem;
 
@@ -453,15 +514,13 @@ export class NewsService {
     provider: NewsProviderName,
     symbols: string[],
   ): Promise<NewsArticleEntity[]> {
-    const since = subDays(new Date(), this.lookbackDays);
     this.logger.debug(
-      `Loading cached news for provider=${provider}, symbols=${symbols.join(', ')}, since=${since.toISOString()}`,
+      `Loading cached news for provider=${provider}, symbols=${symbols.join(', ')}`,
     );
     const articles = await this.newsArticleRepo.find({
       where: {
         provider,
         symbol: In(symbols),
-        publishedAt: MoreThanOrEqual(since),
       },
       order: { publishedAt: 'DESC' },
       take: Math.max(this.perSymbolLimit * symbols.length, 15),

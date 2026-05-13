@@ -48,10 +48,57 @@
   text-overflow: ellipsis;
 }
 
+.portfolio-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--PaddingXS) var(--PaddingS);
+  border-radius: var(--RoundingS);
+}
+
+.balance-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.balance-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.balance-pnl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.balance-pnl-period {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
 .divider {
   height: 1px;
   background-color: var(--color-border-primary);
   margin: 4px 0;
+}
+
+.settings-row {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 2px var(--PaddingS);
+}
+
+.settings-label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 .logout-btn {

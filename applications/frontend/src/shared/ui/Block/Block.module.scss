@@ -13,4 +13,12 @@
   color: var(--color-text-primary);
   text-align: center;
   width: 100%;
+
+  &.left {
+    text-align: left;
+  }
+
+  &.right {
+    text-align: right;
+  }
 }

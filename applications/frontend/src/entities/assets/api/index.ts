@@ -1,6 +1,7 @@
 export * from './AssetsApi';
 export * from './useGetAssetCandles';
 export * from './useGetAssetInfo';
+export * from './useGetAssetNewsAnalysis';
 export * from './useGetAssetPrice';
 export * from './useGetAssetPriceHistory';
 export * from './useGetAssets';

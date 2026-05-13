@@ -74,12 +74,11 @@ export const CandlesChart: FC<CandlesChartProps> = ({
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: getCssVariable('--color-bg-secondary') },
         textColor: getCssVariable('--color-text-primary'),
       },
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
       grid: {
         vertLines: { color: getCssVariable('--color-border-primary') },
         horzLines: { color: getCssVariable('--color-border-primary') },
@@ -179,16 +178,9 @@ export const CandlesChart: FC<CandlesChartProps> = ({
 
     chart.subscribeCrosshairMove(handleCrosshairMove);
 
-    // Ресайз через ResizeObserver (более современно, чем window.resize)
-    const handleResize = () => {
-      chart.applyOptions({ width: chartContainerRef.current?.clientWidth });
-    };
-    window.addEventListener('resize', handleResize);
-
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
-      window.removeEventListener('resize', handleResize);
       chart.remove();
     };
   }, [i18n.language, theme]);

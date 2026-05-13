@@ -79,3 +79,8 @@ export const USER_QUERY_KEYS = {
 export const CURRENCIES_QUERY_KEYS = {
   all: ['currencies'] as const,
 } as const;
+
+export const AI_QUERY_KEYS = {
+  all: ['ai'] as const,
+  newsAnalysis: (symbols: string[]) => [...AI_QUERY_KEYS.all, 'news-analysis', [...symbols].sort().join(',')] as const,
+} as const;

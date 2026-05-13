@@ -1,2 +1,1 @@
-export * from './PortfolioInsight';
 export * from './PortfolioInsightLoader';

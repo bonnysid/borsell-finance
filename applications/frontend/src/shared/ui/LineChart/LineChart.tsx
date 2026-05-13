@@ -75,12 +75,11 @@ export const LineChart: FC<LineChartProps> = ({
     if (!container) return;
 
     const chart = createChart(container, {
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: getCssVariable('--color-bg-secondary') },
         textColor: getCssVariable('--color-text-primary'),
       },
-      width: container.clientWidth,
-      height: container.clientHeight,
       grid: {
         vertLines: { color: getCssVariable('--color-border-primary') },
         horzLines: { color: getCssVariable('--color-border-primary') },
@@ -157,17 +156,9 @@ export const LineChart: FC<LineChartProps> = ({
 
     chart.subscribeCrosshairMove(handleCrosshairMove);
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      const { width } = entries[0].contentRect;
-      chart.applyOptions({ width });
-    });
-
-    resizeObserver.observe(container);
-
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
-      resizeObserver.disconnect();
       chart.remove();
     };
   }, [i18n.language, theme]);

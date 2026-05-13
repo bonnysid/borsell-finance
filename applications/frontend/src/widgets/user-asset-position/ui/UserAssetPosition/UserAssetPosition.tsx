@@ -74,6 +74,8 @@ export const UserAssetPosition: FC<UserAssetPositionProps> = ({ symbol, price })
       className={cx('user-asset-position')}
       title={t('MyPosition')}
       isLoading={isLoading || isLoadingAssetInfo}
+      skeletonHeight={508}
+      skeletonMinHeight={508}
     >
       <RowInfo caption={t('Quantity')}>{formatNumber(data?.quantity || 0)}</RowInfo>
       <RowInfo caption={t('AvgBuyPrice')}>

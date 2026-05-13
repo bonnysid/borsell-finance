@@ -4,6 +4,7 @@ import { Block } from '@shared/ui';
 import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { PortfolioInsightLoader } from '../PortfolioInsightLoader';
 import styles from './PortfolioInsight.module.scss';
 
 type PortfolioInsightProps = {
@@ -18,7 +19,14 @@ export const usePortfolioInsights = () => {
 
   return useMemo(() => {
     if (!insight) {
-      return { hasData: false, title: '', summary: '', recommendations: [], status: 'average', isLoading };
+      return {
+        hasData: false,
+        title: '',
+        summary: '',
+        recommendations: [],
+        status: 'average',
+        isLoading,
+      };
     }
 
     return {
@@ -40,8 +48,15 @@ export const PortfolioInsight: FC<PortfolioInsightProps> = ({ compact = false })
   return (
     <Block
       title={t('portfolio.insight.block_title')}
+      titleAlign="left"
       className={cx('portfolio-insight', insight?.status, compact && 'compact')}
       isLoading={isLoading}
+      loadingContent={
+        <PortfolioInsightLoader
+          message={t('portfolio.insight.loading')}
+          hint={t('portfolio.insight.loading_hint')}
+        />
+      }
     >
       <div className={cx('header')}>
         <div>

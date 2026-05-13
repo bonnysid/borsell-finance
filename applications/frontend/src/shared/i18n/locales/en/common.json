@@ -93,6 +93,8 @@
   "portfolio": {
     "insight": {
       "block_title": "Insight",
+      "loading": "Evaluating portfolio...",
+      "loading_hint": "Usually takes 10–30 seconds",
       "status_label": {
         "good": "Good",
         "average": "Average",
@@ -153,6 +155,20 @@
       "rebalance_good": "Strict rebalancing doesn't seem mandatory right now. It's enough to monitor the share of the largest position and set target weights in advance.",
       "rebalance_bad": "Rebalancing is useful: start with the largest position and bring the structure to target shares without changing everything in one operation.",
       "risks_prefix": "The main risks right now are:"
+    }
+  },
+  "asset": {
+    "news_sentiment": {
+      "title": "News Sentiment",
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative",
+      "loading": "Analyzing news...",
+      "loading_hint": "Usually takes 10–30 seconds",
+      "no_news": "No news found for this asset.",
+      "based_on": "{{count}} articles",
+      "analyzed_at": "Updated: {{date}}",
+      "cached": "cached"
     }
   }
 }

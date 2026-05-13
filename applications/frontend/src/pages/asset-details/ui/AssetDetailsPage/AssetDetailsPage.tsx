@@ -2,6 +2,7 @@ import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { AssetLogo, AssetPrice, useGetAssetInfo, useGetAssetPrice } from '@entities/assets';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
+import { AssetNewsSentiment } from '@widgets/asset-ai-summary';
 import { ChartAssetPriceHistory } from '@widgets/chart-asset-price-history';
 import { TransactionsHistory } from '@widgets/transactions-history';
 import { UserAssetPosition } from '@widgets/user-asset-position/ui/UserAssetPosition/UserAssetPosition';
@@ -36,6 +37,8 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
         {assetInfo && <span>({assetInfo.name})</span>}
         {assetPrice && <AssetPrice assetPrice={assetPrice} />}
       </PageTitle>
+      <AssetNewsSentiment symbol={params.symbol} />
+
       <div className={cx('top')}>
         <ChartAssetPriceHistory symbol={params.symbol} />
 
