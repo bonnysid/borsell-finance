@@ -73,7 +73,7 @@ export const AssetsStocksPage: FC<AssetsStocksPageProps> = ({}) => {
   }, []);
 
   const handleRowClick = (record: AssetDtoShape) => {
-    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }));
+    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }, { type: record.type }));
   };
 
   useEffect(() => {

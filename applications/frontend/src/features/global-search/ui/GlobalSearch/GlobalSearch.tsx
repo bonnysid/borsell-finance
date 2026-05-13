@@ -53,7 +53,7 @@ export const GlobalSearch: FC = () => {
   const handleSelectAsset = (asset: AssetSearchResultDtoShape) => {
     setSearch('');
     setIsFocused(false);
-    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: asset.symbol }));
+    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: asset.symbol }, { type: asset.type }));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

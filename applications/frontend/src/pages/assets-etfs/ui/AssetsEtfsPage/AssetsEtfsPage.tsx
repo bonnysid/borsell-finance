@@ -73,7 +73,7 @@ export const AssetsEtfsPage: FC<AssetsEtfsPageProps> = ({}) => {
   }, []);
 
   const handleRowClick = (record: AssetDtoShape) => {
-    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }));
+    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.symbol }, { type: record.type }));
   };
 
   useEffect(() => {

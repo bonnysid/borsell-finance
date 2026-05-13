@@ -1,5 +1,6 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
 import { AssetLogo, AssetPrice, useGetAssetInfo, useGetAssetPrice } from '@entities/assets';
+import { AssetType } from '@packages/types';
 import { AppRoutePaths } from '@shared/router';
 import { PageTitle, PageWrapper } from '@shared/ui';
 import { AssetNewsSentiment } from '@widgets/asset-ai-summary';
@@ -8,7 +9,7 @@ import { TransactionsHistory } from '@widgets/transactions-history';
 import { UserAssetPosition } from '@widgets/user-asset-position/ui/UserAssetPosition/UserAssetPosition';
 import { FC } from 'react';
 import { Navigate } from 'react-router';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import styles from './AssetDetailsPage.module.scss';
 
@@ -22,6 +23,7 @@ type Params = {
 
 export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
   const params = useParams<Params>();
+  const [searchParams] = useSearchParams();
   const { data: assetInfo } = useGetAssetInfo(params.symbol);
   const { data: assetPrice } = useGetAssetPrice(params.symbol);
 
@@ -37,7 +39,9 @@ export const AssetDetailsPage: FC<AssetDetailsPageProps> = ({}) => {
         {assetInfo && <span>({assetInfo.name})</span>}
         {assetPrice && <AssetPrice assetPrice={assetPrice} />}
       </PageTitle>
-      <AssetNewsSentiment symbol={params.symbol} />
+      {(assetInfo?.type === AssetType.STOCK || searchParams.get('type') === AssetType.STOCK) && (
+        <AssetNewsSentiment symbol={params.symbol} />
+      )}
 
       <div className={cx('top')}>
         <ChartAssetPriceHistory symbol={params.symbol} />

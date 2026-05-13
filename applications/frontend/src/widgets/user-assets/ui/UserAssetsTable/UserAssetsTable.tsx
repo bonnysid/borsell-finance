@@ -48,7 +48,9 @@ export const UserAssetsTable: FC<UserAssetsTableProps> = ({
   };
 
   const handleRowClick = (record: UserAssetDtoShape) => {
-    navigate(AppRoutePaths.ASSETS_DETAILS({ symbol: record.asset.symbol }));
+    navigate(
+      AppRoutePaths.ASSETS_DETAILS({ symbol: record.asset.symbol }, { type: record.asset.type }),
+    );
   };
 
   const columns = useMemo<TableColumnType<UserAssetDtoShape>[]>(() => {
