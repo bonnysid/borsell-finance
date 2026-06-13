@@ -466,9 +466,9 @@ export class AssetService {
       },
     });
 
-    // If we have less than 70% of days, we fetch from external source
-    // We use 70% because of weekends/holidays
-    if (count < diffDays * 0.7) {
+    // If we have less than 98% of days, we fetch from external source
+    // We use 98% because of weekends/holidays
+    if (count < diffDays * 0.98) {
       this.logger.log(`Data missing for ${symbol} in range ${startDate} - ${endDate}. Fetching...`);
 
       const asset = await this.assetRepo.findOne({ where: { symbol } });
