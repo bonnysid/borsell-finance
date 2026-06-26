@@ -42,7 +42,7 @@ export const usePortfolioInsights = () => {
 
 export const PortfolioInsight: FC<PortfolioInsightProps> = ({ compact = false }) => {
   const { t } = useTranslation();
-  const { data: insight, isLoading } = useGetPortfolioInsight();
+  const { data: insight, isLoading, isFetching } = useGetPortfolioInsight();
   const refresh = useRefreshPortfolioInsight();
 
   return (
@@ -50,7 +50,7 @@ export const PortfolioInsight: FC<PortfolioInsightProps> = ({ compact = false })
       title={t('portfolio.insight.block_title')}
       titleAlign="left"
       className={cx('portfolio-insight', insight?.status, compact && 'compact')}
-      isLoading={isLoading}
+      isLoading={isLoading || isFetching}
       loadingContent={
         <PortfolioInsightLoader
           message={t('portfolio.insight.loading')}

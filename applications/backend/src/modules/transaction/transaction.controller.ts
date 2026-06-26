@@ -54,6 +54,7 @@ export class TransactionController {
 
     if (portfolio) {
       await this.portfolioAssetService.createPortfolioAssetAndSave(portfolio.id, userAsset.id);
+      await this.portfolioService.invalidatePortfolioInsight(user.userId);
       await this.portfolioService.updatePortfolioMetrics(portfolio.id);
     }
 

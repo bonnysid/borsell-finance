@@ -4,7 +4,7 @@ import { CSSProperties, FC, HTMLAttributes, ReactNode } from 'react';
 import styles from './Block.module.scss';
 
 type BlockProps = HTMLAttributes<HTMLDivElement> & {
-  title?: string;
+  title?: ReactNode;
   titleAlign?: 'left' | 'center' | 'right';
   isLoading?: boolean;
   loadingContent?: ReactNode;

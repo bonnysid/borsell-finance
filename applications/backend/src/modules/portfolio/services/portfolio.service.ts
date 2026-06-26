@@ -14,8 +14,8 @@ import { addDays, startOfMonth } from 'date-fns';
 import { Between, LessThanOrEqual, Repository } from 'typeorm';
 
 import { formatDateToSqlDate, normalizeDate } from '@/common/utils/date.utils';
-import { AssetService } from '@/modules/asset/services';
 import { AiService } from '@/modules/ai/services/ai.service';
+import { AssetService } from '@/modules/asset/services';
 import { CurrencyConverterService } from '@/modules/currency/services';
 import {
   CreatePortfolioDto,
@@ -63,7 +63,23 @@ export class PortfolioService {
     });
   }
 
+  private insightPromises = new Map<
+    string,
+    { promise: Promise<PortfolioInsightDtoShape | null>; isStale: boolean }
+  >();
+
+  async invalidatePortfolioInsight(userId: ID): Promise<void> {
+    this.logger.log(`Invalidating portfolio insight cache and ongoing requests for user ${userId}`);
+    await this.clearInsightCache(String(userId));
+    for (const [key, state] of this.insightPromises.entries()) {
+      if (key.startsWith(`${userId}:`)) {
+        state.isStale = true;
+      }
+    }
+  }
+
   async updatePortfolioMetrics(portfolioId: ID) {
+    this.logger.log(`Starting metrics update for portfolio ${portfolioId}`);
     const portfolio = await this.portfolioRepository.findOne({
       where: { id: portfolioId },
       relations: ['assets', 'assets.userAsset', 'assets.userAsset.asset', 'currency'],
@@ -113,6 +129,7 @@ export class PortfolioService {
 
         await this.portfolioSnapshotRepository.save(snapshot);
       }
+      this.logger.log(`Metrics update completed for portfolio ${portfolioId}`);
     } catch (e) {
       this.logger.error(`Failed to update portfolio metrics: ${e.message}`);
     }
@@ -175,7 +192,41 @@ export class PortfolioService {
     };
   }
 
+  isInsightUpdating(userId: ID, currencyCode: string): boolean {
+    const key = `${userId}:${currencyCode}`;
+    const state = this.insightPromises.get(key);
+    return !!state && !state.isStale;
+  }
+
   async getPortfolioInsight(
+    userId: ID,
+    targetCurrency: CurrencyCode,
+    refresh = false,
+  ): Promise<PortfolioInsightDtoShape | null> {
+    this.logger.log(`Getting portfolio insight for user ${userId} in currency ${targetCurrency}`);
+    const key = `${userId}:${targetCurrency}`;
+    const existing = this.insightPromises.get(key);
+
+    if (existing && !existing.isStale && !refresh) {
+      this.logger.log(`Returning existing insight promise for user ${userId}`);
+      return existing.promise;
+    }
+
+    const promise = this._getPortfolioInsight(userId, targetCurrency, refresh);
+    this.insightPromises.set(key, { promise, isStale: false });
+
+    try {
+      return await promise;
+    } finally {
+      // Только если это всё еще тот же промис, удаляем его
+      const current = this.insightPromises.get(key);
+      if (current && current.promise === promise) {
+        this.insightPromises.delete(key);
+      }
+    }
+  }
+
+  private async _getPortfolioInsight(
     userId: ID,
     targetCurrency: CurrencyCode,
     refresh = false,
