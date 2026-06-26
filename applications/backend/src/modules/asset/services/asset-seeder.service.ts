@@ -64,7 +64,7 @@ export class AssetSeederService implements OnModuleInit {
     const tickers = [...new Set([...this.initialTickers, ...topTickers])];
 
     const existingAssets = await this.assetRepo.find({
-      where: { symbol: In(tickers), type: AssetType.STOCK },
+      where: { symbol: In(tickers) },
     });
 
     const today = normalizeDate(new Date());
@@ -99,13 +99,22 @@ export class AssetSeederService implements OnModuleInit {
     const tickers = [...new Set([...topTickers])];
 
     const existingAssets = await this.assetRepo.find({
-      where: { symbol: In(tickers), type: AssetType.ETF },
+      where: { symbol: In(tickers) },
     });
 
     const today = normalizeDate(new Date());
 
     const symbolsToUpdate = tickers.filter((symbol) => {
       const asset = existingAssets.find((a) => a.symbol === symbol);
+      const assetInfo = topEtfs.find((a) => a.symbol === symbol);
+
+      if (asset?.type !== assetInfo?.type) {
+        this.logger.warn(
+          `Asset type mismatch: ${assetInfo?.symbol} - MOEX: ${assetInfo?.type}, DB: ${asset?.type}`,
+        );
+        return false;
+      }
+
       if (!asset) return true;
       return asset.lastPriceUpdateAt < today;
     });

@@ -148,7 +148,7 @@ export class AssetUpdaterService {
 
     if (existingAssets.length === 0) {
       existingAssets = await this.assetRepo.find({
-        where: { symbol: In(tickers), type },
+        where: { symbol: In(tickers) },
       });
     }
 
@@ -191,6 +191,13 @@ export class AssetUpdaterService {
           type: assetInfo.type ?? type,
           currencyCode: assetInfo.currencyCode,
         });
+      }
+
+      if (assetInfo.type !== asset?.type) {
+        this.logger.warn(
+          `Asset type mismatch: ${assetInfo.symbol} - MOEX: ${assetInfo.type}, DB: ${asset?.type}`,
+        );
+        continue;
       }
 
       this.mapAssetInfo(asset, assetInfo, type);
