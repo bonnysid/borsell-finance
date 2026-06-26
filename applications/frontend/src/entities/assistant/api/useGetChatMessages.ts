@@ -14,5 +14,8 @@ export const useGetChatMessages = (sessionId: string | null) => {
       return data;
     },
     enabled: !!sessionId,
+    // Пока есть незавершённое сообщение ассистента — опрашиваем сервер, чтобы подтянуть ответ.
+    refetchInterval: (query) =>
+      query.state.data?.some((m) => m.status === 'pending') ? 2000 : false,
   });
 };

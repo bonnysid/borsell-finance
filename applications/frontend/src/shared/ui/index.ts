@@ -5,6 +5,7 @@ export * from './DirectionArrow';
 export * from './DonutChart';
 export * from './LineChart';
 export * from './Logo';
+export * from './Notifications';
 export * from './PageTitle';
 export * from './PageWrapper';
 export * from './PercentText';

@@ -5,46 +5,45 @@ import {
   useGetAssistantDigest,
   useGetChatMessages,
   useGetChatSessions,
+  useGetPendingAssistant,
 } from '@entities/assistant';
 
 import { TypingIndicator } from './TypingIndicator';
 import { ChatMessageShape } from '@packages/types';
 import { FC, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import styles from './AssistantPage.module.scss';
 
-type LocalMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  createdAt?: string;
-  isLoading?: boolean;
-};
-
 const cn = bindStyles(styles);
-
-function fromRemote(m: ChatMessageShape): LocalMessage {
-  return { id: m.id, role: m.role, content: m.content, createdAt: m.createdAt };
-}
 
 export const AssistantPage: FC = () => {
   const { t, i18n } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSessionId = searchParams.get('session');
   const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<LocalMessage[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: sessions = [] } = useGetChatSessions();
   const { data: remoteMessages } = useGetChatMessages(activeSessionId);
+  const { data: pending } = useGetPendingAssistant();
   const askAssistant = useAskAssistant();
   const getDigest = useGetAssistantDigest();
   const deleteSession = useDeleteChatSession();
 
-  const isLoading = messages.some((m) => m.isLoading);
+  // Сессии, по которым прямо сейчас генерируется ответ — для индикатора в списке чатов.
+  const pendingSessionIds = useMemo(
+    () => new Set((pending ?? []).map((p) => p.sessionId)),
+    [pending],
+  );
+
+  // AI «думает», пока среди сообщений есть pending, либо пока летит запрос на регистрацию.
+  const hasPending = !!remoteMessages?.some((m) => m.status === 'pending');
+  const isBusy = hasPending || askAssistant.isPending || getDigest.isPending;
 
   const QUICK_PROMPTS = useMemo(
     () => [
@@ -55,39 +54,55 @@ export const AssistantPage: FC = () => {
     [t],
   );
 
-  const greeting: LocalMessage = useMemo(
-    () => ({ id: 'greeting', role: 'assistant', content: t('assistant.greeting') }),
+  const greeting: ChatMessageShape = useMemo(
+    () => ({
+      id: 'greeting',
+      sessionId: '',
+      role: 'assistant',
+      content: t('assistant.greeting'),
+      status: 'done',
+      createdAt: '',
+    }),
     [t],
   );
 
-  useEffect(() => {
-    if (remoteMessages && remoteMessages.length > 0) {
-      setMessages(remoteMessages.map(fromRemote));
-    } else if (!activeSessionId) {
-      setMessages([greeting]);
+  const messages: ChatMessageShape[] = useMemo(() => {
+    if (activeSessionId && remoteMessages && remoteMessages.length > 0) {
+      return remoteMessages;
     }
-  }, [remoteMessages, activeSessionId]);
-
-  useEffect(() => {
     if (!activeSessionId) {
-      setMessages([greeting]);
+      return [greeting];
     }
-  }, [i18n.language]);
+    return [];
+  }, [activeSessionId, remoteMessages, greeting]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const setActiveSession = (sessionId: string | null) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (sessionId) {
+          next.set('session', sessionId);
+        } else {
+          next.delete('session');
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const startNewChat = () => {
-    setActiveSessionId(null);
-    setMessages([greeting]);
+    setActiveSession(null);
     textareaRef.current?.focus();
   };
 
   const selectSession = (sessionId: string) => {
     if (sessionId === activeSessionId) return;
-    setActiveSessionId(sessionId);
-    setMessages([]);
+    setActiveSession(sessionId);
   };
 
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
@@ -98,65 +113,27 @@ export const AssistantPage: FC = () => {
 
   const sendMessage = async (question: string) => {
     const text = question.trim();
-    if (!text || isLoading) return;
+    if (!text || isBusy) return;
 
-    const userId = `${Date.now()}-u`;
-    const botId = `${Date.now()}-a`;
-
-    const now = new Date().toISOString();
-    setMessages((prev) => [
-      ...prev,
-      { id: userId, role: 'user', content: text, createdAt: now },
-      { id: botId, role: 'assistant', content: '', isLoading: true },
-    ]);
     setInputValue('');
-
     try {
       const result = await askAssistant.mutateAsync({
         question: text,
         sessionId: activeSessionId ?? undefined,
       });
-
-      if (!activeSessionId) setActiveSessionId(result.sessionId);
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === botId ? { ...m, content: result.response, isLoading: false, createdAt: new Date().toISOString() } : m,
-        ),
-      );
+      if (result.sessionId !== activeSessionId) setActiveSession(result.sessionId);
     } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === botId ? { ...m, content: t('assistant.error'), isLoading: false, createdAt: new Date().toISOString() } : m,
-        ),
-      );
+      // ошибка регистрации запроса — статус не изменится, пользователь может повторить
     }
   };
 
   const handleDigest = async () => {
-    if (isLoading) return;
-    const userId = `${Date.now()}-digest-u`;
-    const botId = `${Date.now()}-digest-a`;
-    const now = new Date().toISOString();
-
-    setMessages((prev) => [
-      ...prev,
-      { id: userId, role: 'user', content: t('assistant.get_digest'), createdAt: now },
-      { id: botId, role: 'assistant', content: '', isLoading: true },
-    ]);
-
+    if (isBusy) return;
     try {
       const result = await getDigest.mutateAsync(activeSessionId ?? undefined);
-      if (!activeSessionId) setActiveSessionId(result.sessionId);
-      setMessages((prev) =>
-        prev.map((m) => (m.id === botId ? { ...m, content: result.response, isLoading: false, createdAt: new Date().toISOString() } : m)),
-      );
+      if (result.sessionId !== activeSessionId) setActiveSession(result.sessionId);
     } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === botId ? { ...m, content: t('assistant.error_digest'), isLoading: false, createdAt: new Date().toISOString() } : m,
-        ),
-      );
+      // см. комментарий выше
     }
   };
 
@@ -202,7 +179,14 @@ export const AssistantPage: FC = () => {
             >
               <div className={cn('session-title')}>{s.title}</div>
               <div className={cn('session-meta')}>
-                <span>{fmtDate(s.updatedAt)}</span>
+                {pendingSessionIds.has(s.id) ? (
+                  <span className={cn('session-generating')}>
+                    <span className={cn('session-dot')} />
+                    {t('assistant.generating')}
+                  </span>
+                ) : (
+                  <span>{fmtDate(s.updatedAt)}</span>
+                )}
                 <button
                   type="button"
                   className={cn('session-del')}
@@ -229,7 +213,7 @@ export const AssistantPage: FC = () => {
         <div className={cn('messages')}>
           {messages.map((msg) => (
             <div key={msg.id} className={cn('msg', msg.role)}>
-              {msg.isLoading ? (
+              {msg.status === 'pending' ? (
                 <TypingIndicator />
               ) : (
                 <>
@@ -254,12 +238,12 @@ export const AssistantPage: FC = () => {
               type="button"
               className={cn('digest-btn')}
               onClick={handleDigest}
-              disabled={isLoading}
+              disabled={isBusy}
             >
               ✨ {t('assistant.get_digest')}
             </button>
             {QUICK_PROMPTS.map((p) => (
-              <button key={p} type="button" disabled={isLoading} onClick={() => sendMessage(p)}>
+              <button key={p} type="button" disabled={isBusy} onClick={() => sendMessage(p)}>
                 {p}
               </button>
             ))}
@@ -274,10 +258,10 @@ export const AssistantPage: FC = () => {
                 onKeyDown={handleKeyDown}
                 placeholder={t('assistant.placeholder')}
                 rows={2}
-                disabled={isLoading}
+                disabled={isBusy}
               />
             </div>
-            <Button type="submit" disabled={!inputValue.trim() || isLoading}>
+            <Button type="submit" disabled={!inputValue.trim() || isBusy}>
               {t('assistant.send')}
             </Button>
           </form>

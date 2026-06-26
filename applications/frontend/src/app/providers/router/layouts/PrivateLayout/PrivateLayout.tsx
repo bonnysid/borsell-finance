@@ -1,4 +1,6 @@
 import { bindStyles } from '@devbonnysid/ui-kit-default';
+import { useAssistantNotifications } from '@features/assistant-notifications';
+import { NotificationsContainer } from '@shared/ui';
 import { Header } from '@widgets/header';
 import { Sidebar } from '@widgets/sidebar';
 import { FC } from 'react';
@@ -11,6 +13,8 @@ type PrivateLayoutProps = {};
 const cn = bindStyles(styles);
 
 export const PrivateLayout: FC<PrivateLayoutProps> = () => {
+  useAssistantNotifications();
+
   return (
     <div className={cn('private-layout')}>
       <Header />
@@ -22,6 +26,8 @@ export const PrivateLayout: FC<PrivateLayoutProps> = () => {
           <Outlet />
         </div>
       </div>
+
+      <NotificationsContainer />
     </div>
   );
 };

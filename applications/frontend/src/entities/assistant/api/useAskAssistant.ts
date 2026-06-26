@@ -2,9 +2,10 @@ import { restService } from '@shared/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { CHAT_SESSIONS_KEY } from './useGetChatSessions';
+import { chatMessagesKey } from './useGetChatMessages';
 
 type AskPayload = { question: string; sessionId?: string };
-type AskResponse = { response: string; sessionId: string };
+type AskResponse = { sessionId: string; messageId: string };
 
 export const useAskAssistant = () => {
   const queryClient = useQueryClient();
@@ -13,12 +14,12 @@ export const useAskAssistant = () => {
     mutationFn: async (payload: AskPayload) => {
       const { data } = await restService.POST<AskResponse, AskPayload>('/assistant/ask', {
         data: payload,
-        timeout: 0,
       });
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: CHAT_SESSIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: chatMessagesKey(data.sessionId) });
     },
   });
 };

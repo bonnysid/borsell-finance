@@ -44,10 +44,19 @@ export type ChatSessionShape = {
   updatedAt: string;
 };
 
+export type ChatMessageStatus = 'pending' | 'done' | 'error';
+
 export type ChatMessageShape = {
   id: string;
   sessionId: string;
   role: 'user' | 'assistant';
   content: string;
+  status: ChatMessageStatus;
   createdAt: string;
+};
+
+export type AssistantPendingShape = {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
 };

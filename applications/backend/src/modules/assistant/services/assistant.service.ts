@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CurrencyCode } from '@packages/types';
 import { Message } from 'ollama';
 
@@ -8,8 +8,12 @@ import { PortfolioService } from '@/modules/portfolio/services';
 
 import { ChatService } from './chat.service';
 
+type EnqueueResult = { sessionId: string; messageId: string };
+
 @Injectable()
 export class AssistantService {
+  private readonly logger = new Logger(AssistantService.name);
+
   constructor(
     private readonly portfolioService: PortfolioService,
     private readonly aiService: AiService,
@@ -17,116 +21,166 @@ export class AssistantService {
     private readonly chatService: ChatService,
   ) {}
 
+  /**
+   * Регистрирует вопрос: создаёт сессию (при необходимости), сохраняет сообщение пользователя
+   * и pending-сообщение ассистента, затем СРАЗУ возвращает их id. Генерация ответа AI идёт в фоне.
+   */
   async askQuestion(
     userId: string,
     currencyCode: CurrencyCode,
     question: string,
     lang: string,
     sessionId?: string,
-  ): Promise<{ response: string; sessionId: string }> {
-    let session = sessionId ? await this.chatService.getSession(sessionId) : null;
-
-    if (!session || session.userId !== userId) {
-      session = await this.chatService.createSession(userId, question);
-    }
+  ): Promise<EnqueueResult> {
+    const session = await this.resolveSession(userId, sessionId, question);
 
     await this.chatService.saveMessage(session.id, userId, 'user', question);
+    const pending = await this.chatService.createPendingMessage(session.id, userId);
 
-    const portfolioInsight = await this.portfolioService.getPortfolioInsight(userId, currencyCode);
-    const allocation = await this.portfolioService.getPortfolioAllocation(userId, currencyCode);
-    const language = this.normalizeLanguage(lang);
+    void this.generateAnswer(userId, currencyCode, lang, session.id, pending.id);
 
-    const system = portfolioInsight && allocation
-      ? this.buildSystemContext(portfolioInsight, allocation.items, currencyCode, language)
-      : this.buildFallbackSystem(language);
-
-    const history = await this.chatService.getMessages(session.id);
-    const messages: Message[] = history.map((m) => ({ role: m.role, content: m.content }));
-
-    const response = await this.aiService.chatWithHistory(messages, system);
-
-    await this.chatService.saveMessage(session.id, userId, 'assistant', response);
-
-    return { response, sessionId: session.id };
+    return { sessionId: session.id, messageId: pending.id };
   }
 
+  /**
+   * Регистрирует запрос сводки новостей: сохраняет триггер-сообщение пользователя и pending-ответ,
+   * возвращает id сразу, генерация идёт в фоне.
+   */
   async getNewsDigest(
     userId: string,
     currencyCode: CurrencyCode,
     lang: string,
     sessionId?: string,
-  ): Promise<{ response: string; sessionId: string }> {
+  ): Promise<EnqueueResult> {
     const language = this.normalizeLanguage(lang);
-    const triggerMessage = language === 'ru'
-      ? 'Сводка новостей по портфелю'
-      : 'Portfolio news digest';
+    const triggerMessage = language === 'ru' ? 'Сводка новостей по портфелю' : 'Portfolio news digest';
 
-    let session = sessionId ? await this.chatService.getSession(sessionId) : null;
-    if (!session || session.userId !== userId) {
-      session = await this.chatService.createSession(userId, triggerMessage);
-    }
+    const session = await this.resolveSession(userId, sessionId, triggerMessage);
 
     await this.chatService.saveMessage(session.id, userId, 'user', triggerMessage);
+    const pending = await this.chatService.createPendingMessage(session.id, userId);
 
-    const allocation = await this.portfolioService.getPortfolioAllocation(userId, currencyCode);
+    void this.generateDigest(userId, currencyCode, language, session.id, pending.id);
 
-    if (!allocation || allocation.items.length === 0) {
-      const emptyResponse = language === 'ru'
-        ? 'В вашем портфеле нет активов.'
-        : 'You have no assets in your portfolio.';
-      await this.chatService.saveMessage(session.id, userId, 'assistant', emptyResponse);
-      return { response: emptyResponse, sessionId: session.id };
+    return { sessionId: session.id, messageId: pending.id };
+  }
+
+  private async resolveSession(userId: string, sessionId: string | undefined, firstMessage: string) {
+    const existing = sessionId ? await this.chatService.getSession(sessionId) : null;
+    if (existing && existing.userId === userId) {
+      return existing;
     }
+    return this.chatService.createSession(userId, firstMessage);
+  }
 
-    const portfolio = await this.portfolioService.findByUserId(userId);
-    const assetsBySymbol = new Map(
-      portfolio?.assets.map((portfolioAsset) => {
-        const asset = portfolioAsset.userAsset.asset;
-        return [asset.symbol, asset];
-      }) ?? [],
-    );
-    const newsAssets = allocation.items.map((item) => {
-      const asset = assetsBySymbol.get(item.symbol);
-      return {
-        symbol: item.symbol,
-        name: item.name,
-        currencyCode: asset?.currencyCode,
-        source: asset?.metadata?.source,
-      };
-    });
-    const news = await this.newsService.getPortfolioNews(newsAssets);
+  /** Фоновая генерация ответа на вопрос. Завершает pending-сообщение результатом или ошибкой. */
+  private async generateAnswer(
+    userId: string,
+    currencyCode: CurrencyCode,
+    lang: string,
+    sessionId: string,
+    messageId: string,
+  ): Promise<void> {
+    try {
+      const portfolioInsight = await this.portfolioService.getPortfolioInsight(userId, currencyCode);
+      const allocation = await this.portfolioService.getPortfolioAllocation(userId, currencyCode);
+      const language = this.normalizeLanguage(lang);
 
-    if (news.length === 0) {
-      const noNewsResponse = language === 'ru'
-        ? 'Новостей по активам вашего портфеля не найдено.'
-        : 'No news found for your assets.';
-      await this.chatService.saveMessage(session.id, userId, 'assistant', noNewsResponse);
-      return { response: noNewsResponse, sessionId: session.id };
+      const system =
+        portfolioInsight && allocation
+          ? this.buildSystemContext(portfolioInsight, allocation.items, currencyCode, language)
+          : this.buildFallbackSystem(language);
+
+      const history = await this.chatService.getMessagesForContext(sessionId);
+      const messages: Message[] = history.map((m) => ({ role: m.role, content: m.content }));
+
+      const response = await this.aiService.chatWithHistory(messages, system);
+
+      await this.chatService.completeMessage(messageId, response, 'done');
+    } catch (e) {
+      this.logger.error(`Failed to generate answer for session ${sessionId}`, e as Error);
+      await this.chatService.completeMessage(messageId, this.errorText(lang), 'error');
     }
+  }
 
-    const assetWeights = allocation.items.reduce(
-      (acc, item) => {
-        acc[item.symbol] = item.percentage;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+  /** Фоновая генерация сводки новостей. */
+  private async generateDigest(
+    userId: string,
+    currencyCode: CurrencyCode,
+    language: string,
+    sessionId: string,
+    messageId: string,
+  ): Promise<void> {
+    try {
+      const allocation = await this.portfolioService.getPortfolioAllocation(userId, currencyCode);
 
-    const newsContext = news
-      .slice(0, 15)
-      .map((n) => {
-        const weight = assetWeights[n.symbol] || 0;
-        return `- [${n.symbol}, доля: ${weight.toFixed(1)}%] ${n.title} (${n.publisher}, ${n.publishedAt.toLocaleDateString('ru')})`;
-      })
-      .join('\n');
+      if (!allocation || allocation.items.length === 0) {
+        const emptyResponse =
+          language === 'ru' ? 'В вашем портфеле нет активов.' : 'You have no assets in your portfolio.';
+        await this.chatService.completeMessage(messageId, emptyResponse, 'done');
+        return;
+      }
 
-    const prompt = language === 'ru'
-      ? `Ты финансовый аналитик. Сделай краткую сводку новостей по активам портфеля. Укажи ключевые риски и возможности. Отвечай на русском языке.\n\nНовости:\n${newsContext}`
-      : `You are a financial analyst. Summarize the following portfolio news. Highlight key risks and opportunities. Be concise.\n\nNews:\n${newsContext}`;
+      const portfolio = await this.portfolioService.findByUserId(userId);
+      const assetsBySymbol = new Map(
+        portfolio?.assets.map((portfolioAsset) => {
+          const asset = portfolioAsset.userAsset.asset;
+          return [asset.symbol, asset];
+        }) ?? [],
+      );
+      const newsAssets = allocation.items.map((item) => {
+        const asset = assetsBySymbol.get(item.symbol);
+        return {
+          symbol: item.symbol,
+          name: item.name,
+          currencyCode: asset?.currencyCode,
+          source: asset?.metadata?.source,
+        };
+      });
+      const news = await this.newsService.getPortfolioNews(newsAssets);
 
-    const response = await this.aiService.generateResponse(prompt);
-    await this.chatService.saveMessage(session.id, userId, 'assistant', response);
-    return { response, sessionId: session.id };
+      if (news.length === 0) {
+        const noNewsResponse =
+          language === 'ru'
+            ? 'Новостей по активам вашего портфеля не найдено.'
+            : 'No news found for your assets.';
+        await this.chatService.completeMessage(messageId, noNewsResponse, 'done');
+        return;
+      }
+
+      const assetWeights = allocation.items.reduce(
+        (acc, item) => {
+          acc[item.symbol] = item.percentage;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      const newsContext = news
+        .slice(0, 15)
+        .map((n) => {
+          const weight = assetWeights[n.symbol] || 0;
+          return `- [${n.symbol}, доля: ${weight.toFixed(1)}%] ${n.title} (${n.publisher}, ${n.publishedAt.toLocaleDateString('ru')})`;
+        })
+        .join('\n');
+
+      const prompt =
+        language === 'ru'
+          ? `Ты финансовый аналитик. Сделай краткую сводку новостей по активам портфеля. Укажи ключевые риски и возможности. Отвечай на русском языке.\n\nНовости:\n${newsContext}`
+          : `You are a financial analyst. Summarize the following portfolio news. Highlight key risks and opportunities. Be concise.\n\nNews:\n${newsContext}`;
+
+      const response = await this.aiService.generateResponse(prompt);
+      await this.chatService.completeMessage(messageId, response, 'done');
+    } catch (e) {
+      this.logger.error(`Failed to generate digest for session ${sessionId}`, e as Error);
+      await this.chatService.completeMessage(messageId, this.errorText(language), 'error');
+    }
+  }
+
+  private errorText(lang: string): string {
+    return this.normalizeLanguage(lang) === 'ru'
+      ? 'Не удалось получить ответ. Попробуйте ещё раз.'
+      : 'Failed to get a response. Please try again.';
   }
 
   private normalizeLanguage(lang: string): string {

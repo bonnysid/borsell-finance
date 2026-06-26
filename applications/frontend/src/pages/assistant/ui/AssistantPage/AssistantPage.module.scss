@@ -90,6 +90,33 @@
   padding-right: 20px;
 }
 
+.session-generating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-accent-primary, var(--color-text-primary));
+}
+
+.session-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: session-pulse 1s ease-in-out infinite;
+}
+
+@keyframes session-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .session-meta {
   display: flex;
   align-items: center;

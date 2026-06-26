@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { AssistantPendingShape } from '@packages/types';
 
 import { AuthGuard, CurrentUser } from '@/common';
 import { UserJWT } from '@/express';
@@ -45,6 +46,21 @@ export class AssistantController {
     const currencyCode = dbUser?.currencyCode || 'USD';
 
     return this.assistantService.getNewsDigest(user.userId, currencyCode, lang, dto.sessionId);
+  }
+
+  @Get('pending')
+  async getPending(@CurrentUser() user: UserJWT): Promise<AssistantPendingShape[]> {
+    const pending = await this.chatService.getPendingMessages(user.userId);
+    if (pending.length === 0) {
+      return [];
+    }
+    const sessions = await this.chatService.getSessions(user.userId);
+    const titleById = new Map(sessions.map((s) => [s.id, s.title]));
+    return pending.map((m) => ({
+      id: m.id,
+      sessionId: m.sessionId,
+      sessionTitle: titleById.get(m.sessionId) ?? '',
+    }));
   }
 
   @Get('sessions')
